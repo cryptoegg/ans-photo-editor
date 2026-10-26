@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Editor — A New Song</title>
+<meta name="description" content="A free photo editor for carousels: Instagram, TikTok and YouTube in one go.">
+<script>
+  // The skin before the first paint (js/ui/skin.js), so a dark one never flashes light
+  try { document.documentElement.dataset.skin = localStorage.getItem("ans_photo_skin") || "concrete"; } catch (e) { document.documentElement.dataset.skin = "concrete"; }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Caveat:wght@500;700&family=DM+Serif+Display&family=Inter+Tight:wght@400;500;700;800&family=Playfair+Display:wght@400;700&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+<!-- Installable (an icon on the dock / desktop, works offline): js/install.js -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1f4fbf">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">A New Song — Photo Editor</span>
+  <div class="segmented" id="platform-switch" title="Linked: one square set for all three. A platform: its own set and shape.">
+    <button data-mode="linked">Linked</button>
+    <button data-mode="instagram">Instagram</button>
+    <button data-mode="tiktok">TikTok</button>
+    <button data-mode="youtube">YouTube</button>
+  </div>
+  <select id="ratio-select" class="select" title="This platform's shape"></select>
+  <span class="spacer"></span>
+  <div class="segmented" id="view-switch" role="tablist" aria-label="View">
+    <button data-view="edit" class="on">Edit</button>
+    <button data-view="phone">Phone</button>
+  </div>
+  <span class="spacer"></span>
+  <button id="btn-settings" class="btn ghost icon" title="Settings: your main folder, what's saved where, the skin, keys (⌘,)" aria-label="Settings">⚙</button>
+  <button id="btn-projects" class="btn ghost" title="Your projects, and this one's name">Projects ▾</button>
+  <button id="btn-export" class="btn primary">Export</button>
+</header>
+
+<main class="workspace">
+  <section class="stage-area" id="stage-area">
+    <!-- Edit view -->
+    <div class="edit-view" id="edit-view">
+      <canvas id="stage-canvas"></canvas>
+      <div class="empty" id="empty-state" hidden>
+        <h2>Start your set</h2>
+        <p>Drop up to 10 photos here, or</p>
+        <button class="btn primary" id="btn-empty-add">Add photos</button>
+        <p class="muted small">JPEG, PNG, WebP and iPhone HEIC</p>
+      </div>
+      <div class="stage-tools">
+        <span class="hint" id="before-hint" hidden>Before</span>
+        <button class="btn ghost small" id="btn-guides" title="Guides">▦</button>
+        <button class="btn ghost small" id="btn-magnet" title="Snapping">🧲</button>
+        <button class="btn ghost small" id="btn-zoom-out" title="Zoom out">−</button>
+        <button class="btn ghost small" id="btn-zoom-fit" title="Fit">Fit</button>
+        <button class="btn ghost small" id="btn-zoom-in" title="Zoom in">＋</button>
+      </div>
+    </div>
+    <!-- Phone view -->
+    <div class="phone-view" id="phone-view" hidden>
+      <div class="segmented" id="phone-platforms">
+        <button data-platform="instagram" class="on">Instagram</button>
+        <button data-platform="tiktok">TikTok</button>
+        <button data-platform="youtube">YouTube</button>
+      </div>
+      <div class="phone-row">
+        <button class="btn ghost round" id="phone-prev" aria-label="Previous slide">‹</button>
+        <div class="phone-fit" id="phone-fit"><div class="phone" id="phone"></div></div>
+        <button class="btn ghost round" id="phone-next" aria-label="Next slide">›</button>
+      </div>
+      <p class="muted small">← → or swipe to flick through · double-click a slide to edit it · pinch or ⌘-scroll to zoom</p>
+      <div class="stage-tools">
+        <button class="btn ghost small" id="phone-zoom-out" title="Zoom out">−</button>
+        <button class="btn ghost small" id="phone-zoom-fit" title="Fit">Fit</button>
+        <button class="btn ghost small" id="phone-zoom-in" title="Zoom in">＋</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel" id="panel">
+    <div class="scope" id="scope">
+      <span class="scope-text" id="scope-text">No slides yet</span>
+      <button id="btn-undo" class="btn ghost icon" title="Undo (⌘Z)">↶</button>
+      <button id="btn-redo" class="btn ghost icon" title="Redo (⇧⌘Z)">↷</button>
+      <div class="segmented small" id="scope-switch">
+        <button data-scope="one" class="on">This slide</button>
+        <button data-scope="all">All</button>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="filters" class="on">Filters</button>
+      <button data-tab="adjust">Adjust</button>
+      <button data-tab="crop">Crop</button>
+      <button data-tab="text">Text overlay</button>
+      <button data-tab="captions">Captions</button>
+    </nav>
+    <div class="tab-body" id="tab-body"></div>
+  </aside>
+</main>
+
+<footer class="filmstrip-area">
+  <div class="strip-tools">
+    <button class="btn small" id="btn-add">＋ Add photos</button>
+    <button class="btn ghost small" id="btn-duplicate" title="Duplicate (⌘D)">Duplicate</button>
+    <button class="btn ghost small" id="btn-pano" title="Join the selected slides into one panorama">Make panorama</button>
+    <button class="btn ghost small" id="btn-split" title="Turn a panorama back into separate slides">Split apart</button>
+    <button class="btn ghost small" id="btn-reset" title="Back to the photo as it came in">Reset</button>
+    <button class="btn ghost small" id="btn-delete" title="Remove from the set">Remove</button>
+    <span class="spacer"></span>
+    <span class="count" id="slide-count">0 of 10</span>
+  </div>
+  <div class="filmstrip" id="filmstrip"></div>
+</footer>
+
+<input type="file" id="file-input" accept="image/*,.heic,.heif" multiple hidden>
+<div class="toast" id="toast" hidden></div>
+<div class="popover" id="projects-menu" hidden></div>
+<div class="dialog-backdrop" id="export-dialog" hidden></div>
+<div class="dialog-backdrop" id="ask-dialog" hidden></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

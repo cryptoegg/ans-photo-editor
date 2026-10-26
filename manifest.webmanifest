@@ -1,0 +1,19 @@
+{
+  "id": "/photo-editor/app/",
+  "name": "Photo Editor — A New Song",
+  "short_name": "Photo Editor",
+  "description": "Edit carousels for Instagram, TikTok and YouTube in one go. Free.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1f4fbf",
+  "theme_color": "#1f4fbf",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "related_applications": [
+    { "platform": "webapp", "url": "https://anewsong.club/photo-editor/app/manifest.webmanifest" }
+  ]
+}
