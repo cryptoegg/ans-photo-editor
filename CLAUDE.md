@@ -10,6 +10,12 @@ when you switch back. Looks (filter + adjustments) stay shared across platforms 
 (`shareLooks` in `js/state.js`) unless a slide has its own (`ownLook`, "Same look on every
 platform" tick box). Laptop first; phone later. Will be plugged into the website (ans-website) once it's working well.
 
+**Live** (free, no login) at anewsong.club/photo-editor/ (the page, in ans-website) and
+/photo-editor/app/ (this app, installable: `manifest.webmanifest`, `sw.js`, `js/install.js`).
+ans-website's `deploy.sh` copies this folder in (left out: `.assetsignore`); GitHub Actions clones
+the public repo github.com/cryptoegg/ans-photo-editor instead. So: commit and push here, then push
+ans-website (or run its `./deploy.sh`) to put a change live.
+
 Plain JavaScript ES modules, **no build step**: `index.html` loads `js/main.js`. Libraries load
 from CDNs only when needed (heic2any for iPhone HEIC in browsers that can't read it, JSZip for the
 zip export). Styles: `styles.css`. Run with any static server from this folder, e.g.
