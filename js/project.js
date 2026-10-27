@@ -43,16 +43,16 @@ export const RATIOS = { "1:1": [1, 1], "4:5": [4, 5], "3:4": [3, 4], "1.91:1": [
 // The shapes each platform takes for sure (checked October 2026):
 //   Instagram  4:5, 1:1, 1.91:1 (always), 3:4 (the app, since May 2025; tools posting through
 //              Meta's API may still crop it to 4:5)
-//   TikTok     9:16 (full screen); every other shape (3:4, 4:5, 1:1, 16:9) goes out as 9:16 with
-//              the fill round it, so TikTok always gets a full-screen picture
-//   YouTube    1:1 and 4:5 (its help suggests 1:1; the feed shows 4:5 posts in full too), up
-//              to 10 images
+//   TikTok     9:16 (full screen), 4:5, 1:1; 4:5 and 1:1 go out as 9:16 with the fill round
+//              them, so TikTok always gets a full-screen picture
+//   YouTube    1:1, 4:5, 16:9 (its help suggests 1:1; the feed shows 4:5 and 16:9 posts too),
+//              up to 10 images
 // Linked: 1:1 or 4:5, the two shapes all three show in full (TikTok with the fill)
 export const LINKED_RATIOS = ["1:1", "4:5"];
 export const STAGES = {
   instagram: { ratios: ["4:5", "3:4", "1:1", "1.91:1"], ratio: "4:5", max: 20 },
-  tiktok: { ratios: ["9:16", "3:4", "4:5", "1:1", "16:9"], ratio: "9:16", max: 35 },
-  youtube: { ratios: ["1:1", "4:5"], ratio: "1:1", max: 10 }
+  tiktok: { ratios: ["9:16", "4:5", "1:1"], ratio: "9:16", max: 35 },
+  youtube: { ratios: ["1:1", "4:5", "16:9"], ratio: "1:1", max: 10 }
 };
 export const RATIO_NAMES = { "1:1": "1:1", "4:5": "4:5", "3:4": "3:4", "1.91:1": "1.91:1", "9:16": "9:16", "16:9": "16:9" };
 // (TikTok: a shape other than 9:16 goes out on a 9:16 frame with the fill)
@@ -87,10 +87,20 @@ export function newProject(name = "Untitled") {
   };
 }
 
-export function newItem(mediaId) {
+// kind "video": an Instagram carousel clip, with trim { start, end } (seconds into the clip; at
+// most 60 s long), cover (the moment used as its still: thumbnails, and TikTok / YouTube while
+// Linked) and muted
+export const VIDEO_MAX = 60, VIDEO_MIN = 3;
+export function newItem(mediaId, kind = "photo", duration = 0) {
   const id = newId("s");
-  return { id, mediaId, span: 1, crop: cropDefaults(), background: BACKGROUND, look: lookDefaults(), lookGroup: id, ownLook: false, texts: [] };
+  const item = { id, mediaId, kind, span: 1, crop: cropDefaults(), background: BACKGROUND, look: lookDefaults(), lookGroup: id, ownLook: false, texts: [] };
+  if (kind === "video") Object.assign(item, { trim: { start: 0, end: Math.min(duration || VIDEO_MAX, VIDEO_MAX) }, cover: 0, muted: false });
+  return item;
 }
+export const isVideo = (item) => item && item.kind === "video";
+// Which sets can hold a video: the Linked set and Instagram's (TikTok photo posts and YouTube
+// posts take pictures only)
+export const takesVideo = (platform) => !platform || platform === "instagram";
 
 // ---- The set being edited: the square set (Linked) or the current platform's stage
 
@@ -131,6 +141,13 @@ export function tidyProject(p) {
     if (item.look.chain !== undefined && !Array.isArray(item.look.chain)) item.look.chain = null;
     item.lookGroup = item.lookGroup || item.id;
     item.ownLook = !!item.ownLook;
+    item.kind = item.kind === "video" ? "video" : "photo";
+    if (item.kind === "video") {
+      item.trim = { start: 0, end: VIDEO_MAX, ...(item.trim || {}) };
+      item.cover = Number.isFinite(item.cover) ? item.cover : item.trim.start;
+      item.muted = !!item.muted;
+      item.span = 1;
+    }
     item.background = item.background || BACKGROUND;
     item.texts = (Array.isArray(item.texts) ? item.texts : []).map((t) => ({ ...TEXT_DEFAULTS(), ...t }));
   });

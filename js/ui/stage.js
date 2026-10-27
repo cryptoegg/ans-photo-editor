@@ -13,9 +13,10 @@
 // panorama's seams (by its edges or middle), the line lights pink, and dragging on pulls it free.
 // ⌘ held = no snapping. Guides are never exported.
 import { state, changed, commit, currentItem, onChange, items } from '../state.js';
-import { activeSet, aspectOf } from '../project.js';
+import { activeSet, aspectOf, isVideo } from '../project.js';
 import { drawItem, drawPlaced, layoutText, textAt, photoBox, onBox, textBox, turn } from '../render.js';
-import { lookedPicture } from '../looks.js';
+import { lookedPicture, lookedFrame } from '../looks.js';
+import { initVideoBar, videoFrame } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
 import { uiColour, onSkinChange } from './skin.js';
 
@@ -63,6 +64,7 @@ export function initStage() {
   document.getElementById("btn-zoom-out").onclick = () => { viewZoom = Math.max(0.3, viewZoom / 1.25); draw(); };
   document.getElementById("btn-zoom-fit").onclick = () => { viewZoom = 1; draw(); };
 
+  initVideoBar(draw);
   canvas.addEventListener("pointerdown", down);
   canvas.addEventListener("pointermove", move);
   canvas.addEventListener("pointerup", up);
@@ -347,17 +349,21 @@ function paint() {
   const f = frameRect(item);
   ctx.setTransform(ratio, 0, 0, ratio, f.x * ratio, f.y * ratio);
 
+  // A video: the frame at the playhead, with its look (worked out once for both draws below)
+  const raw = isVideo(item) ? videoFrame(item) : null;
+  const frame = raw && !state.before ? lookedFrame(item, raw, "preview", state.project.seed) : raw;
+
   // The photo past the frame's edges, faint: only while the photo is picked (click the grey to
   // see just the slide)
   if (state.photoPicked) {
-    const looked = state.before ? pic.preview : lookedPicture(item, "preview", state.project.seed);
+    const looked = frame || (state.before ? pic.preview : lookedPicture(item, "preview", state.project.seed));
     ctx.save();
     ctx.globalAlpha = 0.3;
     drawPlaced(ctx, looked, item.crop, f.w, f.h);
     ctx.restore();
   }
 
-  drawItem(ctx, item, f.w, f.h, { before: state.before, seed: state.project.seed });
+  drawItem(ctx, item, f.w, f.h, { before: state.before, seed: state.project.seed, frame, frameLooked: true });
 
   // Guides, seams, the frame
   const hair = 1 / ratio;

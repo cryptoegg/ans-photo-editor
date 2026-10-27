@@ -1,8 +1,8 @@
 // What the buttons and keys do to the set: add photos, duplicate, remove, reset, panoramas,
 // copy / paste a look. Each is one undo step.
 import { state, changed, commit, undo, currentItem, selectedItems, items, setItems, tidySelection } from './state.js';
-import { newItem, slideCount, cropDefaults, lookDefaults, clone, newId, activeSet, aspectOf, STAGES, PLATFORMS, LINKED_RATIOS } from './project.js';
-import { addPhotoFile, isPhotoFile, getPicture } from './media.js';
+import { newItem, slideCount, cropDefaults, lookDefaults, clone, newId, activeSet, aspectOf, STAGES, PLATFORMS, LINKED_RATIOS, MAX_SLIDES, linkedRatio, isVideo, takesVideo } from './project.js';
+import { addMediaFile, isMediaFile, getPicture } from './media.js';
 import { photoSize, fillCrop } from './render.js';
 import { toast } from './ui/toast.js';
 
@@ -12,21 +12,35 @@ const MAX = () => set().max;
 const fullNote = () => (set().platform ? `${PLATFORMS.find((x) => x.id === set().platform).label} takes up to ${MAX()} slides.` : `${MAX()} slides is the most that suits all three platforms.`);
 const undoAction = { label: "Undo", run: () => undo() };
 
-// Photos dropped or picked: added after the current slide (or at the end), up to 10 slides
+// Every set in the record with what it takes: [{ platform (null = Linked), label, list, max, ratio }]
+function allSets() {
+  const p = state.project;
+  const out = [{ platform: null, label: "Linked", list: p.items, max: MAX_SLIDES, ratio: linkedRatio(p) }];
+  if (p.stages) Object.entries(p.stages).forEach(([k, st]) => out.push({ platform: k, label: PLATFORMS.find((x) => x.id === k).label, list: st.items, max: STAGES[k].max, ratio: st.ratio }));
+  return out;
+}
+const countOf = (list) => list.reduce((n, i) => n + i.span, 0);
+
+// Photos and videos dropped or picked: added after the current slide (or at the end). With a set
+// per platform, they go into every platform's set too (each fitted to its shape, as far as it has
+// room; videos only where they're taken: Instagram and Linked).
 export async function addFiles(fileList) {
-  const files = [...fileList].filter(isPhotoFile);
-  if (!files.length) { toast("Those aren't photos this app can open."); return; }
+  const files = [...fileList].filter(isMediaFile);
+  if (!files.length) { toast("Those aren't photos or videos this app can open."); return; }
+  const here = set();
+  const usable = takesVideo(here.platform) ? files : files.filter((f) => !/^video\//.test(f.type) && !/\.(mp4|mov|m4v|webm)$/i.test(f.name));
+  if (!usable.length) { toast(`${PLATFORMS.find((x) => x.id === here.platform).label} posts take photos only. Videos go in Instagram (or Linked).`); return; }
   const free = room();
   if (free <= 0) { toast(`The set is full: ${fullNote()}`); return; }
-  const taking = files.slice(0, free);
-  toast(taking.length === 1 ? "Adding 1 photo…" : `Adding ${taking.length} photos…`);
+  const taking = usable.slice(0, free);
+  toast(taking.length === 1 ? "Adding 1 file…" : `Adding ${taking.length} files…`);
   const list = items();
   const at = state.current ? list.findIndex((i) => i.id === state.current) + 1 : list.length;
   const added = [];
   for (const file of taking) {
     try {
-      const mediaId = await addPhotoFile(file, state.project.id);
-      added.push(newItem(mediaId));
+      const media = await addMediaFile(file, state.project.id);
+      added.push(newItem(media.id, media.kind, media.duration));
     } catch (err) {
       console.error(err);
       toast(`${file.name} couldn't be opened.`);
@@ -34,12 +48,54 @@ export async function addFiles(fileList) {
   }
   if (!added.length) return;
   list.splice(at, 0, ...added);
+
+  // …and into the other platforms' sets
+  const notes = [];
+  const reached = [here.platform ? PLATFORMS.find((x) => x.id === here.platform).label : "Linked"];
+  if (state.project.stages) {
+    allSets().forEach((target) => {
+      if (target.list === list) return;
+      const fits = added.filter((i) => takesVideo(target.platform) || !isVideo(i));
+      const roomThere = target.max - countOf(target.list);
+      const copies = fits.slice(0, Math.max(0, roomThere)).map((i) => refit(clone(i), target.ratio));
+      target.list.push(...copies);
+      if (copies.length) reached.push(target.label);
+      if (copies.length < fits.length) notes.push(`${target.label} took ${copies.length} (it's full at ${target.max})`);
+      if (fits.length < added.length && target.platform) notes.push(`${target.label} posts don't take video`);
+    });
+  }
   state.selected = new Set([added[0].id]);
   state.current = added[0].id;
   changed("project");
   commit();
-  if (files.length > taking.length) toast(`Added ${taking.length}. The set is full at ${MAX()} slides, so ${files.length - taking.length} weren't added.`);
-  else toast(added.length === 1 ? "Added 1 photo" : `Added ${added.length} photos`);
+  const what = added.length === 1 ? (isVideo(added[0]) ? "1 video" : "1 photo") : `${added.length} files`;
+  const where = state.project.stages ? ` to ${reached.filter((x) => x !== "Linked" || !state.project.stages || state.project.linked).join(", ")}` : "";
+  const left = files.length - taking.length;
+  toast(`Added ${what}${where}${notes.length ? `. ${notes.join("; ")}` : ""}${left > 0 ? `. ${left} didn't fit (the set is full at ${MAX()})` : ""}`);
+}
+
+// Copy the selected slides into another platform's set (Linked off): "all" = every other one.
+// A slide already there (the same one) is skipped; videos only go where they're taken.
+export function copySelectedTo(target) {
+  const chosen = selectedItems();
+  if (!chosen.length) return;
+  const here = items();
+  const targets = allSets().filter((t) => t.platform && t.list !== here && (target === "all" || t.platform === target));
+  const notes = [];
+  targets.forEach((t) => {
+    let copied = 0, skipped = 0;
+    chosen.forEach((item) => {
+      if (t.list.some((x) => x.id === item.id)) { skipped++; return; }
+      if (isVideo(item) && !takesVideo(t.platform)) { skipped++; return; }
+      if (countOf(t.list) + item.span > t.max) { skipped++; return; }
+      t.list.push(refit(clone(item), t.ratio));
+      copied++;
+    });
+    notes.push(`${t.label}: ${copied ? `${copied} copied` : "nothing new"}${skipped ? ` (${skipped} already there, full or a video)` : ""}`);
+  });
+  changed("project");
+  commit();
+  toast(notes.join(" · "), undoAction);
 }
 
 export function duplicateSelected() {
@@ -76,7 +132,8 @@ export function removeSelected() {
   state.textId = null;
   changed("project");
   commit();
-  toast(chosen.length === 1 ? "Removed 1 slide" : `Removed ${chosen.length} slides`, undoAction);
+  const only = set().platform ? ` from ${PLATFORMS.find((x) => x.id === set().platform).label} only` : "";
+  toast(`${chosen.length === 1 ? "Removed 1 slide" : `Removed ${chosen.length} slides`}${only}`, undoAction);
 }
 
 // Back to the photo as it came in: crop, look and text
@@ -109,6 +166,7 @@ export function moveItems(ids, beforeId) {
 export function makePanorama() {
   const chosen = selectedItems();
   if (!chosen.length) return;
+  if (chosen.some(isVideo)) { toast("Videos can't be panoramas (Instagram plays each slide's video by itself)."); return; }
   if (chosen.length === 1) {
     if (room() < 1) { toast(`No room for another slide: the set can hold ${MAX()}.`); return; }
     setSpan(chosen[0], chosen[0].span + 1);
@@ -202,7 +260,7 @@ export function setLinked(linked) {
   if (!linked && !p.stages) {
     p.stages = {};
     Object.entries(STAGES).forEach(([platform, info]) => {
-      p.stages[platform] = { ratio: info.ratio, items: p.items.map((item) => refit(clone(item), info.ratio)) };
+      p.stages[platform] = { ratio: info.ratio, items: p.items.filter((item) => takesVideo(platform) || !isVideo(item)).map((item) => refit(clone(item), info.ratio)) };
     });
     toast("Each platform now has its own set, copied from your linked set and re-fitted to its shape. Check the crops.");
   } else if (!linked) {

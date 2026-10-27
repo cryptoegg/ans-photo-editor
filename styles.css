@@ -390,3 +390,20 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
   .brand-long { display: none; }
   .topbar { gap: 4px; padding: 6px 6px; }
 }
+
+/* The video bar (js/ui/videoBar.js), under the canvas while a video slide is on it */
+.video-bar {
+  position: absolute; left: 10px; right: 230px; bottom: 10px; z-index: 3; display: flex; align-items: center; gap: 8px;
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 7px; padding: 4px 8px; font-size: 12px;
+}
+.vb-time, .vb-len { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vb-len.over { color: var(--warn); font-weight: 700; }
+.vb-track { position: relative; flex: 1; height: 26px; background: var(--stage); border-radius: 4px; cursor: pointer; min-width: 80px; touch-action: none; }
+.vb-kept { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border: 2px solid var(--accent-ink); border-radius: 4px; box-sizing: border-box; }
+.vb-end { position: absolute; top: -2px; bottom: -2px; width: 10px; background: var(--accent-ink); cursor: ew-resize; }
+.vb-end.start { left: -6px; border-radius: 4px 0 0 4px; }
+.vb-end.end { right: -6px; border-radius: 0 4px 4px 0; }
+.vb-head { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--snap); pointer-events: none; }
+.vb-cover { position: absolute; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 11px; color: var(--text); pointer-events: none; }
+/* A video in the filmstrip */
+.thumb .vid { position: absolute; left: 4px; bottom: 4px; font-size: 10px; font-weight: 700; background: rgba(0,0,0,0.65); color: #fff; border-radius: 8px; padding: 0 6px; }

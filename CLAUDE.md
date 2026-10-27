@@ -5,7 +5,7 @@ and a **YouTube post**. **Linked · 1:1** (the start): one square set suits all 
 slides). **Separate sets** (Linked off, top bar): each platform is its own stage with its own shape
 (checked Oct 2026, `STAGES` in js/project.js: Instagram 4:5 / 1:1 / 1.91:1 / 3:4 (app only since
 May 2025), up to 20; TikTok 9:16, or 4:5 / 1:1 exported on a 9:16 frame with the fill, up to 35;
-YouTube 1:1 only (its help page: the feed shows posts square), up to 10), slides, crops, panoramas and texts; made from the square set the first time, kept
+YouTube 1:1 / 4:5 / 16:9, up to 10), slides, crops, panoramas and texts; made from the square set the first time, kept
 when you switch back. Looks (filter + adjustments) stay shared across platforms by `lookGroup`
 (`shareLooks` in `js/state.js`) unless a slide has its own (`ownLook`, "Same look on every
 platform" tick box). Laptop first; phone later. Will be plugged into the website (ans-website) once it's working well.
@@ -35,6 +35,16 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 - **Storage**: `js/store.js` (IndexedDB "ans_photo": projects, media, meta). Auto-saved after
   every commit; the Projects menu lists them. Photos: `js/media.js` keeps each original once and
   decodes a full + preview (1600 px) picture.
+- **Adding**: new photos / videos go into the set being edited and, with separate sets, every
+  other platform's set too (fitted to its shape, as far as it has room); Remove only takes them
+  out of the platform you're on; Copy to ▾ (filmstrip) copies selected slides to another platform.
+- **Video** (Instagram carousels; Linked too, where TikTok / YouTube get the cover still): an
+  item with `kind: "video"`, `trim` { start, end } (3 to 60 s), `cover` (seconds: its still),
+  `muted`. `js/media.js` keeps a player (with sound), a seeker for stills (`stillAt`) and the
+  file; `js/ui/videoBar.js` is the bar under the canvas (▶ / space, trim strip, ◆ cover, sound);
+  `lookedFrame` (looks.js) puts the look on each frame; export: `js/video/mp4.js` (frames from
+  `js/video/clipReader.js`, copied from the lyric app, else by seeking; H.264 30 fps + the clip's
+  AAC sound; mp4-muxer and mp4box.js load from the CDN when first needed). No video panoramas.
 - **Looks**: `js/looks.js` runs Light / Colour then the filter's effect chain on the graphics
   card (`js/effects/gl.js`) and keeps the result, so moving / zooming never re-runs it.
 - **Filters**: `js/filters.js`: the presets plus "Your filters" (saved in IndexedDB meta, every

@@ -3,7 +3,7 @@
 // outlined in the filmstrip; Crop and Text always change the one on the canvas. Changing
 // several slides at once says so in a note with Undo.
 import { state, changed, commit, undo, currentItem, selectedItems, select, selectAll, onChange, items } from '../state.js';
-import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, PLATFORMS, newId, cropDefaults, activeSet, aspectOf } from '../project.js';
+import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, PLATFORMS, newId, cropDefaults, activeSet, aspectOf, isVideo } from '../project.js';
 import { PRESETS } from '../effects/presets.js';
 import { getEffect, EFFECTS, effectOrder } from '../effects/registry.js';
 import { vibeSettings, VIBE_DEFAULT } from '../effects/vibe.js';
@@ -448,7 +448,9 @@ function buildCrop() {
     button("Reset", act(() => { item.crop = cropDefaults(); }), "btn ghost small")));
 
   body.append(title("Panorama"));
-  if (item.span > 1) {
+  if (isVideo(item)) {
+    body.append(note("Videos can't be panoramas: Instagram plays each slide's video by itself. Trim it and pick its cover in the bar under the canvas."));
+  } else if (item.span > 1) {
     body.append(note("One photo across several slides. The dashed lines are where each swipe cuts: keep faces and words off them."));
     body.append(el("div", { className: "row" },
       el("span", { textContent: "Slides" }),

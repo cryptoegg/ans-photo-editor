@@ -1,7 +1,7 @@
 // Drawing a slide: the photo (with its look) placed by its crop in the item's frame (span x 1:
 // a square, or a panorama of squares), then its texts. The screen, the phone view and the
 // export all draw through here, so what you see is what's exported.
-import { lookedPicture } from './looks.js';
+import { lookedPicture, lookedFrame } from './looks.js';
 import { getPicture } from './media.js';
 
 // ---- Where the photo sits in a frame W x H (free, like the lyric app's pictures)
@@ -53,9 +53,10 @@ export function drawPlaced(ctx, picture, crop, W, H) {
 }
 
 // The whole item into (0, 0, W, H): its background, the photo, its texts.
-// options: quality "preview" | "full", before (no look), texts (default true), seed
+// options: quality "preview" | "full", before (no look), texts (default true), seed, frame (a
+// video's frame for this moment, a canvas the video's size: playing, exporting; else its still)
 export function drawItem(ctx, item, W, H, options = {}) {
-  const { quality = "preview", before = false, texts = true, seed = 0 } = options;
+  const { quality = "preview", before = false, texts = true, seed = 0, frame = null, frameLooked = false } = options;
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, W, H);
@@ -64,7 +65,8 @@ export function drawItem(ctx, item, W, H, options = {}) {
   ctx.fillRect(0, 0, W, H);
   const pic = getPicture(item.mediaId);
   if (pic) {
-    const picture = before ? (quality === "full" ? pic.full : pic.preview) : lookedPicture(item, quality, seed);
+    const picture = frame ? (before || frameLooked ? frame : lookedFrame(item, frame, quality, seed))
+      : before ? (quality === "full" ? pic.full : pic.preview) : lookedPicture(item, quality, seed);
     if (picture) drawPlaced(ctx, picture, item.crop, W, H);
   }
   if (texts) item.texts.forEach((t) => drawText(ctx, t, W, H));

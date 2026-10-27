@@ -2,9 +2,9 @@
 // take one away (what's outlined is what Filters / Adjust change). Drag to reorder. A panorama
 // shows as one joined block. A dot marks slides with edits.
 import { state, select, onChange, items } from '../state.js';
-import { slideCount, firstSlideOf, isEdited, activeSet, aspectOf } from '../project.js';
+import { slideCount, firstSlideOf, isEdited, activeSet, aspectOf, isVideo } from '../project.js';
 import { drawItem } from '../render.js';
-import { getPicture, loadPicture } from '../media.js';
+import { getPicture, loadPicture, stillsMade } from '../media.js';
 import { moveItems, addFiles } from '../actions.js';
 
 const HEIGHT = 88;
@@ -76,6 +76,7 @@ function build() {
     el.append(num);
     if (item.span > 1) el.append(Object.assign(document.createElement("span"), { className: "pano-tag", textContent: "Panorama" }));
     if (isEdited(item)) el.append(Object.assign(document.createElement("span"), { className: "dot", title: "Edited" }));
+    if (isVideo(item)) el.append(Object.assign(document.createElement("span"), { className: "vid", textContent: `▶ ${(item.trim.end - item.trim.start).toFixed(1)} s` }));
     el.addEventListener("click", (e) => select(item.id, e.shiftKey ? "range" : e.metaKey || e.ctrlKey ? "toggle" : "one"));
     el.addEventListener("dragstart", (e) => {
       dragIds = state.selected.has(item.id) ? set.items.filter((i) => state.selected.has(i.id)).map((i) => i.id) : [item.id];
@@ -105,7 +106,7 @@ function build() {
 // The item's little picture, drawn again only when it changed
 function thumbFor(item, ratio, a) {
   const loaded = !!getPicture(item.mediaId);
-  const key = JSON.stringify([item.mediaId, item.span, item.crop, item.background, item.look, item.texts, loaded, ratio, a]);
+  const key = JSON.stringify([item.mediaId, item.span, item.crop, item.background, item.look, item.texts, loaded, ratio, a, item.cover, stillsMade]);
   const kept = thumbs.get(item.id);
   if (kept && kept.key === key) return kept.canvas;
   const canvas = document.createElement("canvas");

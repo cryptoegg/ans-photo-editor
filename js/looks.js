@@ -5,7 +5,8 @@
 import { runChain, available } from './effects/gl.js';
 import { getEffect } from './effects/registry.js';
 import { freshChain } from './filters.js';
-import { getPicture } from './media.js';
+import { getPicture, stillAt } from './media.js';
+import { changed } from './state.js';
 
 // Finished looks by key, most recently used last: on-screen ones (a few per slide, so undo and
 // switching back are instant), export ones (one or two: they're big) and filter swatches
@@ -44,47 +45,67 @@ function stepsOf(look, seed) {
 // Whether a look changes the photo at all
 export const hasLook = (look) => !!look.preset || !isZero(look.light) || !isZero(look.colour);
 
-// The photo with its look: a canvas, or the plain picture when there's no look (or no
-// graphics card). quality: "preview" (on screen) or "full" (export).
-export function lookedPicture(item, quality = "preview", seed = 0) {
+// The picture a slide starts from: the photo, or for a video the still at its cover moment
+// (the first still while that one's being made)
+function sourceOf(item, quality) {
   const picture = getPicture(item.mediaId);
   if (!picture) return null;
-  const source = quality === "full" ? picture.full : picture.preview;
+  if (picture.kind === "video") {
+    const still = stillAt(item.mediaId, item.cover || 0, () => changed("view"));
+    if (still) return quality === "full" ? still.full : still.preview;
+  }
+  return quality === "full" ? picture.full : picture.preview;
+}
+
+// Run a look on a picture: the adjustments, then the filter at its strength. Returns a canvas
+// (made new, or `into` reused), or the source itself when nothing changes it.
+function applyLook(item, source, keyBase, seed, into = null) {
+  const look = item.look;
+  const { adjust, filter } = stepsOf(look, mix(seed, item.mediaId));
+  const run = (input, steps, name, fresh) => {
+    if (!steps.length) return input;
+    const out = runChain(`${keyBase}@${name}`, input, input.width, input.height, steps, { fresh });
+    return out ? copyOf(out, out.width, out.height, name === "filter" && look.strength >= 100 ? into : null) : input;
+  };
+  const adjusted = run(source, adjust, "adjust", !!into);
+  if (!filter.length) return adjusted === source || !into ? adjusted : copyOf(adjusted, adjusted.width, adjusted.height, into);
+  const filtered = run(adjusted, filter, "filter", true);
+  if (look.strength >= 100 || filtered === adjusted) return filtered;
+  // In between: the filtered picture laid over the adjusted one at the strength
+  const blend = copyOf(adjusted, filtered.width, filtered.height, into);
+  const ctx = blend.getContext("2d");
+  ctx.globalAlpha = Math.max(0, look.strength) / 100;
+  ctx.drawImage(filtered, 0, 0, blend.width, blend.height);
+  ctx.globalAlpha = 1;
+  return blend;
+}
+
+// The slide's picture with its look: a canvas, or the plain picture when there's no look (or no
+// graphics card). quality: "preview" (on screen) or "full" (export). Kept, so it's worked out once.
+export function lookedPicture(item, quality = "preview", seed = 0) {
+  const source = sourceOf(item, quality);
+  if (!source) return null;
   if (!hasLook(item.look) || !available()) return source;
   const look = item.look;
-  const key = JSON.stringify([item.mediaId, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.colour]);
+  const key = JSON.stringify([item.mediaId, item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.colour]);
   const found = find(quality, key);
   if (found) return found;
-
-  const lookSeed = mix(seed, item.mediaId);
-  const { adjust, filter } = stepsOf(look, lookSeed);
-  let result = source;
-  try {
-    const run = (input, steps, name) => {
-      if (!steps.length) return input;
-      const out = runChain(`${item.mediaId}@${quality}@${name}`, input, input.width, input.height, steps, { fresh: name !== "adjust" });
-      return out ? copyOf(out) : input;
-    };
-    const adjusted = run(source, adjust, "adjust");
-    result = adjusted;
-    if (filter.length) {
-      const filtered = run(adjusted, filter, "filter");
-      if (look.strength >= 100 || filtered === adjusted) result = filtered;
-      else {
-        // In between: the filtered photo laid over the adjusted one at the strength
-        const blend = copyOf(adjusted, filtered.width, filtered.height);
-        const ctx = blend.getContext("2d");
-        ctx.globalAlpha = Math.max(0, look.strength) / 100;
-        ctx.drawImage(filtered, 0, 0, blend.width, blend.height);
-        result = blend;
-      }
-    }
-  } catch (err) {
-    console.error("The look couldn't be drawn:", err);
-    return source;
-  }
+  let result;
+  try { result = applyLook(item, source, `${item.mediaId}@${quality}`, seed); }
+  catch (err) { console.error("The look couldn't be drawn:", err); return source; }
   keep(quality, key, result);
   return result;
+}
+
+// One frame of a video (a canvas) with the slide's look, worked out fresh every time (playing,
+// exporting); the result goes into one canvas kept per slide and quality
+const frameCanvases = new Map();
+export function lookedFrame(item, frame, quality = "preview", seed = 0) {
+  if (!hasLook(item.look) || !available()) return frame;
+  const k = `${item.id}@${quality}`;
+  if (!frameCanvases.has(k)) frameCanvases.set(k, document.createElement("canvas"));
+  try { return applyLook(item, frame, `${item.mediaId}@frame@${quality}`, seed, frameCanvases.get(k)); }
+  catch (err) { console.error("The look couldn't be drawn:", err); return frame; }
 }
 
 // A small filter swatch: a little square of the photo with a preset on it (no adjustments)
@@ -110,11 +131,13 @@ export function presetSwatch(mediaId, presetId, seed, side = 120) {
   return result;
 }
 
-function copyOf(source, width = source.width, height = source.height) {
-  const c = document.createElement("canvas");
-  c.width = width;
-  c.height = height;
-  c.getContext("2d").drawImage(source, 0, 0, width, height);
+function copyOf(source, width = source.width, height = source.height, into = null) {
+  const c = into || document.createElement("canvas");
+  if (c.width !== width) c.width = width;
+  if (c.height !== height) c.height = height;
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(source, 0, 0, width, height);
   return c;
 }
 
