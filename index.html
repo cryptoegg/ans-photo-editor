@@ -21,7 +21,7 @@
 </head>
 <body>
 <header class="topbar">
-  <span class="brand">A New Song — Photo Editor</span>
+  <span class="brand"><span class="brand-long">A New Song — </span>Photo Editor</span>
   <div class="segmented" id="platform-switch" title="Linked: one square set for all three. A platform: its own set and shape.">
     <button data-mode="linked">Linked</button>
     <button data-mode="instagram">Instagram</button>
@@ -46,10 +46,8 @@
     <div class="edit-view" id="edit-view">
       <canvas id="stage-canvas"></canvas>
       <div class="empty" id="empty-state" hidden>
-        <h2>Start your set</h2>
-        <p>Drop up to 10 photos here, or</p>
+        <h2>Drop photos here to get started</h2>
         <button class="btn primary" id="btn-empty-add">Add photos</button>
-        <p class="muted small">JPEG, PNG, WebP and iPhone HEIC</p>
       </div>
       <div class="stage-tools">
         <span class="hint" id="before-hint" hidden>Before</span>
@@ -95,7 +93,7 @@
       <button data-tab="filters" class="on">Filters</button>
       <button data-tab="adjust">Adjust</button>
       <button data-tab="crop">Crop</button>
-      <button data-tab="text">Text overlay</button>
+      <button data-tab="text">Text Overlay</button>
       <button data-tab="captions">Captions</button>
     </nav>
     <div class="tab-body" id="tab-body"></div>

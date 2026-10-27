@@ -39,22 +39,22 @@
 // its own shape, slides, crops, panoramas and texts (made from the square set the first time; kept
 // when you switch back). Looks stay shared across platforms unless a slide has its own.
 export const MAX_SLIDES = 10;
-export const RATIOS = { "1:1": [1, 1], "4:5": [4, 5], "3:4": [3, 4], "1.91:1": [1.91, 1], "9:16": [9, 16] };
+export const RATIOS = { "1:1": [1, 1], "4:5": [4, 5], "3:4": [3, 4], "1.91:1": [1.91, 1], "9:16": [9, 16], "16:9": [16, 9] };
 // The shapes each platform takes for sure (checked October 2026):
 //   Instagram  4:5, 1:1, 1.91:1 (always), 3:4 (the app, since May 2025; tools posting through
 //              Meta's API may still crop it to 4:5)
-//   TikTok     9:16 (full screen); 4:5 and 1:1 go out as 9:16 with the fill round them, so
-//              TikTok always gets a full-screen picture
+//   TikTok     9:16 (full screen); every other shape (3:4, 4:5, 1:1, 16:9) goes out as 9:16 with
+//              the fill round it, so TikTok always gets a full-screen picture
 //   YouTube    1:1 and 4:5 (its help suggests 1:1; the feed shows 4:5 posts in full too), up
 //              to 10 images
 // Linked: 1:1 or 4:5, the two shapes all three show in full (TikTok with the fill)
 export const LINKED_RATIOS = ["1:1", "4:5"];
 export const STAGES = {
-  instagram: { ratios: ["4:5", "1:1", "1.91:1", "3:4"], ratio: "4:5", max: 20 },
-  tiktok: { ratios: ["9:16", "4:5", "1:1"], ratio: "9:16", max: 35 },
+  instagram: { ratios: ["4:5", "3:4", "1:1", "1.91:1"], ratio: "4:5", max: 20 },
+  tiktok: { ratios: ["9:16", "3:4", "4:5", "1:1", "16:9"], ratio: "9:16", max: 35 },
   youtube: { ratios: ["1:1", "4:5"], ratio: "1:1", max: 10 }
 };
-export const RATIO_NAMES = { "1:1": "1:1", "4:5": "4:5", "3:4": "3:4", "1.91:1": "1.91:1", "9:16": "9:16" };
+export const RATIO_NAMES = { "1:1": "1:1 square", "4:5": "4:5 portrait", "3:4": "3:4 portrait", "1.91:1": "1.91:1 landscape", "9:16": "9:16 full screen", "16:9": "16:9 landscape" };
 // (TikTok: a shape other than 9:16 goes out on a 9:16 frame with the fill)
 export const tiktokFilled = (ratio) => ratio !== "9:16";
 // A shape's width over its height

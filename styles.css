@@ -367,3 +367,26 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
 .install-card { position: fixed; right: 16px; bottom: 16px; z-index: 70; width: 300px; background: var(--raised); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 6px; }
 .install-card p { margin: 0; font-size: 12px; color: var(--muted-strong); }
 .install-card .actions { display: flex; justify-content: flex-end; gap: 6px; }
+
+/* ---- Panels, like the lyric app's CapCut-style layout: the canvas, the panel on the right and the
+   filmstrip are separate panels, a small gap between them, rounded corners and a thin outline */
+.workspace { padding: 3px 3px 0; gap: 3px; }
+.stage-area, .panel, .filmstrip-area { border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.panel { border-left: 1px solid var(--rule); }
+.filmstrip-area { margin: 3px; border-top: 1px solid var(--rule); }
+
+/* Dropdowns: our own arrow, sitting well inside the box */
+.select {
+  -webkit-appearance: none; appearance: none; padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23666' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 10px 6px;
+}
+:root[data-skin="midnight"] .select, :root[data-skin="slate"] .select, :root[data-skin="print"] .select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ddd' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+#ratio-select { max-width: 190px; }
+/* A narrow window: the name shortens to "Photo Editor" so the whole bar still fits on one row */
+@media (max-width: 900px) {
+  .brand-long { display: none; }
+  .topbar { gap: 4px; padding: 6px 6px; }
+}
