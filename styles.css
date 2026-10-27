@@ -384,7 +384,7 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
 :root[data-skin="midnight"] .select, :root[data-skin="slate"] .select, :root[data-skin="print"] .select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ddd' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
-#ratio-select { max-width: 190px; }
+#ratio-select { width: 86px; max-width: none; flex: none; } /* (one size, whichever shape: fits 1.91:1, the longest, and the arrow) */
 /* A narrow window: the name shortens to "Photo Editor" so the whole bar still fits on one row */
 @media (max-width: 900px) {
   .brand-long { display: none; }

@@ -54,7 +54,7 @@ export const STAGES = {
   tiktok: { ratios: ["9:16", "3:4", "4:5", "1:1", "16:9"], ratio: "9:16", max: 35 },
   youtube: { ratios: ["1:1", "4:5"], ratio: "1:1", max: 10 }
 };
-export const RATIO_NAMES = { "1:1": "1:1 square", "4:5": "4:5 portrait", "3:4": "3:4 portrait", "1.91:1": "1.91:1 landscape", "9:16": "9:16 full screen", "16:9": "16:9 landscape" };
+export const RATIO_NAMES = { "1:1": "1:1", "4:5": "4:5", "3:4": "3:4", "1.91:1": "1.91:1", "9:16": "9:16", "16:9": "16:9" };
 // (TikTok: a shape other than 9:16 goes out on a 9:16 frame with the fill)
 export const tiktokFilled = (ratio) => ratio !== "9:16";
 // A shape's width over its height
