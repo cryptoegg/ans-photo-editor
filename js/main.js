@@ -12,7 +12,7 @@ import { newProject, slides as slideList, firstSlideOf, allLists } from './proje
 import { saveProject, loadProject, lastProjectId } from './store.js';
 import { loadPicture } from './media.js';
 import { FONTS } from './render.js';
-import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setLinked, setStage, setRatio } from './actions.js';
+import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setLinked, setStage, setRatio, copySelectedTo } from './actions.js';
 import { loadMyFilters } from './filters.js';
 import { initInstall } from './install.js';
 import { STAGES, RATIO_NAMES, LINKED_RATIOS, linkedRatio } from './project.js';
@@ -68,6 +68,8 @@ function refresh(what) {
   const has = items().length > 0;
   ["btn-duplicate", "btn-reset", "btn-delete", "btn-pano"].forEach((id) => { $(id).disabled = !has; });
   $("btn-split").disabled = !item || item.span < 2;
+  $("btn-copy-to").hidden = state.project.linked || !state.project.stages;
+  $("btn-copy-to").disabled = !has;
   $("btn-pano").textContent = state.selected.size > 1 ? "Join as panorama" : item && item.span > 1 ? "Add a slide to it" : "Make panorama";
   document.querySelectorAll("#view-switch button").forEach((b) => b.classList.toggle("on", b.dataset.view === state.view));
   // Linked, or a set per platform (with its shape): Linked greys the shape out (it's 1:1)
@@ -124,6 +126,25 @@ function wireStrip() {
   $("btn-reset").onclick = resetSelected;
   $("btn-pano").onclick = makePanorama;
   $("btn-split").onclick = splitPanorama;
+  // Copy to ▾ (separate sets): the other platforms, or all of them
+  $("btn-copy-to").onclick = (e) => {
+    const menu = $("copy-menu");
+    if (!menu.hidden) { menu.hidden = true; return; }
+    const r = e.currentTarget.getBoundingClientRect();
+    menu.innerHTML = "";
+    const here = state.project.stage;
+    [["instagram", "Instagram"], ["tiktok", "TikTok"], ["youtube", "YouTube"]].filter(([id]) => id !== here).concat([["all", "All other platforms"]]).forEach(([id, label]) => {
+      const row = Object.assign(document.createElement("div"), { className: "menu-item", textContent: label });
+      row.onclick = () => { menu.hidden = true; copySelectedTo(id); };
+      menu.append(row);
+    });
+    menu.style.left = `${r.left}px`;
+    menu.style.top = "";
+    menu.style.bottom = `${window.innerHeight - r.top + 6}px`;
+    menu.hidden = false;
+    const away = (ev) => { if (!menu.contains(ev.target) && ev.target !== e.currentTarget) { menu.hidden = true; document.removeEventListener("pointerdown", away); } };
+    setTimeout(() => document.addEventListener("pointerdown", away), 0);
+  };
 }
 
 // Photos dropped anywhere on the window
