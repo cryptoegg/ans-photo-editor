@@ -39,7 +39,7 @@ export { foldersPossible, safeName, mainFolder as savedPlace, chooseMainFolder a
 // Make the photos: { platformId: [Blob…] }. progress(0 - 1).
 export async function makeExports(project, platforms, scale, progress = () => {}) {
   const shapes = platforms.map((id) => ({ id, ...exportShape(project, id) }));
-  await Promise.all(shapes.flatMap((sh) => sh.set.items.map((i) => loadPicture(i.mediaId))));
+  await Promise.all(shapes.flatMap((sh) => sh.set.items.flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId))]).map((id) => loadPicture(id))));
   const out = {};
   // (a video slide counts as much as ten photos in the progress bar: it takes longer)
   const weight = (sh, item) => (sh.id === "instagram" && isVideo(item) ? 10 : 1);

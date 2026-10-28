@@ -35,6 +35,13 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 - **Storage**: `js/store.js` (IndexedDB "ans_photo": projects, media, meta). Auto-saved after
   every commit; the Projects menu lists them. Photos: `js/media.js` keeps each original once and
   decodes a full + preview (1600 px) picture.
+- **Layers** (several photos on one slide): the slide's own photo is layer 1 (item.mediaId / crop
+  / look / style); more are `item.layers` [{ id, mediaId, crop, look, style }]. `item.layout.kind`:
+  "single" / "free" (each moves, sizes, turns; later on top; style = corners, border, shadow) or a
+  grid from `LAYOUTS` (2h, 2v, 3h, 2x2, 1+2: layer i fills cell i, its crop placed in the cell;
+  `gap`, `radius`). The Layers box (top of the panel, `buildLayersBox` in panel.js) picks a layer
+  (`state.layerId`, `currentLayer()`), and Filters / Adjust / Crop then change just that one.
+  Actions: `addLayerFiles`, `setLayout`, `moveLayer`, `removeLayer`. Not for videos or panoramas.
 - **Adding**: new photos / videos go into the set being edited and, with separate sets, every
   other platform's set too (fitted to its shape, as far as it has room); Remove only takes them
   out of the platform you're on; Copy to ▾ (filmstrip) copies selected slides to another platform.
@@ -92,8 +99,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 ## Tom's choices
 
 - Labels: a capital first letter, never all caps. Helvetica in the UI. New UI colours use a role.
-- Keep it simple: one image per slide for now (free placement of several images later; no grid
-  layouts). No background removal. No sound (people add it in TikTok).
+- Several photos per slide: Layers box, Free or a grid, each layer its own look. No background
+  removal. No sound (people add it in TikTok).
 - Later: brand kit, separate stages per platform (Linked off: own ratio / crops per platform),
   video (Instagram only; video panoramas), text across panorama seams, "send to phone", direct
   posting (Instagram API / TikTok drafts; YouTube posts have no API).

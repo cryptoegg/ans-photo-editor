@@ -102,8 +102,8 @@ export function go(step) {
 function renderSlides() {
   const p = state.project;
   const set = phoneSet();
-  const missing = set.items.filter((i) => !getPicture(i.mediaId));
-  if (missing.length) Promise.all(missing.map((i) => loadPicture(i.mediaId))).then(() => { rendered.key = null; build(); });
+  const missing = set.items.flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId))]).filter((id) => !getPicture(id));
+  if (missing.length) Promise.all(missing.map((id) => loadPicture(id))).then(() => { rendered.key = null; build(); });
   const key = JSON.stringify([set.items, set.ratio, p.tiktok, missing.length, state.before]);
   if (rendered.key === key) return;
   const squares = drawSlides(set, SIDE, SIDE / aspectOf(set.ratio), { before: state.before, seed: p.seed }).map((s) => s.canvas);

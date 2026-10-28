@@ -93,11 +93,35 @@ export function newProject(name = "Untitled") {
 export const VIDEO_MAX = 60, VIDEO_MIN = 3;
 export function newItem(mediaId, kind = "photo", duration = 0) {
   const id = newId("s");
-  const item = { id, mediaId, kind, span: 1, crop: cropDefaults(), background: BACKGROUND, look: lookDefaults(), lookGroup: id, ownLook: false, texts: [] };
+  const item = { id, mediaId, kind, span: 1, crop: cropDefaults(), background: BACKGROUND, look: lookDefaults(), lookGroup: id, ownLook: false, texts: [], layers: [], layout: layoutDefaults(), style: styleDefaults() };
   if (kind === "video") Object.assign(item, { trim: { start: 0, end: Math.min(duration || VIDEO_MAX, VIDEO_MAX) }, cover: 0, muted: false });
   return item;
 }
 export const isVideo = (item) => item && item.kind === "video";
+
+// ---- Layers: several photos on one slide. The slide's own photo is its first layer (the item's
+// mediaId / crop / look / style); more are in item.layers = [layer], each with its own photo, crop,
+// look and style, so Filters, Adjust and Crop work on whichever is picked. item.layout arranges
+// them: "single" (one photo), "free" (each moves, sizes and turns anywhere; later ones on top) or a
+// grid (each layer fills a cell, in order; the crop places it in its cell). gap and radius are
+// shares of the slide's shorter side.
+export const LAYOUTS = {
+  "2h": { label: "2 side by side", cells: [[0, 0, 0.5, 1], [0.5, 0, 0.5, 1]] },
+  "2v": { label: "2 stacked", cells: [[0, 0, 1, 0.5], [0, 0.5, 1, 0.5]] },
+  "3h": { label: "3 across", cells: [[0, 0, 1 / 3, 1], [1 / 3, 0, 1 / 3, 1], [2 / 3, 0, 1 / 3, 1]] },
+  "2x2": { label: "2 × 2 grid", cells: [[0, 0, 0.5, 0.5], [0.5, 0, 0.5, 0.5], [0, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5]] },
+  "1+2": { label: "1 big, 2 small", cells: [[0, 0, 0.6, 1], [0.6, 0, 0.4, 0.5], [0.6, 0.5, 0.4, 0.5]] }
+};
+export const layoutDefaults = () => ({ kind: "single", gap: 0.02, radius: 0 });
+export const styleDefaults = () => ({ radius: 0, border: 0, borderColour: "#ffffff", shadow: false });
+export const isGrid = (item) => !!LAYOUTS[item.layout && item.layout.kind];
+export function newLayer(mediaId) {
+  return { id: newId("l"), mediaId, kind: "photo", crop: cropDefaults(), look: lookDefaults(), style: styleDefaults() };
+}
+// Every layer of a slide, bottom first: the slide itself, then its extra layers
+export const layersOf = (item) => [item, ...(item.layers || [])];
+// Every photo / video a slide uses
+export const mediaOf = (item) => layersOf(item).map((l) => l.mediaId);
 // Which sets can hold a video: the Linked set and Instagram's (TikTok photo posts and YouTube
 // posts take pictures only)
 export const takesVideo = (platform) => !platform || platform === "instagram";
@@ -148,6 +172,14 @@ export function tidyProject(p) {
       item.muted = !!item.muted;
       item.span = 1;
     }
+    item.layout = { ...layoutDefaults(), ...(item.layout || {}) };
+    if (!LAYOUTS[item.layout.kind] && item.layout.kind !== "free") item.layout.kind = "single";
+    item.style = { ...styleDefaults(), ...(item.style || {}) };
+    item.layers = (Array.isArray(item.layers) ? item.layers : []).map((l) => ({
+      ...l, kind: "photo", crop: { ...cropDefaults(), ...(l.crop || {}) },
+      look: { ...lookDefaults(), ...(l.look || {}), light: { ...LIGHT_DEFAULTS(), ...((l.look || {}).light || {}) }, colour: { ...COLOUR_DEFAULTS(), ...((l.look || {}).colour || {}) } },
+      style: { ...styleDefaults(), ...(l.style || {}) }
+    }));
     item.background = item.background || BACKGROUND;
     item.texts = (Array.isArray(item.texts) ? item.texts : []).map((t) => ({ ...TEXT_DEFAULTS(), ...t }));
   });
@@ -181,7 +213,7 @@ export function slides(p, set = activeSet(p)) {
 // Whether a slide has anything changed from how it came in (the dot in the filmstrip)
 export function isEdited(item) {
   const plain = lookDefaults(), crop = cropDefaults();
-  return item.texts.length > 0 || item.look.preset !== null || item.background !== BACKGROUND ||
+  return item.texts.length > 0 || (item.layers && item.layers.length > 0) || (item.layout && item.layout.kind !== "single") || item.look.preset !== null || item.background !== BACKGROUND ||
     Object.keys(plain.light).some((k) => item.look.light[k] !== plain.light[k]) ||
     Object.keys(plain.colour).some((k) => item.look.colour[k] !== plain.colour[k]) ||
     Object.keys(crop).some((k) => item.crop[k] !== crop[k]);

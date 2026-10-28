@@ -12,9 +12,9 @@
 // moved photo or text clicks onto the centre lines, the frame's edges, the guides and a
 // panorama's seams (by its edges or middle), the line lights pink, and dragging on pulls it free.
 // ⌘ held = no snapping. Guides are never exported.
-import { state, changed, commit, currentItem, onChange, items } from '../state.js';
-import { activeSet, aspectOf, isVideo } from '../project.js';
-import { drawItem, drawPlaced, layoutText, textAt, photoBox, onBox, textBox, turn } from '../render.js';
+import { state, changed, commit, currentItem, currentLayer, onChange, items } from '../state.js';
+import { activeSet, aspectOf, isVideo, layersOf, isGrid } from '../project.js';
+import { drawItem, drawPlaced, layoutText, textAt, photoBox, onBox, textBox, turn, layerFrame, cellRects } from '../render.js';
 import { lookedPicture, lookedFrame } from '../looks.js';
 import { initVideoBar, videoFrame } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
@@ -95,27 +95,61 @@ function frameRect(item) {
 
 // ---- What's picked: the photo, a text, or nothing
 
-function pick(kind, id = null) {
+// layer: for a photo, which layer (the slide itself, or one of its extra layers)
+function pick(kind, id = null, layer = null) {
   state.photoPicked = kind === "photo";
   state.textId = kind === "text" ? id : null;
+  const item = currentItem();
+  state.layerId = kind === "photo" && layer && item && layer !== item ? layer.id : null;
 }
 
-// The picked thing's box on the frame: { kind, box, text? } or null
+// A layer's photo box on the frame (frame pixels), with the frame it's placed in (its grid cell,
+// or the whole slide): { box, rect } or null
+function layerBox(item, layer, f) {
+  const pic = getPicture(layer.mediaId);
+  const rect = layerFrame(item, layer, f.w, f.h);
+  if (!pic || !rect) return null;
+  const b = photoBox(layer.crop, pic.width, pic.height, rect.w, rect.h);
+  return { rect, box: { ...b, cx: b.cx + rect.x, cy: b.cy + rect.y } };
+}
+
+// The layer under a point (frame pixels): in a grid, the cell's layer ({ cell } for an empty one);
+// else the top photo there. Only on the slide itself (the faint part past its edges doesn't count),
+// unless `picked` (the picked layer, whose handles reach past the edges).
+function layerAt(item, f, p) {
+  const onSlide = p.x >= 0 && p.y >= 0 && p.x <= f.w && p.y <= f.h;
+  const cells = cellRects(item, f.w, f.h);
+  if (cells) {
+    const i = cells.findIndex((c) => p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h);
+    if (i < 0) return null;
+    const layer = layersOf(item)[i];
+    return layer ? { layer } : { cell: i };
+  }
+  const all = layersOf(item);
+  for (let i = all.length - 1; i >= 0; i--) {
+    const lb = layerBox(item, all[i], f);
+    if (lb && onBox(lb.box, p.x, p.y) && (onSlide || (state.photoPicked && currentLayer() === all[i]))) return { layer: all[i] };
+  }
+  return null;
+}
+
+// The picked thing's box on the frame: { kind, box, text?, layer?, rect? } or null
 function pickedBox(item, f) {
   if (state.textId) {
     const t = item.texts.find((x) => x.id === state.textId);
     return t ? { kind: "text", text: t, box: textBox(layoutText(ctx, t, f.w, f.h)) } : null;
   }
   if (state.photoPicked) {
-    const pic = getPicture(item.mediaId);
-    return pic ? { kind: "photo", box: photoBox(item.crop, pic.width, pic.height, f.w, f.h) } : null;
+    const layer = currentLayer();
+    const lb = layer && layerBox(item, layer, f);
+    return lb ? { kind: "photo", layer, rect: lb.rect, box: lb.box } : null;
   }
   return null;
 }
 
 function setAngle(picked, degrees) {
   const a = Math.round((((degrees + 180) % 360 + 360) % 360 - 180) * 10) / 10; // (-180 … 180)
-  if (picked.kind === "text") picked.text.rotation = a; else currentItem().crop.rotation = a;
+  if (picked.kind === "text") picked.text.rotation = a; else (picked.layer || currentItem()).crop.rotation = a;
 }
 
 // The corners of a turned box, on the frame: [[x, y] ×4] (tl, tr, bl, br)
@@ -200,14 +234,17 @@ function down(e) {
   const zone = picked ? zoneAt(picked.box, p) : null;
   if (picked && zone && zone !== "inside") { startDrag(picked, zone, p, f); return; }
 
-  // Otherwise: what's under the pointer (texts sit above the photo), picked and ready to move
+  // Otherwise: what's under the pointer (texts sit above the photos), picked and ready to move
   const hitText = textAt(ctx, item, f.w, f.h, p.x, p.y);
-  const pic = getPicture(item.mediaId);
-  const photo = photoBox(item.crop, pic.width, pic.height, f.w, f.h);
+  const hit = hitText ? null : layerAt(item, f, p);
   if (hitText) {
     if (state.textId !== hitText.id) { pick("text", hitText.id); state.tab = "text"; changed("view"); }
-  } else if (onBox(photo, p.x, p.y) && (state.photoPicked || (p.x >= 0 && p.y >= 0 && p.x <= f.w && p.y <= f.h))) {
-    if (!state.photoPicked) { pick("photo"); changed("view"); }
+  } else if (hit && hit.cell !== undefined) {
+    // an empty grid cell: a photo for it
+    document.dispatchEvent(new CustomEvent("add-layer"));
+    return;
+  } else if (hit) {
+    if (!state.photoPicked || currentLayer() !== hit.layer) { pick("photo", null, hit.layer); changed("view"); }
   } else {
     if (state.textId || state.photoPicked) { pick(null); changed("view"); }
     return;
@@ -218,7 +255,8 @@ function down(e) {
 function startDrag(picked, zone, p, f) {
   const item = currentItem();
   hovering = true;
-  drag = { kind: picked.kind, text: picked.text, zone, f, start: p, box: { ...picked.box }, crop: { ...item.crop }, textStart: picked.text ? { ...picked.text } : null, moved: false };
+  const layer = picked.layer || item;
+  drag = { kind: picked.kind, text: picked.text, layer, rect: picked.rect || { x: 0, y: 0, w: f.w, h: f.h }, zone, f, start: p, box: { ...picked.box }, crop: { ...layer.crop }, textStart: picked.text ? { ...picked.text } : null, moved: false };
   if (zone === "rotate") drag.from = Math.atan2(p.y - picked.box.cy, p.x - picked.box.cx);
   canvas.style.cursor = zone === "inside" ? "grabbing" : zone === "rotate" ? ROTATE_CURSOR : canvas.style.cursor;
 }
@@ -232,7 +270,7 @@ function move(e) {
   if (!dx && !dy && !drag.moved) return;
   drag.moved = true;
   lit = [];
-  const crop = item.crop, t = drag.text;
+  const crop = (drag.layer || item).crop, t = drag.text, rect = drag.rect;
 
   if (zone === "rotate") {
     let a = (drag.kind === "text" ? drag.textStart.rotation : drag.crop.rotation) + ((Math.atan2(p.y - box.cy, p.x - box.cx) - drag.from) * 180) / Math.PI;
@@ -243,10 +281,10 @@ function move(e) {
   } else if (zone === "inside") {
     // Move: the middle follows the pointer, snapping its edges or middle to the lines
     const moved = { ...box, cx: box.cx + dx, cy: box.cy + dy };
-    const snap = snapBox(moved, item, f, e.metaKey);
+    const snap = snapBox(moved, item, f, e.metaKey || (drag.kind === "photo" && isGrid(item))); // (in a grid cell: free)
     const cx = moved.cx + snap.dx, cy = moved.cy + snap.dy;
     if (drag.kind === "text") { t.x = cx / f.w; t.y = cy / f.h; }
-    else { crop.x = (cx - f.w / 2) / f.w; crop.y = (cy - f.h / 2) / f.h; }
+    else { crop.x = (cx - rect.x - rect.w / 2) / rect.w; crop.y = (cy - rect.y - rect.h / 2) / rect.h; }
   } else {
     // A corner: size around the middle (the pointer's move along the box's own sides)
     [dx, dy] = turn(dx, dy, -box.rotation);
@@ -287,9 +325,8 @@ function hover(e) {
   else if (zone === "tr" || zone === "bl") canvas.style.cursor = "nesw-resize";
   else if (zone === "inside" || textAt(ctx, item, f.w, f.h, p.x, p.y)) canvas.style.cursor = "move";
   else {
-    const pic = getPicture(item.mediaId);
-    const onSlide = p.x >= 0 && p.y >= 0 && p.x <= f.w && p.y <= f.h;
-    canvas.style.cursor = pic && onSlide && onBox(photoBox(item.crop, pic.width, pic.height, f.w, f.h), p.x, p.y) ? "move" : "";
+    const hit = layerAt(item, f, p);
+    canvas.style.cursor = hit ? (hit.cell !== undefined ? "copy" : "move") : "";
   }
 }
 
@@ -300,8 +337,8 @@ function wheel(e) {
   if (!item || !getPicture(item.mediaId)) return;
   const f = frameRect(item);
   const p = local(e, f);
-  const pic = getPicture(item.mediaId);
-  const onPhoto = onBox(photoBox(item.crop, pic.width, pic.height, f.w, f.h), p.x, p.y) && p.x >= 0 && p.y >= 0 && p.x <= f.w && p.y <= f.h;
+  const hit = layerAt(item, f, p);
+  const onPhoto = !!(hit && hit.layer);
   if (e.metaKey || !onPhoto) {
     if (!e.metaKey && !e.ctrlKey) return; // (a plain scroll over the grey does nothing)
     e.preventDefault();
@@ -310,13 +347,15 @@ function wheel(e) {
     return;
   }
   e.preventDefault();
-  const crop = item.crop;
+  const rect = layerFrame(item, hit.layer, f.w, f.h);
+  const crop = hit.layer.crop;
   const before = crop.zoom;
   crop.zoom = Math.min(12, Math.max(0.03, before * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025))));
   const k = crop.zoom / before;
-  const cx = f.w / 2 + crop.x * f.w, cy = f.h / 2 + crop.y * f.h;
-  crop.x = (p.x + (cx - p.x) * k - f.w / 2) / f.w;
-  crop.y = (p.y + (cy - p.y) * k - f.h / 2) / f.h;
+  const px = p.x - rect.x, py = p.y - rect.y;
+  const cx = rect.w / 2 + crop.x * rect.w, cy = rect.h / 2 + crop.y * rect.h;
+  crop.x = (px + (cx - px) * k - rect.w / 2) / rect.w;
+  crop.y = (py + (cy - py) * k - rect.h / 2) / rect.h;
   changed("look");
   clearTimeout(wheelTimer);
   wheelTimer = setTimeout(commit, 350);
@@ -346,6 +385,7 @@ function paint() {
   if (!item) return;
   const pic = getPicture(item.mediaId);
   if (!pic) { loadPicture(item.mediaId).then(draw); return; }
+  layersOf(item).forEach((l) => { if (!getPicture(l.mediaId)) loadPicture(l.mediaId).then(draw); }); // (the other layers' photos)
   const f = frameRect(item);
   ctx.setTransform(ratio, 0, 0, ratio, f.x * ratio, f.y * ratio);
 
@@ -353,17 +393,41 @@ function paint() {
   const raw = isVideo(item) ? videoFrame(item) : null;
   const frame = raw && !state.before ? lookedFrame(item, raw, "preview", state.project.seed) : raw;
 
-  // The photo past the frame's edges, faint: only while the photo is picked (click the grey to
-  // see just the slide)
-  if (state.photoPicked) {
-    const looked = frame || (state.before ? pic.preview : lookedPicture(item, "preview", state.project.seed));
+  // The picked photo past its frame's edges (the slide's, or its grid cell's), faint: only while
+  // it's picked (click the grey to see just the slide)
+  const layer = currentLayer();
+  const layerPic = layer && getPicture(layer.mediaId);
+  const rect = layer && layerFrame(item, layer, f.w, f.h);
+  if (state.photoPicked && layerPic && rect) {
+    const looked = (layer === item && frame) || (state.before ? layerPic.preview : lookedPicture(layer, "preview", state.project.seed));
     ctx.save();
     ctx.globalAlpha = 0.3;
-    drawPlaced(ctx, looked, item.crop, f.w, f.h);
+    ctx.translate(rect.x, rect.y);
+    drawPlaced(ctx, looked, layer.crop, rect.w, rect.h);
     ctx.restore();
   }
 
   drawItem(ctx, item, f.w, f.h, { before: state.before, seed: state.project.seed, frame, frameLooked: true });
+
+  // A grid's empty cells: click (or drop a photo) to fill them
+  const cells = cellRects(item, f.w, f.h);
+  if (cells) {
+    cells.forEach((c, i) => {
+      if (i < layersOf(item).length) return;
+      ctx.save();
+      ctx.fillStyle = "rgba(128,128,128,0.18)";
+      ctx.fillRect(c.x, c.y, c.w, c.h);
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = "rgba(128,128,128,0.8)";
+      ctx.strokeRect(c.x + 0.5, c.y + 0.5, c.w - 1, c.h - 1);
+      ctx.fillStyle = "rgba(90,90,90,0.9)";
+      ctx.font = `${Math.max(14, Math.min(c.w, c.h) * 0.18)}px Helvetica, Arial, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("＋", c.x + c.w / 2, c.y + c.h / 2);
+      ctx.restore();
+    });
+  }
 
   // Guides, seams, the frame
   const hair = 1 / ratio;

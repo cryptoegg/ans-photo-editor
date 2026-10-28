@@ -407,3 +407,21 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
 .vb-cover { position: absolute; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 11px; color: var(--text); pointer-events: none; }
 /* A video in the filmstrip */
 .thumb .vid { position: absolute; left: 4px; bottom: 4px; font-size: 10px; font-weight: 700; background: rgba(0,0,0,0.65); color: #fff; border-radius: 8px; padding: 0 6px; }
+
+/* The Layers box (js/ui/panel.js): the photos on the slide, the layout */
+.layers-box { border-bottom: 1px solid var(--rule); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; max-height: 42%; overflow-y: auto; flex: none; }
+.layers-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.layouts button { padding: 2px 5px; }
+.layouts svg { width: 18px; height: 18px; }
+.layer-list { display: flex; flex-direction: column; gap: 3px; }
+.layer-row { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border: 1px solid transparent; border-radius: 5px; cursor: pointer; }
+.layer-row:hover { background: var(--accent-soft); }
+.layer-row.on { border-color: var(--accent-ink); background: var(--accent-soft); }
+.layer-row.off { opacity: 0.5; }
+.layer-row .btn { padding: 0 6px; }
+.layer-thumb { width: 28px; height: 28px; border-radius: 3px; flex: none; background: var(--stage); }
+.layer-name { font-size: 12px; }
+.field.half { flex: 1; min-width: 90px; }
+#scope-switch button { white-space: nowrap; }
+.scope-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.scope .segmented { flex: none; margin-left: 4px; }

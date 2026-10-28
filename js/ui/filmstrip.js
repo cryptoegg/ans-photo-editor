@@ -105,8 +105,9 @@ function build() {
 
 // The item's little picture, drawn again only when it changed
 function thumbFor(item, ratio, a) {
-  const loaded = !!getPicture(item.mediaId);
-  const key = JSON.stringify([item.mediaId, item.span, item.crop, item.background, item.look, item.texts, loaded, ratio, a, item.cover, stillsMade]);
+  const media = [item.mediaId, ...((item.layers || []).map((l) => l.mediaId))];
+  const loaded = media.every((id) => getPicture(id));
+  const key = JSON.stringify([item.mediaId, item.span, item.crop, item.background, item.look, item.texts, item.layers, item.layout, item.style, loaded, ratio, a, item.cover, stillsMade]);
   const kept = thumbs.get(item.id);
   if (kept && kept.key === key) return kept.canvas;
   const canvas = document.createElement("canvas");
@@ -123,7 +124,7 @@ function thumbFor(item, ratio, a) {
     const pw = canvas.width / item.span;
     for (let k = 1; k < item.span; k++) { ctx.beginPath(); ctx.moveTo(Math.round(k * pw) + 0.5, 0); ctx.lineTo(Math.round(k * pw) + 0.5, canvas.height); ctx.stroke(); }
   } else {
-    loadPicture(item.mediaId).then((pic) => { if (pic) redraw(); });
+    Promise.all(media.map((id) => loadPicture(id))).then(() => redraw());
   }
   thumbs.set(item.id, { key, canvas });
   return canvas;

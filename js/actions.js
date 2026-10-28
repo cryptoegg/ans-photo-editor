@@ -1,9 +1,9 @@
 // What the buttons and keys do to the set: add photos, duplicate, remove, reset, panoramas,
 // copy / paste a look. Each is one undo step.
-import { state, changed, commit, undo, currentItem, selectedItems, items, setItems, tidySelection } from './state.js';
-import { newItem, slideCount, cropDefaults, lookDefaults, clone, newId, activeSet, aspectOf, STAGES, PLATFORMS, LINKED_RATIOS, MAX_SLIDES, linkedRatio, isVideo, takesVideo } from './project.js';
+import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, items, setItems, tidySelection } from './state.js';
+import { newItem, slideCount, cropDefaults, lookDefaults, clone, newId, activeSet, aspectOf, STAGES, PLATFORMS, LINKED_RATIOS, MAX_SLIDES, linkedRatio, isVideo, takesVideo, newLayer, layersOf, LAYOUTS, isGrid } from './project.js';
 import { addMediaFile, isMediaFile, getPicture } from './media.js';
-import { photoSize, fillCrop } from './render.js';
+import { photoSize, fillCrop, fitCrop, cellRects } from './render.js';
 import { toast } from './ui/toast.js';
 
 const set = () => activeSet(state.project);
@@ -235,7 +235,7 @@ export function splitPanorama() {
 
 let copiedLook = null;
 export function copyLook() {
-  const item = currentItem();
+  const item = currentLayer();
   if (!item) return;
   copiedLook = clone(item.look);
   toast("Look copied: ⌘V puts it on the selected slides");
@@ -321,4 +321,110 @@ export function setOwnLook(own) {
   changed("project");
   commit();
   toast(own ? "These slides now have their own look on this platform" : "Look shared with the other platforms again");
+}
+
+// ---- Layers: several photos on one slide
+
+const LAYER_KEYS = ["mediaId", "crop", "look", "style"];
+const frameOf = (item) => ({ W: item.span * aspectOf(set().ratio), H: 1 });
+
+// Photos onto the slide on the canvas, as layers: in a grid they fill the next empty cells; free,
+// each comes in smaller and a little apart from the last
+export async function addLayerFiles(fileList) {
+  const item = currentItem();
+  if (!item) return;
+  if (isVideo(item) || item.span > 1) { toast(isVideo(item) ? "A video slide holds just the video." : "A panorama holds one photo."); return; }
+  const files = [...fileList].filter((f) => isMediaFile(f) && !/^video\//.test(f.type) && !/\.(mp4|mov|m4v|webm)$/i.test(f.name));
+  if (!files.length) { toast("Layers take photos."); return; }
+  if (!isGrid(item)) item.layout.kind = "free";
+  const { W, H } = frameOf(item);
+  const added = [];
+  for (const file of files) {
+    try {
+      const media = await addMediaFile(file, state.project.id);
+      const layer = newLayer(media.id);
+      const pic = getPicture(media.id);
+      if (!isGrid(item) && pic) {
+        fitCrop(layer.crop, pic.width, pic.height, W, H);
+        const n = item.layers.length + added.length + 1;
+        layer.crop.zoom *= 0.55;
+        layer.crop.x = ((n % 4) - 1.5) * 0.12;
+        layer.crop.y = ((n % 3) - 1) * 0.1;
+      }
+      added.push(layer);
+    } catch (err) { console.error(err); toast(`${file.name} couldn't be opened.`); }
+  }
+  if (!added.length) return;
+  item.layers.push(...added);
+  state.photoPicked = true;
+  state.textId = null;
+  state.layerId = added[added.length - 1].id;
+  changed("project");
+  commit();
+  toast(added.length === 1 ? "Added a photo to this slide" : `Added ${added.length} photos to this slide`, undoAction);
+}
+
+// Free, or a grid. Into a grid: each photo fills its cell. Out of a grid: each photo stays over
+// the cell it was in, now free to move.
+export function setLayout(kind) {
+  const item = currentItem();
+  if (!item || isVideo(item) || item.span > 1) return;
+  const was = item.layout.kind;
+  if (kind === was || (kind === "free" && was === "single")) return;
+  const { W, H } = frameOf(item);
+  if (LAYOUTS[kind]) {
+    layersOf(item).forEach((l) => { l.crop = cropDefaults(); });
+  } else if (LAYOUTS[was]) {
+    const cells = cellRects(item, W, H);
+    layersOf(item).forEach((l, i) => {
+      const pic = getPicture(l.mediaId), c = cells[i];
+      if (!pic || !c) return;
+      const inCell = photoSize(l.crop, pic.width, pic.height, c.w, c.h);
+      const plain = photoSize({ zoom: 1, stretch: 1 }, pic.width, pic.height, W, H);
+      const cx = c.x + c.w / 2 + l.crop.x * c.w, cy = c.y + c.h / 2 + l.crop.y * c.h;
+      l.crop = { ...l.crop, zoom: inCell.dh / plain.dh, x: (cx - W / 2) / W, y: (cy - H / 2) / H };
+    });
+  }
+  item.layout.kind = kind;
+  changed("project");
+  commit();
+  const cells = LAYOUTS[kind] ? LAYOUTS[kind].cells.length : 0;
+  const count = layersOf(item).length;
+  if (cells && count < cells) toast(`Click an empty cell (or ＋ Add photo) to fill it: ${cells - count} to go`);
+  else if (cells && count > cells) toast(`${count - cells} photo${count - cells === 1 ? " doesn't" : "s don't"} fit this layout: they wait in Layers`);
+}
+
+// Up (+1, towards the top / a later cell) or down (-1)
+export function moveLayer(layer, dir) {
+  const item = currentItem();
+  const all = layersOf(item);
+  const i = all.indexOf(layer), j = i + dir;
+  if (i < 0 || j < 0 || j >= all.length) return;
+  const a = all[i], b = all[j];
+  if (a === item || b === item) {
+    // (the slide's own photo is the first layer: swap what the two hold)
+    LAYER_KEYS.forEach((k) => { const t = a[k]; a[k] = b[k]; b[k] = t; });
+  } else {
+    const list = item.layers;
+    [list[i - 1], list[j - 1]] = [list[j - 1], list[i - 1]];
+  }
+  state.layerId = b === item ? null : b.id; // (the pick follows the photo)
+  if (a !== item && b !== item) state.layerId = layer.id;
+  changed("project");
+  commit();
+}
+
+// Take a photo off the slide (the slide always keeps one)
+export function removeLayer(layer) {
+  const item = currentItem();
+  if (!item || !item.layers.length) return;
+  if (layer === item) {
+    const next = item.layers.shift();
+    LAYER_KEYS.forEach((k) => { item[k] = next[k]; });
+  } else item.layers = item.layers.filter((l) => l !== layer);
+  if (!item.layers.length && !isGrid(item)) item.layout.kind = "single";
+  state.layerId = null;
+  changed("project");
+  commit();
+  toast("Photo taken off the slide", undoAction);
 }

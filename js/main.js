@@ -12,7 +12,7 @@ import { newProject, slides as slideList, firstSlideOf, allLists } from './proje
 import { saveProject, loadProject, lastProjectId } from './store.js';
 import { loadPicture } from './media.js';
 import { FONTS } from './render.js';
-import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setLinked, setStage, setRatio, copySelectedTo } from './actions.js';
+import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setLinked, setStage, setRatio, copySelectedTo, addLayerFiles } from './actions.js';
 import { loadMyFilters } from './filters.js';
 import { initInstall } from './install.js';
 import { STAGES, RATIO_NAMES, LINKED_RATIOS, linkedRatio } from './project.js';
@@ -46,7 +46,7 @@ async function start() {
   try {
     const id = await lastProjectId();
     const p = id ? await loadProject(id) : null;
-    if (p) { openProject(p); opened = true; await Promise.all(allLists(state.project).flat().map((i) => loadPicture(i.mediaId))); changed("project"); }
+    if (p) { openProject(p); opened = true; await Promise.all(allLists(state.project).flat().flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId))]).map((id) => loadPicture(id))); changed("project"); }
   } catch (err) { console.error("Couldn't open the last project:", err); }
   if (!opened) openProject(newProject());
 }
@@ -126,6 +126,10 @@ function wireStrip() {
   $("btn-reset").onclick = resetSelected;
   $("btn-pano").onclick = makePanorama;
   $("btn-split").onclick = splitPanorama;
+  // Photos onto the slide as layers (＋ Add photo in Layers, or an empty grid cell)
+  const layerInput = $("layer-input");
+  document.addEventListener("add-layer", () => layerInput.click());
+  layerInput.addEventListener("change", () => { if (layerInput.files.length) addLayerFiles(layerInput.files); layerInput.value = ""; });
   // Copy to ▾ (separate sets): the other platforms, or all of them
   $("btn-copy-to").onclick = (e) => {
     const menu = $("copy-menu");

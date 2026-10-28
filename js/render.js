@@ -3,6 +3,7 @@
 // export all draw through here, so what you see is what's exported.
 import { lookedPicture, lookedFrame } from './looks.js';
 import { getPicture } from './media.js';
+import { LAYOUTS, layersOf } from './project.js';
 
 // ---- Where the photo sits in a frame W x H (free, like the lyric app's pictures)
 // zoom 1 = the photo upright just fills the frame ("Fill"); bigger or smaller from there (smaller:
@@ -52,7 +53,78 @@ export function drawPlaced(ctx, picture, crop, W, H) {
   ctx.restore();
 }
 
-// The whole item into (0, 0, W, H): its background, the photo, its texts.
+// ---- Layers and layouts
+
+// A grid's cells on a frame W x H: [{ x, y, w, h }] (frame pixels), the gap round and between
+// them (the slide's background shows in it)
+export function cellRects(item, W, H) {
+  const grid = LAYOUTS[item.layout && item.layout.kind];
+  if (!grid) return null;
+  const gap = (item.layout.gap || 0) * Math.min(W, H);
+  return grid.cells.map(([fx, fy, fw, fh]) => {
+    const l = fx === 0 ? gap : gap / 2, t = fy === 0 ? gap : gap / 2;
+    const r = fx + fw >= 0.999 ? gap : gap / 2, b = fy + fh >= 0.999 ? gap : gap / 2;
+    return { x: fx * W + l, y: fy * H + t, w: Math.max(1, fw * W - l - r), h: Math.max(1, fh * H - t - b) };
+  });
+}
+
+// The frame a layer's crop is placed in (frame pixels): its cell in a grid, else the whole slide.
+// null: a layer with no cell left in the grid (not shown).
+export function layerFrame(item, layer, W, H) {
+  const cells = cellRects(item, W, H);
+  if (!cells) return { x: 0, y: 0, w: W, h: H };
+  const i = layersOf(item).indexOf(layer);
+  return i >= 0 && i < cells.length ? cells[i] : null;
+}
+
+// One layer's picture (with its look) placed in its frame; in a grid clipped to its (rounded)
+// cell, else with its own style: rounded corners, a border, a soft shadow
+function drawLayer(ctx, item, layer, picture, rect, grid) {
+  ctx.save();
+  ctx.translate(rect.x, rect.y);
+  if (grid) {
+    const r = (item.layout.radius || 0) * Math.min(rect.w, rect.h) * 2;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, rect.w, rect.h, Math.min(r, rect.w / 2, rect.h / 2));
+    ctx.clip();
+    drawPlaced(ctx, picture, layer.crop, rect.w, rect.h);
+    ctx.restore();
+    return;
+  }
+  const st = layer.style || {};
+  if (!st.radius && !st.border && !st.shadow) { drawPlaced(ctx, picture, layer.crop, rect.w, rect.h); ctx.restore(); return; }
+  const box = photoBox(layer.crop, picture.width, picture.height, rect.w, rect.h);
+  const r = Math.min(box.w, box.h) * (st.radius || 0);
+  const shape = () => { ctx.beginPath(); ctx.roundRect(-box.w / 2, -box.h / 2, box.w, box.h, r); };
+  ctx.translate(box.cx, box.cy);
+  ctx.rotate((box.rotation * Math.PI) / 180);
+  if (st.shadow) {
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = Math.min(rect.w, rect.h) * 0.04;
+    ctx.shadowOffsetY = Math.min(rect.w, rect.h) * 0.015;
+    shape();
+    ctx.fillStyle = "#000";
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.save();
+  shape();
+  ctx.clip();
+  ctx.scale(layer.crop.flipH ? -1 : 1, layer.crop.flipV ? -1 : 1);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(picture, -box.w / 2, -box.h / 2, box.w, box.h);
+  ctx.restore();
+  if (st.border) {
+    shape();
+    ctx.lineWidth = st.border * Math.min(rect.w, rect.h) * 0.01;
+    ctx.strokeStyle = st.borderColour || "#ffffff";
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// The whole item into (0, 0, W, H): its background, its layers (bottom first), its texts.
 // options: quality "preview" | "full", before (no look), texts (default true), seed, frame (a
 // video's frame for this moment, a canvas the video's size: playing, exporting; else its still)
 export function drawItem(ctx, item, W, H, options = {}) {
@@ -63,12 +135,17 @@ export function drawItem(ctx, item, W, H, options = {}) {
   ctx.clip();
   ctx.fillStyle = item.background || "#ffffff";
   ctx.fillRect(0, 0, W, H);
-  const pic = getPicture(item.mediaId);
-  if (pic) {
-    const picture = frame ? (before || frameLooked ? frame : lookedFrame(item, frame, quality, seed))
-      : before ? (quality === "full" ? pic.full : pic.preview) : lookedPicture(item, quality, seed);
-    if (picture) drawPlaced(ctx, picture, item.crop, W, H);
-  }
+  const grid = !!LAYOUTS[item.layout && item.layout.kind];
+  const cells = grid ? cellRects(item, W, H) : null;
+  layersOf(item).forEach((layer, i) => {
+    const rect = cells ? cells[i] : { x: 0, y: 0, w: W, h: H };
+    if (!rect) return; // (more layers than cells: the rest wait off the grid)
+    const pic = getPicture(layer.mediaId);
+    if (!pic) return;
+    const picture = layer === item && frame ? (before || frameLooked ? frame : lookedFrame(item, frame, quality, seed))
+      : before ? (quality === "full" ? pic.full : pic.preview) : lookedPicture(layer, quality, seed);
+    if (picture) drawLayer(ctx, item, layer, picture, rect, grid);
+  });
   if (texts) item.texts.forEach((t) => drawText(ctx, t, W, H));
   ctx.restore();
 }

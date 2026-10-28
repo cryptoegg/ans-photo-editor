@@ -12,7 +12,9 @@ export const state = {
   selected: new Set(),    // item ids: what the Filters / Adjust panels change
   current: null,          // the item id on the canvas (and the one Crop and Text change)
   textId: null,           // the text picked on the canvas, or null
-  photoPicked: false,     // the photo picked on the canvas (its frame and handles show)
+  photoPicked: false,     // a photo picked on the canvas (its frame and handles show)
+  layerId: null,          // which layer of the slide is picked (null: the slide's own photo);
+                          // Filters, Adjust and Crop work on it
   view: "edit",           // "edit" | "phone"
   phonePlatform: "instagram",
   phoneSlide: 0,          // the slide the phone shows (0-based)
@@ -121,6 +123,14 @@ export function tidySelection() {
   if (state.current && !state.selected.size) state.selected.add(state.current);
   const item = currentItem();
   if (!item || !item.texts.some((t) => t.id === state.textId)) state.textId = null;
+  if (!item || !(item.layers || []).some((l) => l.id === state.layerId)) state.layerId = null;
+}
+
+// The picked layer of the slide on the canvas: one of its extra layers, or the slide itself
+export function currentLayer() {
+  const item = currentItem();
+  if (!item) return null;
+  return (state.layerId && (item.layers || []).find((l) => l.id === state.layerId)) || item;
 }
 
 // Select one item (click), add / remove one (⌘-click), or a run of them (shift-click)
@@ -141,6 +151,7 @@ export function select(id, how = "one") {
     state.current = id;
   }
   if (state.textId && !(currentItem() && currentItem().texts.some((t) => t.id === state.textId))) state.textId = null;
+  state.layerId = null;
   changed("selection");
 }
 

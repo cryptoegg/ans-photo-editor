@@ -54,7 +54,7 @@ export async function deleteProject(id) {
   const doomed = all.find((p) => p.id === id);
   if (!doomed) return;
   const lists = (p) => [p.items || [], ...(p.stages ? Object.values(p.stages).map((s) => s.items || []) : [])].flat();
-  const usedElsewhere = new Set(all.filter((p) => p.id !== id).flatMap((p) => lists(p).map((i) => i.mediaId)));
+  const usedElsewhere = new Set(all.filter((p) => p.id !== id).flatMap((p) => lists(p).flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId))])));
   const mine = await dbAll("media").catch(() => []);
   await Promise.all(mine.filter((m) => m.projectId === id && !usedElsewhere.has(m.id)).map((m) => dbDelete("media", m.id)));
   await dbDelete("projects", id);

@@ -2,16 +2,16 @@
 // "Editing all 7 slides") and a This slide / All switch: Filters and Adjust change every slide
 // outlined in the filmstrip; Crop and Text always change the one on the canvas. Changing
 // several slides at once says so in a note with Undo.
-import { state, changed, commit, undo, currentItem, selectedItems, select, selectAll, onChange, items } from '../state.js';
-import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, PLATFORMS, newId, cropDefaults, activeSet, aspectOf, isVideo } from '../project.js';
+import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, select, selectAll, onChange, items } from '../state.js';
+import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, PLATFORMS, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
 import { PRESETS } from '../effects/presets.js';
 import { getEffect, EFFECTS, effectOrder } from '../effects/registry.js';
 import { vibeSettings, VIBE_DEFAULT } from '../effects/vibe.js';
 import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, deleteMyFilter, isMine } from '../filters.js';
 import { presetSwatch } from '../looks.js';
 import { getPicture } from '../media.js';
-import { TEXT_STYLES, FONTS, fillCrop, fitCrop } from '../render.js';
-import { setSpan, splitPanorama, makePanorama, setOwnLook } from '../actions.js';
+import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame } from '../render.js';
+import { setSpan, splitPanorama, makePanorama, setOwnLook, setLayout, moveLayer, removeLayer } from '../actions.js';
 import { toast } from './toast.js';
 import { ask } from './dialogs.js';
 
@@ -44,6 +44,81 @@ export function initPanel() {
   build();
 }
 
+// ---- Layers: the photos on the slide on the canvas (top of the list = on top), click one to
+// pick it (Filters, Adjust and Crop then change just that one), ↑ ↓ to reorder (in a grid: which
+// cell), ✕ to take one off, ＋ Add photo. Layout: Free (photos anywhere) or a grid, with its gap
+// and rounded corners.
+
+const LAYOUT_ICONS = { free: [[0.12, 0.18, 0.5, 0.42], [0.4, 0.42, 0.48, 0.42]] };
+function layoutIcon(kind) {
+  const cells = LAYOUT_ICONS[kind] || LAYOUTS[kind].cells.map(([x, y, w, h]) => [x + 0.04, y + 0.04, w - 0.08, h - 0.08]);
+  return `<svg viewBox="0 0 1 1" width="20" height="20">${cells.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="0.04" fill="currentColor"/>`).join("")}</svg>`;
+}
+
+function buildLayersBox() {
+  const box = document.getElementById("layers-box");
+  const slide = currentItem();
+  box.innerHTML = "";
+  if (!slide) { box.hidden = true; return; }
+  box.hidden = false;
+  if (isVideo(slide) || slide.span > 1) {
+    box.append(el("div", { className: "layers-head" }, el("strong", { textContent: "Layers" }), el("span", { className: "note", textContent: isVideo(slide) ? "A video slide holds just the video" : "A panorama holds one photo" })));
+    return;
+  }
+  const kind = isGrid(slide) ? slide.layout.kind : "free";
+  const head = el("div", { className: "layers-head" }, el("strong", { textContent: "Layers" }));
+  const picker = el("div", { className: "segmented small icons layouts" });
+  ["free", ...Object.keys(LAYOUTS)].forEach((k) => {
+    const b = el("button", { className: k === kind ? "on" : "", title: k === "free" ? "Free: move, size and turn each photo anywhere" : LAYOUTS[k].label, onclick: () => setLayout(k) });
+    b.innerHTML = layoutIcon(k);
+    picker.append(b);
+  });
+  head.append(picker);
+  box.append(head);
+
+  const list = el("div", { className: "layer-list" });
+  const all = layersOf(slide);
+  const picked = currentLayer();
+  const cells = isGrid(slide) ? LAYOUTS[slide.layout.kind].cells.length : Infinity;
+  all.map((layer, i) => ({ layer, i })).reverse().forEach(({ layer, i }) => {
+    const pic = getPicture(layer.mediaId);
+    const thumb = el("canvas", { width: 56, height: 56, className: "layer-thumb" });
+    if (pic) { const src = pic.preview, s = Math.min(src.width, src.height); thumb.getContext("2d").drawImage(src, (src.width - s) / 2, (src.height - s) / 2, s, s, 0, 0, 56, 56); }
+    const row = el("div", { className: "layer-row" + (state.photoPicked && layer === picked ? " on" : "") + (i >= cells ? " off" : "") },
+      thumb, el("span", { className: "layer-name", textContent: `Photo ${i + 1}${i >= cells ? " (no cell)" : ""}` }), el("span", { className: "spacer" }));
+    const up = button("↑", (e) => { e.stopPropagation(); moveLayer(layer, 1); }, "btn ghost small");
+    const down = button("↓", (e) => { e.stopPropagation(); moveLayer(layer, -1); }, "btn ghost small");
+    const del = button("✕", (e) => { e.stopPropagation(); removeLayer(layer); }, "btn ghost small");
+    up.disabled = i === all.length - 1;
+    down.disabled = i === 0;
+    up.title = isGrid(slide) ? "Later cell" : "Bring forward";
+    down.title = isGrid(slide) ? "Earlier cell" : "Send back";
+    del.title = "Take this photo off the slide";
+    del.disabled = all.length === 1;
+    row.append(up, down, del);
+    row.onclick = () => { state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view"); };
+    list.append(row);
+  });
+  box.append(list);
+  const add = button("＋ Add photo", () => document.dispatchEvent(new CustomEvent("add-layer")), "btn small");
+  add.title = "Another photo on this slide";
+  const foot = el("div", { className: "row" }, add);
+  if (isGrid(slide)) {
+    const gap = slider({ label: "Gap", min: 0, max: 10, step: 0.5, unit: "%", targets: [slide], get: (i) => i.layout.gap * 100, set: (i, v) => { i.layout.gap = v / 100; }, onCommit: () => {} });
+    const round = slider({ label: "Corners", min: 0, max: 50, unit: "%", targets: [slide], get: (i) => i.layout.radius * 100, set: (i, v) => { i.layout.radius = v / 100; }, onCommit: () => {} });
+    gap.classList.add("half");
+    round.classList.add("half");
+    foot.append(gap, round);
+  }
+  box.append(foot);
+}
+
+// What Filters, Adjust and Crop change: a picked extra layer by itself, else the selected slides
+// (each slide's own photo)
+const lookItems = () => (state.layerId ? [currentLayer()] : selectedItems());
+const lookItem = () => currentLayer() || currentItem();
+const layerName = (item, layer) => `photo ${layersOf(item).indexOf(layer) + 1}`;
+
 // ---- Building
 
 function build() {
@@ -53,13 +128,15 @@ function build() {
   const scope = document.getElementById("scope");
   const text = document.getElementById("scope-text");
   if (!all) text.textContent = "No slides yet";
-  else if (chosen.length === 1) text.textContent = `Editing ${slideLabel(p, chosen[0]).toLowerCase()}`;
+  else if (state.layerId && currentItem()) text.textContent = `Editing ${layerName(currentItem(), currentLayer())} · ${slideLabel(p, currentItem()).toLowerCase()}`;
+  else if (chosen.length === 1) text.textContent = `Editing ${slideLabel(p, chosen[0]).toLowerCase()}${layersOf(chosen[0]).length > 1 ? " · photo 1" : ""}`;
   else if (chosen.length === all) text.textContent = `Editing all ${all} slides`;
   else text.textContent = `Editing ${chosen.length} slides`;
   scope.classList.toggle("many", chosen.length > 1);
   document.querySelectorAll("#scope-switch button").forEach((b) => b.classList.toggle("on", b.dataset.scope === "all" ? chosen.length > 1 && chosen.length === all : chosen.length === 1));
   document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === state.tab));
 
+  buildLayersBox();
   const scroll = body.scrollTop;
   body.innerHTML = "";
   if (!all && state.tab !== "captions") {
@@ -158,8 +235,8 @@ function useFilter(chosen, id) {
 }
 
 function buildFilters() {
-  const chosen = selectedItems();
-  const item = currentItem();
+  const chosen = lookItems();
+  const item = lookItem();
   const presets = chosen.map((i) => i.look.preset);
   const mixed = presets.some((x) => x !== presets[0]);
   body.append(strengthBar(chosen));
@@ -227,7 +304,7 @@ function foldCard({ key, name, tick = null, quick = null, onReset = null, build,
 
 const ADJUST_TYPES = ["tone", "colour", "tint"];
 function effectsSection(chosen) {
-  const item = currentItem();
+  const item = lookItem();
   if (!item) return;
   const id = item.look.preset;
   const targets = chosen;
@@ -292,7 +369,7 @@ function effectsSection(chosen) {
 // Save this filter: the slide's whole look (its Light, Colour, filter and effects) as one of Your
 // filters, for any project. Always at the bottom of Adjust. Reset / Delete when it has a filter.
 function saveFilterSection(chosen) {
-  const item = currentItem();
+  const item = lookItem();
   if (!item) return;
   const id = item.look.preset;
   const done = () => { changed("project"); commit(); };
@@ -368,7 +445,8 @@ function effectControl(c, type, targets, shown, ensure) {
 // ---- Adjust: Light, Colour and Background, each folding open (they follow This slide / All)
 
 function buildAdjust() {
-  const chosen = selectedItems();
+  const chosen = lookItems();
+  const slidesChosen = selectedItems();
   const tone = getEffect("tone"), colour = getEffect("colour");
   body.append(strengthBar(chosen));
   const resetPart = (part, fresh, label) => () => { chosen.forEach((i) => { i.look[part] = fresh(); }); changed("project"); commit(); saidAcross(`${label} reset`, chosen.length); };
@@ -398,12 +476,12 @@ function buildAdjust() {
   effectsSection(chosen);
   body.append(foldCard({
     key: "adjust:background", name: "Background",
-    onReset: () => { chosen.forEach((i) => { i.background = "#ffffff"; }); changed("project"); commit(); saidAcross("Background reset", chosen.length); },
+    onReset: () => { slidesChosen.forEach((i) => { i.background = "#ffffff"; }); changed("project"); commit(); saidAcross("Background reset", slidesChosen.length); },
     build: (inner) => {
       inner.append(note("Shows wherever the photo doesn't cover the slide."));
-      const backs = chosen.map((i) => i.background);
+      const backs = slidesChosen.map((i) => i.background);
       const same = backs.every((b) => b === backs[0]) ? backs[0] : null;
-      const setBack = (v, finished) => { chosen.forEach((i) => { i.background = v; }); changed(finished ? "project" : "look"); if (finished) { commit(); saidAcross("Background", chosen.length); } };
+      const setBack = (v, finished) => { slidesChosen.forEach((i) => { i.background = v; }); changed(finished ? "project" : "look"); if (finished) { commit(); saidAcross("Background", slidesChosen.length); } };
       const picker = el("input", { type: "color", className: "colour-big", value: same || "#ffffff", title: "Pick a colour" });
       picker.oninput = () => setBack(picker.value, false);
       picker.onchange = () => setBack(picker.value, true);
@@ -417,16 +495,20 @@ function buildAdjust() {
 // ---- Crop (the slide on the canvas only)
 
 function buildCrop() {
-  const item = currentItem();
-  if (!item) return;
+  const slide = currentItem();
+  if (!slide) return;
+  const item = lookItem(); // (the picked layer: its crop)
   const pic = getPicture(item.mediaId);
-  if (selectedItems().length > 1) body.append(note(`Crop changes ${slideLabel(state.project, item).toLowerCase()} only.`));
-  body.append(note("Click the photo on the canvas: drag it to move, a corner to size it, just outside a corner to turn it. Scroll or pinch to zoom."));
+  const many = layersOf(slide).length > 1;
+  if (selectedItems().length > 1 || many) body.append(note(`Crop changes ${many ? `${layerName(slide, item)} on ` : ""}${slideLabel(state.project, slide).toLowerCase()} only.`));
+  body.append(note("Click a photo on the canvas: drag it to move, a corner to size it, just outside a corner to turn it. Scroll or pinch to zoom."));
   const act = (fn) => () => { fn(); changed("project"); commit(); };
+  const frame = () => layerFrame(slide, item, slide.span * aspectOf(activeSet(state.project).ratio), 1) || { w: 1, h: 1 };
+  const inGrid = isGrid(slide);
   body.append(el("div", { className: "row" },
-    button("Fill", act(() => { if (pic) fillCrop(item.crop, pic.width, pic.height, item.span * aspectOf(activeSet(state.project).ratio), 1); }), "btn small"),
-    button("Fit", act(() => { if (pic) fitCrop(item.crop, pic.width, pic.height, item.span * aspectOf(activeSet(state.project).ratio), 1); }), "btn small"),
-    el("span", { className: "note", textContent: "Fill covers the slide; Fit shows the whole photo on the background." })));
+    button("Fill", act(() => { if (pic) fillCrop(item.crop, pic.width, pic.height, frame().w, frame().h); }), "btn small"),
+    button("Fit", act(() => { if (pic) fitCrop(item.crop, pic.width, pic.height, frame().w, frame().h); }), "btn small"),
+    el("span", { className: "note", textContent: inGrid ? "Fill covers its cell; Fit shows the whole photo in it." : "Fill covers the slide; Fit shows the whole photo on the background." })));
   body.append(slider({
     label: "Size", min: 5, max: 400, unit: "%", reset: 100, targets: [item],
     get: (i) => i.crop.zoom * 100, set: (i, v) => { i.crop.zoom = v / 100; }, onCommit: () => {}
@@ -447,6 +529,22 @@ function buildCrop() {
     el("span", { className: "spacer" }),
     button("Reset", act(() => { item.crop = cropDefaults(); }), "btn ghost small")));
 
+  // A photo's own style (free layouts): rounded corners, a border, a soft shadow
+  if (!inGrid && (many || slide.layout.kind === "free")) {
+    const st = item.style;
+    body.append(title("Photo style"));
+    body.append(slider({ label: "Corners", min: 0, max: 50, unit: "%", targets: [item], get: (i) => (i.style.radius || 0) * 100, set: (i, v) => { i.style.radius = v / 100; }, onCommit: () => {} }));
+    body.append(slider({ label: "Border", min: 0, max: 5, step: 0.25, targets: [item], get: (i) => i.style.border || 0, set: (i, v) => { i.style.border = v; }, onCommit: () => {} }));
+    const bc = el("input", { type: "color", value: st.borderColour || "#ffffff" });
+    bc.oninput = () => { st.borderColour = bc.value; changed("look"); };
+    bc.onchange = () => { changed("project"); commit(); };
+    const sh = el("input", { type: "checkbox", checked: !!st.shadow });
+    sh.onchange = act(() => { st.shadow = sh.checked; });
+    body.append(el("div", { className: "row" }, el("span", { textContent: "Border colour" }), bc, el("span", { className: "spacer" }), el("label", { className: "check-row" }, sh, el("span", { textContent: "Shadow" }))));
+  }
+
+  if (many || inGrid) return; // (panoramas are for a slide with one photo)
+  const pano = slide;
   body.append(title("Panorama"));
   if (isVideo(item)) {
     body.append(note("Videos can't be panoramas: Instagram plays each slide's video by itself. Trim it and pick its cover in the bar under the canvas."));
