@@ -39,7 +39,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   / look / style); more are `item.layers` [{ id, mediaId, crop, look, style }]. `item.layout.kind`:
   "single" / "free" (each moves, sizes, turns; later on top; style = corners, border, shadow) or a
   grid from `LAYOUTS` (2h, 2v, 3h, 2x2, 1+2: layer i fills cell i, its crop placed in the cell;
-  `gap`, `radius`). The Layers box (top of the panel, `buildLayersBox` in panel.js) picks a layer
+  `gap`, `radius`). The Layers box (top of the panel, `buildLayersBox` in panel.js; drag a row or ↑ ↓ to reorder, `placeLayer`) picks a layer
   (`state.layerId`, `currentLayer()`), and Filters / Adjust / Crop then change just that one.
   Actions: `addLayerFiles`, `setLayout`, `moveLayer`, `removeLayer`. Not for videos or panoramas.
 - **Adding**: new photos / videos go into the set being edited and, with separate sets, every

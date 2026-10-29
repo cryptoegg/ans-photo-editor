@@ -11,7 +11,7 @@ import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, 
 import { presetSwatch } from '../looks.js';
 import { getPicture } from '../media.js';
 import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame } from '../render.js';
-import { setSpan, splitPanorama, makePanorama, setOwnLook, setLayout, moveLayer, removeLayer } from '../actions.js';
+import { setSpan, splitPanorama, makePanorama, setOwnLook, setLayout, moveLayer, placeLayer, removeLayer } from '../actions.js';
 import { toast } from './toast.js';
 import { ask } from './dialogs.js';
 
@@ -46,7 +46,7 @@ export function initPanel() {
 
 // ---- Layers: the photos on the slide on the canvas (top of the list = on top), click one to
 // pick it (Filters, Adjust and Crop then change just that one), ↑ ↓ to reorder (in a grid: which
-// cell), ✕ to take one off, ＋ Add photo. Layout: Free (photos anywhere) or a grid, with its gap
+// cell), ✕ to take one off (or drag a row), ＋ Add layer. Layout: Free (photos anywhere) or a grid, with its gap
 // and rounded corners.
 
 const LAYOUT_ICONS = { free: [[0.12, 0.18, 0.5, 0.42], [0.4, 0.42, 0.48, 0.42]] };
@@ -96,11 +96,14 @@ function buildLayersBox() {
     del.title = "Take this photo off the slide";
     del.disabled = all.length === 1;
     row.append(up, down, del);
-    row.onclick = () => { state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view"); };
+    row.onclick = () => { if (dragged) return; state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view"); };
+    row.title = "Drag up or down to change the order";
+    row.layer = layer;
+    row.addEventListener("pointerdown", (e) => dragRow(e, row, list, all));
     list.append(row);
   });
   box.append(list);
-  const add = button("＋ Add photo", () => document.dispatchEvent(new CustomEvent("add-layer")), "btn small");
+  const add = button("＋ Add layer", () => document.dispatchEvent(new CustomEvent("add-layer")), "btn small");
   add.title = "Another photo on this slide";
   const foot = el("div", { className: "row" }, add);
   if (isGrid(slide)) {
@@ -111,6 +114,39 @@ function buildLayersBox() {
     foot.append(gap, round);
   }
   box.append(foot);
+}
+
+// Dragging a row in Layers up or down: the row moves through the list as you go, and letting go
+// puts the photo there (the list shows the top first, so place 0 is the last row)
+let dragged = false;
+function dragRow(e, row, list, all) {
+  if (e.button !== 0 || e.target.closest("button")) return;
+  const startY = e.clientY;
+  let moving = false;
+  dragged = false;
+  const move = (ev) => {
+    if (!moving && Math.abs(ev.clientY - startY) < 4) return;
+    // (once it's a drag, the list holds on to the pointer: the row itself moves around in it)
+    if (!moving) { moving = true; row.classList.add("dragging"); list.setPointerCapture(ev.pointerId); }
+    const rows = [...list.children];
+    const over = rows.find((r) => r !== row && ev.clientY > r.getBoundingClientRect().top && ev.clientY < r.getBoundingClientRect().bottom);
+    if (!over) return;
+    const mid = over.getBoundingClientRect().top + over.offsetHeight / 2;
+    if (ev.clientY < mid) list.insertBefore(row, over); else list.insertBefore(row, over.nextSibling);
+  };
+  const up = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", up);
+    if (!moving) return;
+    dragged = true;
+    setTimeout(() => { dragged = false; }, 0); // (the click that ends a drag doesn't pick the row)
+    row.classList.remove("dragging");
+    placeLayer(row.layer, all.length - 1 - [...list.children].indexOf(row));
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
+  window.addEventListener("pointercancel", up);
 }
 
 // What Filters, Adjust and Crop change: a picked extra layer by itself, else the selected slides

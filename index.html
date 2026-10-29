@@ -34,10 +34,12 @@
     <button data-view="edit" class="on">Edit</button>
     <button data-view="phone">Phone</button>
   </div>
-  <span class="spacer"></span>
+  <!-- (over the panel, so Edit | Phone ends where the canvas does) -->
+  <div class="topbar-right">
   <button id="btn-settings" class="btn ghost icon" title="Settings: your main folder, what's saved where, the skin, keys (⌘,)" aria-label="Settings">⚙</button>
   <button id="btn-projects" class="btn ghost" title="Your projects, and this one's name">Projects ▾</button>
   <button id="btn-export" class="btn primary">Export</button>
+  </div>
 </header>
 
 <main class="workspace">
@@ -83,8 +85,8 @@
   <aside class="panel" id="panel">
     <div class="scope" id="scope">
       <span class="scope-text" id="scope-text">No slides yet</span>
-      <button id="btn-undo" class="btn ghost icon" title="Undo (⌘Z)">↶</button>
-      <button id="btn-redo" class="btn ghost icon" title="Redo (⇧⌘Z)">↷</button>
+      <button id="btn-undo" class="btn ghost icon undo-redo" title="Undo (⌘Z)" aria-label="Undo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button id="btn-redo" class="btn ghost icon undo-redo" title="Redo (⇧⌘Z)" aria-label="Redo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
       <div class="segmented small" id="scope-switch">
         <button data-scope="one" class="on">This slide</button>
         <button data-scope="all">All</button>

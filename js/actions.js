@@ -395,21 +395,21 @@ export function setLayout(kind) {
 }
 
 // Up (+1, towards the top / a later cell) or down (-1)
-export function moveLayer(layer, dir) {
+export const moveLayer = (layer, dir) => placeLayer(layer, layersOf(currentItem()).indexOf(layer) + dir);
+
+// Put a photo at place `to` in the stack (0 = the bottom / the first cell): dragging in Layers
+export function placeLayer(layer, to) {
   const item = currentItem();
   const all = layersOf(item);
-  const i = all.indexOf(layer), j = i + dir;
-  if (i < 0 || j < 0 || j >= all.length) return;
-  const a = all[i], b = all[j];
-  if (a === item || b === item) {
-    // (the slide's own photo is the first layer: swap what the two hold)
-    LAYER_KEYS.forEach((k) => { const t = a[k]; a[k] = b[k]; b[k] = t; });
-  } else {
-    const list = item.layers;
-    [list[i - 1], list[j - 1]] = [list[j - 1], list[i - 1]];
-  }
-  state.layerId = b === item ? null : b.id; // (the pick follows the photo)
-  if (a !== item && b !== item) state.layerId = layer.id;
+  const from = all.indexOf(layer);
+  if (from < 0 || to < 0 || to >= all.length || to === from) return;
+  // (the slide's own photo is the first layer: lift each layer's contents out, reorder, put back)
+  const parts = all.map((l) => ({ ...(l === item ? { id: newId("l"), kind: "photo" } : l), ...Object.fromEntries(LAYER_KEYS.map((k) => [k, l[k]])) }));
+  const [moved] = parts.splice(from, 1);
+  parts.splice(to, 0, moved);
+  LAYER_KEYS.forEach((k) => { item[k] = parts[0][k]; });
+  item.layers = parts.slice(1);
+  state.layerId = to === 0 ? null : moved.id; // (the pick follows the photo)
   changed("project");
   commit();
 }

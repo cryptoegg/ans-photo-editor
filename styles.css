@@ -302,9 +302,11 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
 .ph-tick { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #888; color: #0f0f0f; font-size: 9px; text-align: center; line-height: 14px; }
 .ph-yt-text { padding: 2px 12px 10px; line-height: 1.4; max-height: 4.4em; overflow: hidden; }
 .ph-yt-media { background: transparent; }
-.ph-yt-media .ph-track { gap: 8px; padding-left: 5.5%; }
+.ph-yt-media .ph-track { gap: 8px; }
+/* (each slide 89% of the screen, the first lined up with the text at 12px, the next peeking in) */
 .ph-yt-media canvas { width: 89%; border-radius: 14px; }
-.ph-yt-media .ph-count { right: 8.5%; }
+.ph-yt-media canvas:first-child { margin-left: 12px; }
+.ph-yt-media .ph-count { right: calc(11% - 4px); }
 .ph-actions.yt { gap: 8px; padding: 14px 14px; }
 .ph-gap { width: 26px; }
 .ph-yt-nav { margin-top: auto; height: 56px; display: flex; justify-content: space-around; align-items: center; background: rgba(30,30,30,0.95); flex: none; }
@@ -390,6 +392,14 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
   .brand-long { display: none; }
   .topbar { gap: 4px; padding: 6px 6px; }
 }
+/* ⚙ Projects Export sit over the panel: the bar's padding + gap + this = the panel's 320 + its
+   3px edges, so Edit | Phone's right edge meets the canvas's top-right corner */
+.topbar > .topbar-right { width: 310px; flex: 0 1 auto; min-width: max-content; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+@media (max-width: 900px) { .topbar > .topbar-right { width: 316px; } }
+/* (a window too narrow for that: it gives way rather than the bar running off the edge) */
+/* Undo / redo: line arrows, like Figma's or Google Docs' */
+.btn.icon.undo-redo { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
+.btn.icon.undo-redo svg { display: block; }
 
 /* The video bar (js/ui/videoBar.js), under the canvas while a video slide is on it */
 .video-bar {
@@ -418,6 +428,8 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
 .layer-row:hover { background: var(--accent-soft); }
 .layer-row.on { border-color: var(--accent-ink); background: var(--accent-soft); }
 .layer-row.off { opacity: 0.5; }
+.layer-row { touch-action: none; user-select: none; }
+.layer-row.dragging { cursor: grabbing; background: var(--accent-soft); box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
 .layer-row .btn { padding: 0 6px; }
 .layer-thumb { width: 28px; height: 28px; border-radius: 3px; flex: none; background: var(--stage); }
 .layer-name { font-size: 12px; }
