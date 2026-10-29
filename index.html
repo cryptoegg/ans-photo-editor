@@ -22,8 +22,7 @@
 <body>
 <header class="topbar">
   <span class="brand"><span class="brand-long">A New Song — </span>Photo Editor</span>
-  <div class="segmented" id="platform-switch" title="Linked: one square set for all three. A platform: its own set and shape.">
-    <button data-mode="linked">Linked</button>
+  <div class="segmented" id="platform-switch" title="The platform you're editing. Platforms on the same shape are edited together.">
     <button data-mode="instagram">Instagram</button>
     <button data-mode="tiktok">TikTok</button>
     <button data-mode="youtube">YouTube</button>
@@ -63,10 +62,16 @@
     </div>
     <!-- Phone view -->
     <div class="phone-view" id="phone-view" hidden>
-      <div class="segmented" id="phone-platforms">
-        <button data-platform="instagram" class="on">Instagram</button>
-        <button data-platform="tiktok">TikTok</button>
-        <button data-platform="youtube">YouTube</button>
+      <div class="phone-switches">
+        <div class="segmented" id="phone-platforms">
+          <button data-platform="instagram" class="on">Instagram</button>
+          <button data-platform="tiktok">TikTok</button>
+          <button data-platform="youtube">YouTube</button>
+        </div>
+        <div class="segmented" id="phone-screens" title="Feed: the post as people scroll past it. Profile: how it sits on your page.">
+          <button data-screen="feed" class="on">Feed</button>
+          <button data-screen="profile">Profile</button>
+        </div>
       </div>
       <div class="phone-row">
         <button class="btn ghost round" id="phone-prev" aria-label="Previous slide">‹</button>
@@ -110,7 +115,7 @@
     <button class="btn ghost small" id="btn-duplicate" title="Duplicate (⌘D)">Duplicate</button>
     <button class="btn ghost small" id="btn-pano" title="Join the selected slides into one panorama">Make panorama</button>
     <button class="btn ghost small" id="btn-split" title="Turn a panorama back into separate slides">Split apart</button>
-    <button class="btn ghost small" id="btn-copy-to" title="Copy the selected slides to another platform's set" hidden>Copy to ▾</button>
+    <button class="btn ghost small" id="btn-copy-to" title="Copy the selected slides to another platform's set">Copy to ▾</button>
     <button class="btn ghost small" id="btn-reset" title="Back to the photo as it came in">Reset</button>
     <button class="btn ghost small" id="btn-delete" title="Remove from the set">Remove</button>
     <span class="spacer"></span>

@@ -1,5 +1,5 @@
-// ANS Photo Editor: one linked set of slides (1:1 or 4:5) for an Instagram carousel, a TikTok photo post
-// and a YouTube post at once, or a set per platform (up to 10 linked). Plain JavaScript modules, no build
+// ANS Photo Editor: a set of slides for an Instagram carousel, a TikTok photo post and a YouTube post,
+// one per platform, edited together while they share a shape. Plain JavaScript modules, no build
 // step: run any static server from this folder (python3 -m http.server).
 //
 //   js/project.js   the project record          js/state.js     selection, undo / redo, events
@@ -12,10 +12,10 @@ import { newProject, slides as slideList, firstSlideOf, allLists } from './proje
 import { saveProject, loadProject, lastProjectId } from './store.js';
 import { loadPicture } from './media.js';
 import { FONTS } from './render.js';
-import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setLinked, setStage, setRatio, copySelectedTo, addLayerFiles } from './actions.js';
+import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setStage, setRatio, copySelectedTo, addLayerFiles } from './actions.js';
 import { loadMyFilters } from './filters.js';
 import { initInstall } from './install.js';
-import { STAGES, RATIO_NAMES, LINKED_RATIOS, linkedRatio } from './project.js';
+import { STAGES, RATIO_NAMES, SHARED_RATIOS } from './project.js';
 import { initFilmstrip } from './ui/filmstrip.js';
 import { initStage } from './ui/stage.js';
 import { initPanel } from './ui/panel.js';
@@ -68,21 +68,21 @@ function refresh(what) {
   const has = items().length > 0;
   ["btn-duplicate", "btn-reset", "btn-delete", "btn-pano"].forEach((id) => { $(id).disabled = !has; });
   $("btn-split").disabled = !item || item.span < 2;
-  $("btn-copy-to").hidden = state.project.linked || !state.project.stages;
   $("btn-copy-to").disabled = !has;
   $("btn-pano").textContent = state.selected.size > 1 ? "Join as panorama" : item && item.span > 1 ? "Add a slide to it" : "Make panorama";
   document.querySelectorAll("#view-switch button").forEach((b) => b.classList.toggle("on", b.dataset.view === state.view));
-  // Linked, or a set per platform (with its shape): Linked greys the shape out (it's 1:1)
-  const p = state.project, separate = !p.linked && !!p.stages;
-  document.querySelectorAll("#platform-switch button").forEach((b) => b.classList.toggle("on", separate ? b.dataset.mode === p.stage : b.dataset.mode === "linked"));
+  // The platform being edited, and its shape ("· all": a shape all three take)
+  const p = state.project;
+  document.querySelectorAll("#platform-switch button").forEach((b) => b.classList.toggle("on", b.dataset.mode === p.stage));
   const select = $("ratio-select");
-  const ratios = separate ? STAGES[p.stage].ratios : LINKED_RATIOS;
-  const forKey = separate ? p.stage : "linked";
-  if (select.dataset.for !== forKey) { select.innerHTML = ratios.map((r) => `<option value="${r}">${RATIO_NAMES[r]}</option>`).join(""); select.dataset.for = forKey; }
-  select.value = separate ? p.stages[p.stage].ratio : linkedRatio(p);
-  select.disabled = ratios.length < 2;
-  select.title = !separate ? "Linked: one set for all three, 1:1 or 4:5 (both show in full everywhere)" : "This platform's shape";
-  if (separate && state.phonePlatform !== p.stage) state.phonePlatform = p.stage;
+  if (select.dataset.for !== p.stage) {
+    select.innerHTML = STAGES[p.stage].ratios.map((r) => `<option value="${r}">${RATIO_NAMES[r]}${SHARED_RATIOS.includes(r) ? " · all" : ""}</option>`).join("");
+    select.dataset.for = p.stage;
+  }
+  select.value = p.stages[p.stage].ratio;
+  const twins = Object.keys(STAGES).filter((k) => k !== p.stage && p.stages[k].ratio === p.stages[p.stage].ratio).map((k) => ({ instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube" })[k]);
+  select.title = `This platform's shape. "· all": all three take it.${twins.length ? ` Same as ${twins.join(" and ")}, so edits go to ${twins.length > 1 ? "all three" : "both"}.` : ""}`;
+  if (state.phonePlatform !== p.stage) state.phonePlatform = p.stage;
   $("edit-view").hidden = state.view !== "edit";
   $("phone-view").hidden = state.view !== "phone";
 }
@@ -100,13 +100,8 @@ function setView(view) {
 
 function wireTopBar() {
   $("btn-projects").onclick = (e) => openProjectsMenu(e.currentTarget);
-  // Linked | Instagram | TikTok | YouTube
-  document.querySelectorAll("#platform-switch button").forEach((b) => b.addEventListener("click", () => {
-    const mode = b.dataset.mode;
-    if (mode === "linked") { setLinked(true); return; }
-    if (state.project.linked || !state.project.stages) { state.phonePlatform = mode; setLinked(false); }
-    setStage(mode);
-  }));
+  // Instagram | TikTok | YouTube
+  document.querySelectorAll("#platform-switch button").forEach((b) => b.addEventListener("click", () => setStage(b.dataset.mode)));
   $("ratio-select").addEventListener("change", (e) => setRatio(e.target.value));
   document.querySelectorAll("#view-switch button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
   $("btn-undo").onclick = undo;

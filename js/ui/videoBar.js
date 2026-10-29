@@ -1,7 +1,7 @@
 // The video bar, under the canvas while a video slide is on it: ▶ / ❚❚ (space), the trim strip
 // (the whole clip; drag its two ends to choose the part that's posted, 3 to 60 s, which Instagram
 // takes; click or drag inside to move the playhead), the cover moment (◆: the still used for
-// thumbnails, and for TikTok and YouTube while Linked: "Set as cover"), and sound on / off.
+// thumbnails: "Set as cover"), and sound on / off.
 // Playing loops the trimmed part, with the slide's look on every frame.
 import { state, changed, commit, currentItem, onChange } from '../state.js';
 import { isVideo, VIDEO_MAX, VIDEO_MIN } from '../project.js';
@@ -111,7 +111,7 @@ function build(item, pic) {
     <span class="vb-time"></span>
     <div class="vb-track" title="Drag the ends to trim · click to move the playhead">
       <div class="vb-kept"><i class="vb-end start" data-end="start"></i><i class="vb-end end" data-end="end"></i></div>
-      <i class="vb-cover" title="Cover: the still used for thumbnails (and TikTok / YouTube while Linked)">◆</i>
+      <i class="vb-cover" title="Cover: the still used for thumbnails ">◆</i>
       <i class="vb-head"></i>
     </div>
     <span class="vb-len"></span>

@@ -179,7 +179,7 @@ function build() {
     body.append(note("Add photos to start. Everything you set here shows on the canvas straight away."));
     return;
   }
-  if ((state.tab === "filters" || state.tab === "adjust") && !p.linked && p.stages) body.append(sharedLook(chosen));
+  if ((state.tab === "filters" || state.tab === "adjust") && chosen.length) body.append(sharedLook(chosen));
   ({ filters: buildFilters, adjust: buildAdjust, crop: buildCrop, text: buildText, captions: buildCaptions })[state.tab]();
   body.scrollTop = scroll;
 }
@@ -228,7 +228,8 @@ function segmented(options, value, onPick) {
   return seg;
 }
 
-// ---- Shared looks (Linked off): a slide's filter and adjustments are the same on every platform,
+// ---- Shared slides: a slide's filter and adjustments are the same on every platform (and its crop,
+// text and layers on platforms with the same shape),
 // unless it has its own here
 
 function sharedLook(chosen) {
@@ -237,8 +238,8 @@ function sharedLook(chosen) {
   box.indeterminate = own.some(Boolean) && !own.every(Boolean);
   box.onchange = () => setOwnLook(!box.checked);
   const platform = PLATFORMS.find((x) => x.id === state.project.stage);
-  return el("label", { className: "check-row note", title: "Off: this platform gets its own look for the selected slides" }, box,
-    el("span", { textContent: box.checked ? "Same look on every platform" : `Own look on ${platform ? platform.label : "this platform"}` }));
+  return el("label", { className: "check-row note", title: "On: the look is the same on all three, and the crop, text and layers too on platforms with the same shape. Off: these slides stand alone here." }, box,
+    el("span", { textContent: box.checked ? "Same on every platform" : `Only on ${platform ? platform.label : "this platform"}` }));
 }
 
 // ---- Filters: the tiles (Original first), Strength floating at the top

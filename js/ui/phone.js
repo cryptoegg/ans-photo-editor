@@ -2,6 +2,8 @@
 // as the apps look today), with that app's buttons and text round it (drawn here as simple
 // stand-ins: a close guide, not a copy of the apps). No phone outline, just the screen. Flick
 // through with ← →, the arrows, or by dragging. Double-click a slide to edit it.
+// Feed | Profile: Profile shows the post on your page: Instagram's and TikTok's 3-across grids of
+// 3:4 tiles (the first slide, cropped to 3:4 from the middle) and YouTube's Posts tab.
 import { state, changed, onChange, select } from '../state.js';
 import { slides, setFor, aspectOf, tiktokFilled as filledShape } from '../project.js';
 import { setStage } from '../actions.js';
@@ -9,7 +11,7 @@ import { drawSlides, composeTikTok } from '../render.js';
 import { getPicture, loadPicture } from '../media.js';
 
 const SIDE = 720;
-// The slides the phone shows: the set that platform posts (the square set while Linked)
+// The slides the phone shows: the set that platform posts
 const phoneSet = () => setFor(state.project, state.phonePlatform);
 const slideList = (p) => slides(p, phoneSet());
 // TikTok shows a 1:1 or 4:5 set with the fill around it; a 9:16 set fills the screen
@@ -41,7 +43,11 @@ const ICON = {
   inbox: '<path d="M4 5h16v11H9l-5 4z"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/>',
   music: '<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
-  photo: '<rect x="4" y="5" width="13" height="13" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v11"/>'
+  photo: '<rect x="4" y="5" width="13" height="13" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v11"/>',
+  grid: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M9.2 3.5v17M14.8 3.5v17M3.5 9.2h17M3.5 14.8h17"/>',
+  play: '<path d="M7 4.5v15l12-7.5z"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  back: '<path d="M15 4.5 7.5 12l7.5 7.5"/>'
 };
 const icon = (name, size = 22, fill = "none") => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="${fill}" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${stroke(ICON[name])}</svg>`;
 const STATUS = `<div class="ph-status"><b>9:41</b><span class="ph-status-right"><i class="ph-bars"></i>5G<i class="ph-battery">82</i></span></div>`;
@@ -80,7 +86,11 @@ export function initPhone() {
   }, { passive: false });
   document.querySelectorAll("#phone-platforms button").forEach((b) => b.addEventListener("click", () => {
     state.phonePlatform = b.dataset.platform;
-    if (!state.project.linked && state.project.stages) setStage(b.dataset.platform); // (Linked off: the phone and the stage go together)
+    setStage(b.dataset.platform); // (the phone and the stage go together)
+    changed("view");
+  }));
+  document.querySelectorAll("#phone-screens button").forEach((b) => b.addEventListener("click", () => {
+    state.phoneScreen = b.dataset.screen;
     changed("view");
   }));
   document.getElementById("phone-prev").onclick = () => go(-1);
@@ -113,12 +123,16 @@ const tiktokSlide = (i) => (!tiktokFilled() ? rendered.squares[i] : rendered.tik
 
 function build() {
   document.querySelectorAll("#phone-platforms button").forEach((b) => b.classList.toggle("on", b.dataset.platform === state.phonePlatform));
+  document.querySelectorAll("#phone-screens button").forEach((b) => b.classList.toggle("on", b.dataset.screen === state.phoneScreen));
+  const profile = state.phoneScreen === "profile";
+  document.getElementById("phone-view").classList.toggle("profile", profile);
   const p = state.project;
   const count = slideList(p).length;
   if (!count) { phone.className = "phone"; phone.innerHTML = `<div class="ph-empty">Add photos to see them here</div>`; return; }
   state.phoneSlide = Math.min(state.phoneSlide, count - 1);
   renderSlides();
   const name = (p.name || "yourname").toLowerCase().replace(/[^a-z0-9._]+/g, "").slice(0, 24) || "yourname";
+  if (profile) { buildProfile(name, count); return; }
   const platform = state.phonePlatform;
   const caption = escape(p.captions[platform] || "");
   const firstLine = (text, fallback) => text ? text.split("<br>")[0] : `<span class="ph-faint">${fallback}</span>`;
@@ -183,6 +197,83 @@ function build() {
     select(slide.item.id, "one");
     changed("view");
   });
+}
+
+// ---- Profile: the post first on your page, with stand-ins for your other posts
+
+// A picture cut to 3:4 from its middle (what the profile grids show of a post)
+function tile(src) {
+  const c = document.createElement("canvas");
+  c.width = 300;
+  c.height = 400;
+  const s = Math.min(src.width / 3, src.height / 4);
+  c.getContext("2d").drawImage(src, (src.width - 3 * s) / 2, (src.height - 4 * s) / 2, 3 * s, 4 * s, 0, 0, 300, 400);
+  return c;
+}
+// Your other posts: plain tiles in quiet shades
+const others = (n, extra = "") => Array.from({ length: n }, (_, i) => `<div class="ph-tile ph-other" style="--shade:${[22, 30, 26, 34, 20, 28, 24, 32, 27, 21, 31, 25][i % 12]}%">${extra}</div>`).join("");
+
+function buildProfile(name, count) {
+  const p = state.project;
+  const platform = state.phonePlatform;
+  const views = `<span class="ph-views">${icon("play", 13)} 1,204</span>`;
+  if (platform === "instagram") {
+    phone.className = "phone ph-ig ph-profile";
+    phone.innerHTML = `${STATUS}
+      <div class="ph-prof-top"><b>${name}</b> <span class="ph-faint">⌄</span><span class="ph-grow"></span>${icon("plus", 25)}${icon("menu", 25)}</div>
+      <div class="ph-scroll">
+        <div class="ph-prof-head"><i class="ph-avatar huge"></i><div class="ph-prof-stats"><b>${escape(p.name || "Your name")}</b><div><span><b>12</b> posts</span><span><b>1,204</b> followers</span><span><b>318</b> following</span></div></div></div>
+        <div class="ph-prof-bio"><span class="ph-faint">Your bio shows here</span></div>
+        <div class="ph-prof-buttons"><span>Edit profile</span><span>Share profile</span><span class="ph-sq">${icon("user", 16)}</span></div>
+        <div class="ph-prof-tabs"><span class="on">${icon("grid", 24)}</span><span>${icon("reels", 24)}</span><span>${icon("user", 24)}</span></div>
+        <div class="ph-grid" id="ph-grid"><div class="ph-tile ph-mine">${count > 1 ? `<span class="ph-multi">${icon("photo", 16)}</span>` : ""}</div>${others(14)}</div>
+      </div>
+      <div class="ph-ig-nav">${icon("home", 26)}${icon("reels", 25)}${icon("send", 25)}${icon("search", 25)}<span class="on"><i class="ph-avatar small"></i></span></div>`;
+    mine(tile(rendered.squares[0]));
+  } else if (platform === "tiktok") {
+    phone.className = "phone ph-tt ph-profile";
+    phone.innerHTML = `${STATUS}
+      <div class="ph-prof-top center">${icon("user", 24)}<span class="ph-grow"></span><b>${escape(p.name || "Your name")}</b> <span class="ph-faint">⌄</span><span class="ph-grow"></span>${icon("menu", 25)}</div>
+      <div class="ph-scroll">
+        <div class="ph-tt-prof"><i class="ph-avatar huge"></i><b>@${name}</b>
+          <div class="ph-tt-stats"><span><b>318</b><small>Following</small></span><span><b>1,204</b><small>Followers</small></span><span><b>22.4K</b><small>Likes</small></span></div>
+          <div class="ph-prof-buttons tt"><span>Edit profile</span><span>Share profile</span></div>
+          <div class="ph-faint">Tap to add bio</div></div>
+        <div class="ph-prof-tabs"><span class="on">${icon("grid", 22)}</span><span>${icon("lock", 22)}</span><span>${icon("repost", 22)}</span><span>${icon("bookmark", 22)}</span><span>${icon("heart", 22)}</span></div>
+        <div class="ph-grid" id="ph-grid"><div class="ph-tile ph-mine">${views}</div>${others(14, views)}</div>
+      </div>
+      <div class="ph-tt-nav"><span>${icon("home", 26)}<small>Home</small></span><span>${icon("friends", 26)}<small>Friends</small></span><span class="ph-tt-plus">＋</span><span class="ph-badge-wrap">${icon("inbox", 26)}<small>Inbox</small></span><span class="on">${icon("user", 26, "currentColor")}<small>Profile</small></span></div>`;
+    mine(tile(tiktokSlide(0)));
+  } else {
+    phone.className = "phone ph-yt ph-profile";
+    const caption = escape(p.captions.youtube || "");
+    phone.innerHTML = `${STATUS}
+      <div class="ph-prof-top">${icon("back", 24)}<span class="ph-grow"></span>${icon("search", 24)}${icon("more", 22)}</div>
+      <div class="ph-scroll">
+        <div class="ph-yt-banner"></div>
+        <div class="ph-yt-chan"><i class="ph-avatar huge"></i><div><b class="ph-yt-name">${escape(p.name || "Your channel")}</b><small class="ph-faint">@${name} · 1.2K subscribers · 48 videos</small></div></div>
+        <div class="ph-prof-buttons yt"><span>Manage videos</span></div>
+        <div class="ph-yt-tabs chan"><span>Home</span><span>Videos</span><span>Shorts</span><b>Posts</b><span>Playlists</span></div>
+        <div class="ph-head"><i class="ph-avatar"></i><div class="ph-who"><b>${escape(p.name || "Your channel")}</b><small>1 day ago</small></div><span class="ph-grow"></span>${icon("more", 22)}</div>
+        <div class="ph-yt-text">${caption ? caption.split("<br>").slice(0, 2).join(" ") : '<span class="ph-faint">Your post text shows here</span>'}</div>
+        <div class="ph-yt-post" id="ph-grid"><div class="ph-mine" style="aspect-ratio: ${aspectOf(phoneSet().ratio)}">${count > 1 ? `<span class="ph-count">1/${count}</span>` : ""}</div></div>
+      </div>
+      <div class="ph-yt-nav">${icon("home", 27)}${icon("shorts", 26)}${icon("plus", 28)}<i class="ph-avatar small"></i></div>`;
+    mine(rendered.squares[0]);
+  }
+  fitPhone();
+}
+// Your post's tile, copied in (a click on it opens the post in the feed)
+function mine(src) {
+  const box = phone.querySelector(".ph-mine");
+  if (!box || !src) return;
+  const c = document.createElement("canvas");
+  c.width = src.width;
+  c.height = src.height;
+  c.getContext("2d").drawImage(src, 0, 0);
+  box.prepend(c);
+  box.title = "Your post: click to see it in the feed";
+  box.onclick = () => { state.phoneScreen = "feed"; state.phoneSlide = 0; changed("view"); };
 }
 
 // How far the track moves for slide i (YouTube shows its neighbours peeking in at the sides)

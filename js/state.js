@@ -18,6 +18,7 @@ export const state = {
   view: "edit",           // "edit" | "phone"
   phonePlatform: "instagram",
   phoneSlide: 0,          // the slide the phone shows (0-based)
+  phoneScreen: "feed",    // "feed" (the post in the feed) | "profile" (on your profile page)
   tab: "filters",         // the panel's tab
   before: false           // \ held: the photos without their look
 };
@@ -33,34 +34,37 @@ export const onChange = (fn) => listeners.add(fn);
 // Something changed: what = "project" (the record), "selection", "view" or "look" (only how it
 // looks, mid-drag / mid-slide)
 export function changed(what = "project") {
-  if (what === "look" || what === "project") shareLooks();
+  if (what === "look" || what === "project") shareSlides();
   listeners.forEach((fn) => { try { fn(what); } catch (err) { console.error(err); } });
 }
 
 export const project = () => state.project;
-// The slides being edited: the square set (Linked) or the current platform's stage
+// The slides being edited: the current platform's stage
 export const items = () => activeSet(state.project).items;
 export const setItems = (list) => setActiveItems(state.project, list);
 export const itemById = (id) => items().find((i) => i.id === id) || null;
 export const currentItem = () => itemById(state.current);
 export const selectedItems = () => items().filter((i) => state.selected.has(i.id));
 
-// Looks shared across platforms: a slide's look (filter, adjustments) is copied to the slides in
-// the other sets with the same lookGroup, unless either has its own (ownLook). The set being
-// edited is where the change came from.
-function shareLooks() {
+// The same slide on the other platforms (the same lookGroup) follows the one being edited: its
+// look always, and while that platform has the same shape, its crop, texts and layers too, so a
+// set on one shape is edited once for all three. A slide with its own look (ownLook) on either
+// side is left alone.
+export const SAME_SHAPE_KEYS = ["mediaId", "crop", "texts", "layers", "layout", "style", "background"];
+function shareSlides() {
   const p = state.project;
-  if (!p.stages) return;
-  const here = items();
+  const here = activeSet(p);
   const from = new Map();
-  here.forEach((item) => { if (!item.ownLook) from.set(item.lookGroup, item); });
+  here.items.forEach((item) => { if (!item.ownLook) from.set(item.lookGroup, item); });
   if (!from.size) return;
-  allLists(p).forEach((list) => {
-    if (list === here) return;
-    list.forEach((other) => {
+  Object.values(p.stages).forEach((stage) => {
+    if (stage.items === here.items) return;
+    const sameShape = stage.ratio === here.ratio;
+    stage.items.forEach((other) => {
       const source = from.get(other.lookGroup);
       if (!source || other.ownLook) return;
-      if (JSON.stringify(other.look) !== JSON.stringify(source.look)) other.look = clone(source.look);
+      const keys = sameShape && other.span === source.span && other.kind === source.kind ? ["look", ...SAME_SHAPE_KEYS] : ["look"];
+      keys.forEach((k) => { if (JSON.stringify(other[k]) !== JSON.stringify(source[k])) other[k] = clone(source[k]); });
     });
   });
 }

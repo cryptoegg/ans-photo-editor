@@ -29,7 +29,7 @@ export async function openExport() {
 
   const draw = () => {
     box.innerHTML = "";
-    box.append(el("h2", { textContent: p.linked ? `Export ${slideCount(p)} slides` : "Export each platform's set" }));
+    box.append(el("h2", { textContent: "Export each platform's set" }));
     EXPORT_PLATFORMS.forEach((pl) => {
       const shape = exportShape(p, pl.id);
       const tick = el("input", { type: "checkbox", checked: choices.platforms.has(pl.id) && shape.count > 0 });
@@ -49,7 +49,7 @@ export async function openExport() {
     } else {
       box.append(el("p", { className: "note", textContent: "This browser can't save into folders, so you'll get one zip with a folder per platform. (Chrome and Edge can save straight into a project folder.)" }));
     }
-    box.append(el("p", { className: "note", textContent: "Numbered in swipe order (01.jpg, 02.mp4…). Videos go to Instagram as MP4 (30 fps, with their sound unless muted), and to TikTok and YouTube as their cover still. Location and camera details are removed from every file." }));
+    box.append(el("p", { className: "note", textContent: "Numbered in swipe order (01.jpg, 02.mp4…). Videos go to Instagram as MP4 (30 fps, with their sound unless muted). Location and camera details are removed from every file." }));
     const bar = el("div", { className: "progress", hidden: true }, el("div"));
     box.append(bar);
     const go = el("button", { className: "btn primary", textContent: "Export" });

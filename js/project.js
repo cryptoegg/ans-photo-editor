@@ -33,11 +33,12 @@
 //                                    rounded | pill | outline | lines (around each line's words);
 //                                    stroke: an outline round the letters, 0 - 20 (% of the size)
 //
-// Linked (the start): one square set that suits Instagram, TikTok (with a fill around the
-// square) and YouTube alike, at most 10 slides: project.items.
-// Linked off: each platform is its own stage, project.stages[platform] = { ratio, items }, with
-// its own shape, slides, crops, panoramas and texts (made from the square set the first time; kept
-// when you switch back). Looks stay shared across platforms unless a slide has its own.
+// Each platform is its own stage, project.stages[platform] = { ratio, items }, with its own shape
+// and slides; a new project starts on 1:1 for all three. The same slide on each platform (its
+// lookGroup) shares its look, and while two platforms have the same shape, its crop, texts and
+// layers too (shareSlides in state.js), so a set on one shape is edited once for all three.
+// A slide with ownLook stands alone on its platform. (Older records had a "Linked" square set in
+// project.items: tidyProject turns it into the three stages.)
 export const MAX_SLIDES = 10;
 export const RATIOS = { "1:1": [1, 1], "4:5": [4, 5], "3:4": [3, 4], "1.91:1": [1.91, 1], "9:16": [9, 16], "16:9": [16, 9] };
 // The shapes each platform takes for sure (checked October 2026):
@@ -47,8 +48,8 @@ export const RATIOS = { "1:1": [1, 1], "4:5": [4, 5], "3:4": [3, 4], "1.91:1": [
 //              them, so TikTok always gets a full-screen picture
 //   YouTube    1:1, 4:5, 16:9 (its help suggests 1:1; the feed shows 4:5 and 16:9 posts too),
 //              up to 10 images
-// Linked: 1:1 or 4:5, the two shapes all three show in full (TikTok with the fill)
-export const LINKED_RATIOS = ["1:1", "4:5"];
+// 1:1 and 4:5: the shapes all three show in full (TikTok with the fill), marked "· all" in the menu
+export const SHARED_RATIOS = ["1:1", "4:5"];
 export const STAGES = {
   instagram: { ratios: ["4:5", "3:4", "1:1", "1.91:1"], ratio: "4:5", max: 20 },
   tiktok: { ratios: ["9:16", "4:5", "1:1"], ratio: "9:16", max: 35 },
@@ -81,15 +82,15 @@ export function newProject(name = "Untitled") {
     version: 1, id: newId("p"), name, created: now, updated: now,
     seed: Math.floor(Math.random() * 2147483647),
     items: [],
-    linked: true, linkedRatio: "1:1", stage: "instagram", stages: null,
+    linked: false, stage: "instagram",
+    stages: Object.fromEntries(Object.keys(STAGES).map((k) => [k, { ratio: "1:1", items: [] }])),
     captions: { instagram: "", tiktok: "", youtube: "" },
     tiktok: { fill: "blur", colour: "#111111", title: "", titleColour: "#ffffff" }
   };
 }
 
 // kind "video": an Instagram carousel clip, with trim { start, end } (seconds into the clip; at
-// most 60 s long), cover (the moment used as its still: thumbnails, and TikTok / YouTube while
-// Linked) and muted
+// most 60 s long), cover (the moment used as its still: thumbnails) and muted
 export const VIDEO_MAX = 60, VIDEO_MIN = 3;
 export function newItem(mediaId, kind = "photo", duration = 0) {
   const id = newId("s");
@@ -122,36 +123,35 @@ export function newLayer(mediaId) {
 export const layersOf = (item) => [item, ...(item.layers || [])];
 // Every photo / video a slide uses
 export const mediaOf = (item) => layersOf(item).map((l) => l.mediaId);
-// Which sets can hold a video: the Linked set and Instagram's (TikTok photo posts and YouTube
-// posts take pictures only)
+// Which sets can hold a video: Instagram's (TikTok photo posts and YouTube posts take pictures only)
 export const takesVideo = (platform) => !platform || platform === "instagram";
 
-// ---- The set being edited: the square set (Linked) or the current platform's stage
+// ---- The set being edited: the current platform's stage
 
-// { items, ratio, max, platform } (platform null = Linked)
-export function activeSet(p) {
-  if (p.linked || !p.stages) return { items: p.items, ratio: linkedRatio(p), max: MAX_SLIDES, platform: null };
-  return setFor(p, p.stage);
-}
-// The set a platform posts: its stage, or the square set while Linked
+// { items, ratio, max, platform }
+export const activeSet = (p) => setFor(p, p.stage);
+// The set a platform posts
 export function setFor(p, platform) {
-  if (p.linked || !p.stages || !p.stages[platform]) return { items: p.items, ratio: linkedRatio(p), max: MAX_SLIDES, platform: p.linked ? null : platform };
   const stage = p.stages[platform];
   return { items: stage.items, ratio: stage.ratio, max: STAGES[platform].max, platform };
 }
-export const linkedRatio = (p) => (LINKED_RATIOS.includes(p.linkedRatio) ? p.linkedRatio : "1:1");
-export function setActiveItems(p, list) {
-  if (p.linked || !p.stages) p.items = list; else p.stages[p.stage].items = list;
-}
-// Every list of slides in the record (the square set and each stage)
-export const allLists = (p) => [p.items, ...(p.stages ? Object.values(p.stages).map((s) => s.items) : [])];
+export function setActiveItems(p, list) { p.stages[p.stage].items = list; }
+// Every list of slides in the record (each stage)
+export const allLists = (p) => Object.values(p.stages || {}).map((s) => s.items);
 
 // Older or partly-written records filled in with today's settings (in place)
 export function tidyProject(p) {
   p.items = Array.isArray(p.items) ? p.items : [];
-  p.linked = p.linked !== false;
   p.stage = STAGES[p.stage] ? p.stage : "instagram";
-  if (p.stages) Object.keys(STAGES).forEach((k) => {
+  // (a Linked square set from before: it becomes each platform's set, on its shape)
+  if (p.linked !== false || !p.stages) {
+    const ratio = SHARED_RATIOS.includes(p.linkedRatio) ? p.linkedRatio : "1:1";
+    p.stages = Object.fromEntries(Object.keys(STAGES).map((k) => [k, { ratio, items: p.items.filter((i) => takesVideo(k) || i.kind !== "video").map((i) => clone(i)) }]));
+  }
+  p.items = [];
+  p.linked = false;
+  delete p.linkedRatio;
+  Object.keys(STAGES).forEach((k) => {
     const st = p.stages[k] || { items: [] };
     st.ratio = STAGES[k].ratios.includes(st.ratio) ? st.ratio : STAGES[k].ratio;
     st.items = Array.isArray(st.items) ? st.items : [];

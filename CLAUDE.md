@@ -1,14 +1,17 @@
 # ans-photo-editor
 
 A browser photo editor for social carousels: an **Instagram carousel**, a **TikTok photo post**
-and a **YouTube post**. **Linked · 1:1** (the start): one square set suits all three (at most 10
-slides). **Separate sets** (Linked off, top bar): each platform is its own stage with its own shape
-(checked Oct 2026, `STAGES` in js/project.js: Instagram 4:5 / 1:1 / 1.91:1 / 3:4 (app only since
-May 2025), up to 20; TikTok 9:16, or 4:5 / 1:1 exported on a 9:16 frame with the fill, up to 35;
-YouTube 1:1 / 4:5 / 16:9, up to 10), slides, crops, panoramas and texts; made from the square set the first time, kept
-when you switch back. Looks (filter + adjustments) stay shared across platforms by `lookGroup`
-(`shareLooks` in `js/state.js`) unless a slide has its own (`ownLook`, "Same look on every
-platform" tick box). Laptop first; phone later. Will be plugged into the website (ans-website) once it's working well.
+and a **YouTube post**. The top bar picks the platform (Instagram | TikTok | YouTube); each is its
+own stage with its own shape and slides (checked Oct 2026, `STAGES` in js/project.js: Instagram
+4:5 / 1:1 / 1.91:1 / 3:4 (app only since May 2025), up to 20; TikTok 9:16, or 4:5 / 1:1 exported on
+a 9:16 frame with the fill, up to 35; YouTube 1:1 / 4:5 / 16:9, up to 10). A new project starts on
+1:1 for all three; the shape menu marks the shapes all three take ("1:1 · all", "4:5 · all",
+`SHARED_RATIOS`). The same slide on each platform (`lookGroup`) shares its look, and while
+platforms have the same shape its crop, texts and layers too (`shareSlides` in `js/state.js`,
+`SAME_SHAPE_KEYS`), so a set on one shape is edited once; switching a platform onto another's
+shape joins it (`setRatio`). A slide with `ownLook` ("Same on every platform" tick box off) stands
+alone. There's no "Linked" mode any more: `tidyProject` turns an old Linked record (project.items)
+into the three stages. Laptop first; phone later.
 
 **Live** (free, no login) at anewsong.club/photo-editor/ (the page, in ans-website) and
 /photo-editor/app/ (this app, installable: `manifest.webmanifest`, `sw.js`, `js/install.js`).
@@ -45,7 +48,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 - **Adding**: new photos / videos go into the set being edited and, with separate sets, every
   other platform's set too (fitted to its shape, as far as it has room); Remove only takes them
   out of the platform you're on; Copy to ▾ (filmstrip) copies selected slides to another platform.
-- **Video** (Instagram carousels; Linked too, where TikTok / YouTube get the cover still): an
+- **Video** (Instagram carousels only): an
   item with `kind: "video"`, `trim` { start, end } (3 to 60 s), `cover` (seconds: its still),
   `muted`. `js/media.js` keeps a player (with sound), a seeker for stills (`stillAt`) and the
   file; `js/ui/videoBar.js` is the bar under the canvas (▶ / space, trim strip, ◆ cover, sound);
@@ -79,7 +82,9 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   sliders; a note with Undo when a change hits several slides),
   `phone.js` (Phone view: no phone outline, just the screen, laid out at 390 × 845 and scaled to
   fit, − Fit + and pinch / ⌘-scroll to zoom; dark-mode stand-ins for Instagram, TikTok and YouTube copied from real screenshots; flick
-  through), the top bar, one row (A New Song — Photo Editor · Linked | Instagram | TikTok | YouTube · shape (greyed while Linked)
+  through; Feed | Profile: Profile = the post first on your page, Instagram's and TikTok's 3-across
+  grids of 3:4 tiles (the first slide cut to 3:4 from the middle) and YouTube's Posts tab,
+  `buildProfile`), the top bar, one row (A New Song — Photo Editor · Instagram | TikTok | YouTube · shape
   · Edit | Phone · ⚙ · Projects ▾ · Export), undo / redo to the right of the "Editing slide…" header, Delete / Backspace removes the selected slides,
   fold-out cards (Light ▸, Colour ▸, Background ▸; the filter editor lists every effect like the
   lyric app: tick box, name ▸, one slider (`vibe`), ↺),
@@ -101,8 +106,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 - Labels: a capital first letter, never all caps. Helvetica in the UI. New UI colours use a role.
 - Several photos per slide: Layers box, Free or a grid, each layer its own look. No background
   removal. No sound (people add it in TikTok).
-- Later: brand kit, separate stages per platform (Linked off: own ratio / crops per platform),
-  video (Instagram only; video panoramas), text across panorama seams, "send to phone", direct
+- Later: brand kit, video panoramas, text across panorama seams, "send to phone", direct
   posting (Instagram API / TikTok drafts; YouTube posts have no API).
 
 ## Keys

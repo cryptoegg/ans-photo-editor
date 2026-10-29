@@ -1,7 +1,7 @@
 // What the buttons and keys do to the set: add photos, duplicate, remove, reset, panoramas,
 // copy / paste a look. Each is one undo step.
-import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, items, setItems, tidySelection } from './state.js';
-import { newItem, slideCount, cropDefaults, lookDefaults, clone, newId, activeSet, aspectOf, STAGES, PLATFORMS, LINKED_RATIOS, MAX_SLIDES, linkedRatio, isVideo, takesVideo, newLayer, layersOf, LAYOUTS, isGrid } from './project.js';
+import { SAME_SHAPE_KEYS, state, changed, commit, undo, currentItem, currentLayer, selectedItems, items, setItems, tidySelection } from './state.js';
+import { newItem, slideCount, cropDefaults, lookDefaults, clone, newId, activeSet, aspectOf, STAGES, PLATFORMS, isVideo, takesVideo, newLayer, layersOf, LAYOUTS, isGrid } from './project.js';
 import { addMediaFile, isMediaFile, getPicture } from './media.js';
 import { photoSize, fillCrop, fitCrop, cellRects } from './render.js';
 import { toast } from './ui/toast.js';
@@ -9,27 +9,22 @@ import { toast } from './ui/toast.js';
 const set = () => activeSet(state.project);
 const room = () => set().max - slideCount(state.project);
 const MAX = () => set().max;
-const fullNote = () => (set().platform ? `${PLATFORMS.find((x) => x.id === set().platform).label} takes up to ${MAX()} slides.` : `${MAX()} slides is the most that suits all three platforms.`);
+const fullNote = () => `${PLATFORMS.find((x) => x.id === set().platform).label} takes up to ${MAX()} slides.`;
 const undoAction = { label: "Undo", run: () => undo() };
 
-// Every set in the record with what it takes: [{ platform (null = Linked), label, list, max, ratio }]
-function allSets() {
-  const p = state.project;
-  const out = [{ platform: null, label: "Linked", list: p.items, max: MAX_SLIDES, ratio: linkedRatio(p) }];
-  if (p.stages) Object.entries(p.stages).forEach(([k, st]) => out.push({ platform: k, label: PLATFORMS.find((x) => x.id === k).label, list: st.items, max: STAGES[k].max, ratio: st.ratio }));
-  return out;
-}
+// Every platform's set with what it takes: [{ platform, label, list, max, ratio }]
+const allSets = () => Object.entries(state.project.stages).map(([k, st]) => ({ platform: k, label: PLATFORMS.find((x) => x.id === k).label, list: st.items, max: STAGES[k].max, ratio: st.ratio }));
 const countOf = (list) => list.reduce((n, i) => n + i.span, 0);
 
-// Photos and videos dropped or picked: added after the current slide (or at the end). With a set
-// per platform, they go into every platform's set too (each fitted to its shape, as far as it has
-// room; videos only where they're taken: Instagram and Linked).
+// Photos and videos dropped or picked: added after the current slide (or at the end), and into
+// every other platform's set too (each fitted to its shape, as far as it has room; videos only
+// where they're taken: Instagram).
 export async function addFiles(fileList) {
   const files = [...fileList].filter(isMediaFile);
   if (!files.length) { toast("Those aren't photos or videos this app can open."); return; }
   const here = set();
   const usable = takesVideo(here.platform) ? files : files.filter((f) => !/^video\//.test(f.type) && !/\.(mp4|mov|m4v|webm)$/i.test(f.name));
-  if (!usable.length) { toast(`${PLATFORMS.find((x) => x.id === here.platform).label} posts take photos only. Videos go in Instagram (or Linked).`); return; }
+  if (!usable.length) { toast(`${PLATFORMS.find((x) => x.id === here.platform).label} posts take photos only. Videos go in Instagram.`); return; }
   const free = room();
   if (free <= 0) { toast(`The set is full: ${fullNote()}`); return; }
   const taking = usable.slice(0, free);
@@ -51,8 +46,8 @@ export async function addFiles(fileList) {
 
   // …and into the other platforms' sets
   const notes = [];
-  const reached = [here.platform ? PLATFORMS.find((x) => x.id === here.platform).label : "Linked"];
-  if (state.project.stages) {
+  const reached = [PLATFORMS.find((x) => x.id === here.platform).label];
+  {
     allSets().forEach((target) => {
       if (target.list === list) return;
       const fits = added.filter((i) => takesVideo(target.platform) || !isVideo(i));
@@ -61,7 +56,7 @@ export async function addFiles(fileList) {
       target.list.push(...copies);
       if (copies.length) reached.push(target.label);
       if (copies.length < fits.length) notes.push(`${target.label} took ${copies.length} (it's full at ${target.max})`);
-      if (fits.length < added.length && target.platform) notes.push(`${target.label} posts don't take video`);
+      if (fits.length < added.length) notes.push(`${target.label} posts don't take video`);
     });
   }
   state.selected = new Set([added[0].id]);
@@ -69,18 +64,18 @@ export async function addFiles(fileList) {
   changed("project");
   commit();
   const what = added.length === 1 ? (isVideo(added[0]) ? "1 video" : "1 photo") : `${added.length} files`;
-  const where = state.project.stages ? ` to ${reached.filter((x) => x !== "Linked" || !state.project.stages || state.project.linked).join(", ")}` : "";
+  const where = ` to ${reached.join(", ")}`;
   const left = files.length - taking.length;
   toast(`Added ${what}${where}${notes.length ? `. ${notes.join("; ")}` : ""}${left > 0 ? `. ${left} didn't fit (the set is full at ${MAX()})` : ""}`);
 }
 
-// Copy the selected slides into another platform's set (Linked off): "all" = every other one.
+// Copy the selected slides into another platform's set: "all" = every other one.
 // A slide already there (the same one) is skipped; videos only go where they're taken.
 export function copySelectedTo(target) {
   const chosen = selectedItems();
   if (!chosen.length) return;
   const here = items();
-  const targets = allSets().filter((t) => t.platform && t.list !== here && (target === "all" || t.platform === target));
+  const targets = allSets().filter((t) => t.list !== here && (target === "all" || t.platform === target));
   const notes = [];
   targets.forEach((t) => {
     let copied = 0, skipped = 0;
@@ -250,32 +245,7 @@ export function pasteLook() {
 }
 
 
-// ---- Platforms: Linked (one square set) or a stage each
-
-// Linked off: each platform gets its own set. The first time they're made from the square set,
-// each crop re-fitted (Fill) to that platform's shape; after that they're kept as you left them.
-export function setLinked(linked) {
-  const p = state.project;
-  if (p.linked === linked) return;
-  if (!linked && !p.stages) {
-    p.stages = {};
-    Object.entries(STAGES).forEach(([platform, info]) => {
-      p.stages[platform] = { ratio: info.ratio, items: p.items.filter((item) => takesVideo(platform) || !isVideo(item)).map((item) => refit(clone(item), info.ratio)) };
-    });
-    toast("Each platform now has its own set, copied from your linked set and re-fitted to its shape. Check the crops.");
-  } else if (!linked) {
-    toast("Back to each platform's own set, as you left it.");
-  } else {
-    toast("One linked set for all three again. Each platform's own set is kept for when you switch back.");
-  }
-  p.linked = linked;
-  if (!linked) p.stage = state.phonePlatform || p.stage;
-  state.textId = null;
-  state.photoPicked = false;
-  tidySelection();
-  changed("project");
-  commit();
-}
+// ---- Platforms: a stage each
 
 function refit(item, ratio) {
   const pic = getPicture(item.mediaId);
@@ -284,7 +254,7 @@ function refit(item, ratio) {
   return item;
 }
 
-// Which platform's set is being edited (Linked off)
+// Which platform's set is being edited
 export function setStage(platform) {
   const p = state.project;
   if (!STAGES[platform] || p.stage === platform) return;
@@ -300,18 +270,26 @@ export function setStage(platform) {
 // A stage's shape (its slides keep their places; Fill puts a photo back to covering the new shape)
 export function setRatio(ratio) {
   const p = state.project;
-  if (p.linked || !p.stages) {
-    if (!LINKED_RATIOS.includes(ratio) || p.linkedRatio === ratio) return;
-    p.linkedRatio = ratio; // (Linked: 1:1 or 4:5, shown in full on all three)
-    changed("project");
-    commit();
-    return;
-  }
   const stage = p.stages[p.stage];
   if (!STAGES[p.stage].ratios.includes(ratio) || stage.ratio === ratio) return;
   stage.ratio = ratio;
+  // Onto a shape another platform has: its slides join that platform's (their crops, texts and
+  // layers come from there, so the two are edited together from now on)
+  const twin = Object.entries(p.stages).find(([k, st]) => k !== p.stage && st.ratio === ratio);
+  let joined = 0;
+  if (twin) {
+    const there = new Map(twin[1].items.filter((i) => !i.ownLook).map((i) => [i.lookGroup, i]));
+    stage.items.forEach((item) => {
+      const other = there.get(item.lookGroup);
+      if (!other || item.ownLook || other.span !== item.span || other.kind !== item.kind) return;
+      SAME_SHAPE_KEYS.forEach((k) => { item[k] = clone(other[k]); });
+      joined++;
+    });
+  }
   changed("project");
   commit();
+  const twins = Object.keys(p.stages).filter((k) => k !== p.stage && p.stages[k].ratio === ratio).map((k) => PLATFORMS.find((x) => x.id === k).label);
+  if (joined) toast(`Same shape as ${twins.join(" and ")}: crops and text now match, and edits go to ${twins.length > 1 ? "all three" : "both"}`, undoAction);
 }
 
 // This slide's look: shared with the same slide on the other platforms, or its own
@@ -320,7 +298,7 @@ export function setOwnLook(own) {
   chosen.forEach((item) => { item.ownLook = own; });
   changed("project");
   commit();
-  toast(own ? "These slides now have their own look on this platform" : "Look shared with the other platforms again");
+  toast(own ? "These slides now stand alone on this platform" : "Shared with the other platforms again");
 }
 
 // ---- Layers: several photos on one slide

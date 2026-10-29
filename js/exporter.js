@@ -1,9 +1,7 @@
 // Export: every slide for each platform, numbered in swipe order (01.jpg, 02.mp4…): photos as
-// JPEG; video slides as MP4 for Instagram (js/video/mp4.js), and as their cover still for TikTok
-// and YouTube (while Linked; their own sets hold no video),
-// 1080 px wide in the platform's shape: Linked, the square set (TikTok: the square in the middle
-// of 1080 x 1920 with the fill around it); Linked off, each platform's own set and shape (4:5 =
-// 1080 x 1350, 9:16 = 1080 x 1920…; a 1:1 TikTok set gets the fill). "Extra sharp" doubles it. Photos are drawn fresh, so no location or camera details from
+// JPEG; video slides as MP4 for Instagram (js/video/mp4.js; the other sets hold no video),
+// 1080 px wide in each platform's own shape (4:5 = 1080 x 1350, 9:16 = 1080 x 1920…; a 1:1 or 4:5
+// TikTok set goes out on 1080 x 1920 with the fill round it). "Extra sharp" doubles it. Photos are drawn fresh, so no location or camera details from
 // the originals go with them.
 //
 // Where they go: in Chrome / Edge, a project folder like the lyric video app's, made once in a
