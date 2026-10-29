@@ -9,7 +9,7 @@
 //   js/effects/…    the effects and filters, copied from the lyric video app
 import { state, changed, onChange, commit, undo, redo, canUndo, canRedo, openProject, currentItem, select, selectAll, items } from './state.js';
 import { newProject, slides as slideList, firstSlideOf, allLists } from './project.js';
-import { saveProject, loadProject, lastProjectId } from './store.js';
+import { saveProject, loadProject } from './store.js';
 import { loadPicture } from './media.js';
 import { FONTS } from './render.js';
 import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setStage, setRatio, copySelectedTo, addLayerFiles } from './actions.js';
@@ -41,13 +41,17 @@ async function start() {
   // they're in)
   if (document.fonts) Promise.all(FONTS.flatMap((f) => [document.fonts.load(`400 40px ${f.css}`), document.fonts.load(`700 40px ${f.css}`)])).catch(() => {}).then(() => changed("project"));
 
-  // Where you left off
+  // A blank project each time; ?open=<id> (the Account page's link) reopens that one instead.
+  // Earlier projects are in the Projects menu. (The param comes off the address, so a refresh
+  // doesn't keep forcing it.)
   let opened = false;
   try {
-    const id = await lastProjectId();
+    const url = new URL(location.href);
+    const id = url.searchParams.get("open");
+    if (id) { url.searchParams.delete("open"); history.replaceState(null, "", url.pathname + url.search + url.hash); }
     const p = id ? await loadProject(id) : null;
     if (p) { openProject(p); opened = true; await Promise.all(allLists(state.project).flat().flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId))]).map((id) => loadPicture(id))); changed("project"); }
-  } catch (err) { console.error("Couldn't open the last project:", err); }
+  } catch (err) { console.error("Couldn't open that project:", err); }
   if (!opened) openProject(newProject());
 }
 

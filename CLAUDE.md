@@ -85,7 +85,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   through; Feed | Profile: Profile = the post first on your page, Instagram's and TikTok's 3-across
   grids of 3:4 tiles (the first slide cut to 3:4 from the middle) and YouTube's Posts tab,
   `buildProfile`), the top bar, one row (A New Song — Photo Editor · Instagram | TikTok | YouTube · shape
-  · Edit | Phone · ⚙ · Projects ▾ · Export), undo / redo to the right of the "Editing slide…" header, Delete / Backspace removes the selected slides,
+  · Edit | Phone · ⚙ · Projects ▾ · Export). Opens on a blank project; `?open=<projectId>` (the
+  Account page's link, anewsong.club/account/) reopens that one, then drops the param, undo / redo to the right of the "Editing slide…" header, Delete / Backspace removes the selected slides,
   fold-out cards (Light ▸, Colour ▸, Background ▸; the filter editor lists every effect like the
   lyric app: tick box, name ▸, one slider (`vibe`), ↺),
   `dialogs.js` (Export, Projects), `skin.js` (same skins as the lyric app).
