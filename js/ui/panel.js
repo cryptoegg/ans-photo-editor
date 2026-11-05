@@ -10,7 +10,7 @@ import { vibeSettings, VIBE_DEFAULT } from '../effects/vibe.js';
 import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, deleteMyFilter, isMine } from '../filters.js';
 import { presetSwatch } from '../looks.js';
 import { getPicture } from '../media.js';
-import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame } from '../render.js';
+import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS } from '../render.js';
 import { setSpan, splitPanorama, makePanorama, setOwnLook, setLayout, moveLayer, placeLayer, removeLayer } from '../actions.js';
 import { toast } from './toast.js';
 import { ask } from './dialogs.js';
@@ -103,6 +103,18 @@ function buildLayersBox() {
     list.append(row);
   });
   box.append(list);
+  // The picked layer's opacity and blend (how it mixes with the layers under it)
+  if (all.length > 1) {
+    const st = picked.style;
+    const n = all.indexOf(picked) + 1;
+    const opacity = slider({ label: `Photo ${n} opacity`, min: 0, max: 100, unit: "%", reset: 100, targets: [picked], get: (l) => (l.style.opacity ?? 1) * 100, set: (l, v) => { l.style.opacity = v / 100; }, onCommit: () => {} });
+    const blend = el("select", { title: "How this photo mixes with the ones under it" });
+    Object.entries(BLENDS).forEach(([value, label]) => blend.append(el("option", { value, textContent: label })));
+    blend.value = st.blend || "normal";
+    blend.onchange = () => { st.blend = blend.value; changed("project"); commit(); };
+    opacity.classList.add("half");
+    box.append(el("div", { className: "row layer-mix" }, opacity, el("label", { className: "field" }, el("span", { textContent: "Blend" }), blend)));
+  }
   const add = button("＋ Add layer", () => document.dispatchEvent(new CustomEvent("add-layer")), "btn small");
   add.title = "Another photo on this slide";
   const foot = el("div", { className: "row" }, add);

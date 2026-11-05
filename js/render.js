@@ -77,11 +77,17 @@ export function layerFrame(item, layer, W, H) {
   return i >= 0 && i < cells.length ? cells[i] : null;
 }
 
+// How a layer mixes with the layers under it (canvas blend modes; "normal" draws over them)
+export const BLENDS = { normal: "Normal", multiply: "Multiply", screen: "Screen", overlay: "Overlay", "soft-light": "Soft light", lighten: "Lighten", darken: "Darken", difference: "Difference" };
+
 // One layer's picture (with its look) placed in its frame; in a grid clipped to its (rounded)
 // cell, else with its own style: rounded corners, a border, a soft shadow
 function drawLayer(ctx, item, layer, picture, rect, grid) {
   ctx.save();
   ctx.translate(rect.x, rect.y);
+  const look = layer.style || {};
+  ctx.globalAlpha = look.opacity ?? 1;
+  ctx.globalCompositeOperation = BLENDS[look.blend] && look.blend !== "normal" ? look.blend : "source-over";
   if (grid) {
     const r = (item.layout.radius || 0) * Math.min(rect.w, rect.h) * 2;
     ctx.beginPath();

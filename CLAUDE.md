@@ -40,7 +40,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   decodes a full + preview (1600 px) picture.
 - **Layers** (several photos on one slide): the slide's own photo is layer 1 (item.mediaId / crop
   / look / style); more are `item.layers` [{ id, mediaId, crop, look, style }]. `item.layout.kind`:
-  "single" / "free" (each moves, sizes, turns; later on top; style = corners, border, shadow) or a
+  "single" / "free" (each moves, sizes, turns; later on top; style = corners, border, shadow, plus opacity
+  and blend (`BLENDS` in render.js), set for the picked layer under the Layers list) or a
   grid from `LAYOUTS` (2h, 2v, 3h, 2x2, 1+2: layer i fills cell i, its crop placed in the cell;
   `gap`, `radius`). The Layers box (top of the panel, `buildLayersBox` in panel.js; drag a row or ↑ ↓ to reorder, `placeLayer`) picks a layer
   (`state.layerId`, `currentLayer()`), and Filters / Adjust / Crop then change just that one.
@@ -67,7 +68,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   filter" (always there: saves the slide's Light, Colour, filter and effects to Your filters) and
   Reset filter. Switching an effect on with no filter makes the slide's own "custom".
 - **Effects**: `js/effects/` is copied from ans-visual-text-generator (minus chain.js, chop,
-  framerate). `standalone.js` stands in for the song / lyrics the effects used to ask about.
+  framerate). `lines.js` (Screen lines: fine
+  bright lines over the photo, LED-wall look) is this app's own. `standalone.js` stands in for the song / lyrics the effects used to ask about.
   Filters = `effects/presets.js`, grouped in `js/ui/panel.js` (Everyday · A New Song · Creative).
 - **Drawing**: `js/render.js` (`drawItem`, `drawSlides`, `composeTikTok`). Screen, phone view and
   export all draw through it, so **preview = export**.

@@ -114,7 +114,8 @@ export const LAYOUTS = {
   "1+2": { label: "1 big, 2 small", cells: [[0, 0, 0.6, 1], [0.6, 0, 0.4, 0.5], [0.6, 0.5, 0.4, 0.5]] }
 };
 export const layoutDefaults = () => ({ kind: "single", gap: 0.02, radius: 0 });
-export const styleDefaults = () => ({ radius: 0, border: 0, borderColour: "#ffffff", shadow: false });
+// opacity 0 - 1; blend: how it mixes with what's under it (BLENDS in js/render.js)
+export const styleDefaults = () => ({ radius: 0, border: 0, borderColour: "#ffffff", shadow: false, opacity: 1, blend: "normal" });
 export const isGrid = (item) => !!LAYOUTS[item.layout && item.layout.kind];
 export function newLayer(mediaId) {
   return { id: newId("l"), mediaId, kind: "photo", crop: cropDefaults(), look: lookDefaults(), style: styleDefaults() };

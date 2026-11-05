@@ -39,6 +39,7 @@ import grain from './grain.js';
 import halftone from './halftone.js';
 import ascii from './ascii.js';
 import screen from './screen.js';
+import lines from './lines.js';
 import paper from './paper.js';
 import dust from './dust.js';
 import leak from './leak.js';
@@ -61,7 +62,7 @@ export const EFFECTS = [
   duotone, negative, solarise,                  // colour effects
   fisheye, liquify, stretch, slice, datamosh, melt, scan, // warp
   blur, bloom, leak,                            // light & blur
-  halftone, ascii, screen, paper, grain, dust,  // texture
+  halftone, ascii, screen, lines, paper, grain, dust, // texture
   burn, vhs, frame,                             // damage & frames
   disintegrate                                  // last: the finished look crumbles away (pictures only)
 ];
