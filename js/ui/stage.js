@@ -19,6 +19,8 @@ import { lookedPicture, lookedFrame } from '../looks.js';
 import { initVideoBar, videoFrame } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
 import { uiColour, onSkinChange } from './skin.js';
+import { showMenu } from './menu.js';
+import { duplicateLayer, removeLayer } from '../actions.js';
 
 const PREFS_KEY = "ans_photo_guides";
 const SNAP = 7;         // screen pixels before something clicks onto a line
@@ -66,6 +68,7 @@ export function initStage() {
 
   initVideoBar(draw);
   canvas.addEventListener("pointerdown", down);
+  canvas.addEventListener("contextmenu", photoMenu);
   canvas.addEventListener("pointermove", move);
   canvas.addEventListener("pointerup", up);
   canvas.addEventListener("pointercancel", up);
@@ -232,6 +235,7 @@ function down(e) {
   canvas.setPointerCapture(e.pointerId);
   const picked = pickedBox(item, f);
   const zone = picked ? zoneAt(picked.box, p) : null;
+  if (e.button === 2) return; // (right-click: the menu picks what's under it)
   if (picked && zone && zone !== "inside") { startDrag(picked, zone, p, f); return; }
 
   // Otherwise: what's under the pointer (texts sit above the photos), picked and ready to move
@@ -250,6 +254,20 @@ function down(e) {
     return;
   }
   startDrag(pickedBox(item, f), "inside", p, f);
+}
+
+// Right-click a photo: it's picked, with Duplicate / Remove
+function photoMenu(e) {
+  const item = currentItem();
+  if (!item || !getPicture(item.mediaId) || isVideo(item) || item.span > 1) return;
+  const f = frameRect(item);
+  const hit = layerAt(item, f, local(e, f));
+  if (!hit || !hit.layer) return;
+  pick("photo", null, hit.layer);
+  changed("view");
+  const entries = [{ label: "Duplicate", keys: "⌘D", action: () => duplicateLayer(hit.layer) }];
+  if (layersOf(item).length > 1) entries.push({ label: "Remove from slide", action: () => removeLayer(hit.layer) });
+  showMenu(e, entries);
 }
 
 function startDrag(picked, zone, p, f) {

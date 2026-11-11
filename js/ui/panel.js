@@ -11,7 +11,8 @@ import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, 
 import { presetSwatch } from '../looks.js';
 import { getPicture } from '../media.js';
 import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS } from '../render.js';
-import { setSpan, splitPanorama, makePanorama, setOwnLook, setLayout, moveLayer, placeLayer, removeLayer } from '../actions.js';
+import { setSpan, splitPanorama, makePanorama, setOwnLook, moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
+import { showMenu } from './menu.js';
 import { toast } from './toast.js';
 import { ask } from './dialogs.js';
 
@@ -46,14 +47,8 @@ export function initPanel() {
 
 // ---- Layers: the photos on the slide on the canvas (top of the list = on top), click one to
 // pick it (Filters, Adjust and Crop then change just that one), ↑ ↓ to reorder (in a grid: which
-// cell), ✕ to take one off (or drag a row), ＋ Add layer. Layout: Free (photos anywhere) or a grid, with its gap
-// and rounded corners.
-
-const LAYOUT_ICONS = { free: [[0.12, 0.18, 0.5, 0.42], [0.4, 0.42, 0.48, 0.42]] };
-function layoutIcon(kind) {
-  const cells = LAYOUT_ICONS[kind] || LAYOUTS[kind].cells.map(([x, y, w, h]) => [x + 0.04, y + 0.04, w - 0.08, h - 0.08]);
-  return `<svg viewBox="0 0 1 1" width="20" height="20">${cells.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="0.04" fill="currentColor"/>`).join("")}</svg>`;
-}
+// cell), ✕ to take one off (or drag a row), right-click: Duplicate, ＋ Add layer. A slide saved in a
+// grid keeps its gap and rounded corners.
 
 function buildLayersBox() {
   const box = document.getElementById("layers-box");
@@ -65,16 +60,8 @@ function buildLayersBox() {
     box.append(el("div", { className: "layers-head" }, el("strong", { textContent: "Layers" }), el("span", { className: "note", textContent: isVideo(slide) ? "A video slide holds just the video" : "A panorama holds one photo" })));
     return;
   }
-  const kind = isGrid(slide) ? slide.layout.kind : "free";
-  const head = el("div", { className: "layers-head" }, el("strong", { textContent: "Layers" }));
-  const picker = el("div", { className: "segmented small icons layouts" });
-  ["free", ...Object.keys(LAYOUTS)].forEach((k) => {
-    const b = el("button", { className: k === kind ? "on" : "", title: k === "free" ? "Free: move, size and turn each photo anywhere" : LAYOUTS[k].label, onclick: () => setLayout(k) });
-    b.innerHTML = layoutIcon(k);
-    picker.append(b);
-  });
-  head.append(picker);
-  box.append(head);
+  // (no layout templates (Tom, 2026-11-11): photos sit freely; a slide saved in a grid keeps it)
+  box.append(el("div", { className: "layers-head" }, el("strong", { textContent: "Layers" })));
 
   const list = el("div", { className: "layer-list" });
   const all = layersOf(slide);
@@ -97,6 +84,12 @@ function buildLayersBox() {
     del.disabled = all.length === 1;
     row.append(up, down, del);
     row.onclick = () => { if (dragged) return; state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view"); };
+    row.addEventListener("contextmenu", (e) => {
+      state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view");
+      const entries = [{ label: "Duplicate", keys: "⌘D", action: () => duplicateLayer(layer) }];
+      if (all.length > 1) entries.push({ label: "Remove from slide", action: () => removeLayer(layer) });
+      showMenu(e, entries);
+    });
     row.title = "Drag up or down to change the order";
     row.layer = layer;
     row.addEventListener("pointerdown", (e) => dragRow(e, row, list, all));
@@ -108,7 +101,7 @@ function buildLayersBox() {
     const st = picked.style;
     const n = all.indexOf(picked) + 1;
     const opacity = slider({ label: `Photo ${n} opacity`, min: 0, max: 100, unit: "%", reset: 100, targets: [picked], get: (l) => (l.style.opacity ?? 1) * 100, set: (l, v) => { l.style.opacity = v / 100; }, onCommit: () => {} });
-    const blend = el("select", { title: "How this photo mixes with the ones under it" });
+    const blend = el("select", { className: "select", title: "How this photo mixes with the ones under it" });
     Object.entries(BLENDS).forEach(([value, label]) => blend.append(el("option", { value, textContent: label })));
     blend.value = st.blend || "normal";
     blend.onchange = () => { st.blend = blend.value; changed("project"); commit(); };

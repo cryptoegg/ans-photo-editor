@@ -97,6 +97,16 @@ export function initPhone() {
   document.getElementById("phone-next").onclick = () => go(1);
   onChange((what) => {
     if (state.view !== "phone") return;
+    // Phone view edits like Edit (Tom, 2026-11-11): the panel works on the slide on the phone, so
+    // picking a slide in the filmstrip turns the phone to it (and turning the phone picks it, in go)
+    if (what === "selection") {
+      const list = slideList(state.project);
+      const shown = list[state.phoneSlide];
+      if (shown && shown.item.id === state.current) return;
+      const i = list.findIndex((s) => s.item.id === state.current);
+      if (i >= 0) { state.phoneSlide = i; slideTo(i, true); }
+      return;
+    }
     if (what === "look") { clearTimeout(renderTimer); renderTimer = setTimeout(build, 200); } else build();
   });
 }
@@ -107,6 +117,8 @@ export function go(step) {
   if (!count) return;
   state.phoneSlide = Math.max(0, Math.min(count - 1, state.phoneSlide + step));
   slideTo(state.phoneSlide, true);
+  const slide = slideList(state.project)[state.phoneSlide];
+  if (slide && slide.item.id !== state.current) select(slide.item.id, "one");
 }
 
 function renderSlides() {

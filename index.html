@@ -7,7 +7,7 @@
 <meta name="description" content="A free photo editor for carousels: Instagram, TikTok and YouTube in one go.">
 <script>
   // The skin before the first paint (js/ui/skin.js), so a dark one never flashes light
-  try { document.documentElement.dataset.skin = localStorage.getItem("ans_photo_skin") || "concrete"; } catch (e) { document.documentElement.dataset.skin = "concrete"; }
+  try { document.documentElement.dataset.skin = localStorage.getItem("ans_photo_skin2") || "site"; } catch (e) { document.documentElement.dataset.skin = "site"; }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,7 @@
 </head>
 <body>
 <header class="topbar">
-  <span class="brand"><span class="brand-long">A New Song — </span>Photo Editor</span>
+  <a id="btn-home" class="btn ghost" href="/identity/" title="Back to Identity">Home</a>
   <div class="segmented" id="platform-switch" title="The platform you're editing. Platforms on the same shape are edited together.">
     <button data-mode="instagram">Instagram</button>
     <button data-mode="tiktok">TikTok</button>
@@ -37,6 +37,7 @@
   <div class="topbar-right">
   <button id="btn-settings" class="btn ghost icon" title="Settings: your main folder, what's saved where, the skin, keys (⌘,)" aria-label="Settings">⚙</button>
   <button id="btn-projects" class="btn ghost" title="Your projects, and this one's name">Projects ▾</button>
+  <a id="btn-post" class="btn ghost" href="/identity/calendar/" title="Your Social Media Calendar in Identity, to plan the post">Post</a>
   <button id="btn-export" class="btn primary">Export</button>
   </div>
 </header>

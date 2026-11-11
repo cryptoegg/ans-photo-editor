@@ -1,7 +1,7 @@
 /* SKINS (js/ui/skin.js): the app's colours, never the photos'. Every UI colour is a role; a skin
    is one set of values on <html data-skin>. The same skins as the lyric video app
-   (ans-visual-text-generator): Concrete (default) · Midnight · Slate · Print (the website) ·
-   Electric. --stage (around the photo) is always neutral grey / black, so colours read true.
+   (ans-visual-text-generator): Website (the default: this app's own) ·
+   Concrete · Midnight · Slate · Print · Electric. --stage (around the photo) is always neutral grey / black, so colours read true.
    New UI colours use a role, never a fixed colour. Labels: a capital first letter, never all caps. */
 :root, :root[data-skin="electric"] {
   --font: Helvetica, Arial, sans-serif;
@@ -48,6 +48,36 @@
   --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.35'/%3E%3C/svg%3E");
 }
 
+/* Website (the default, Tom 2026-11-11): the anewsong.club look. Print blue, off-white ink, Inter Tight,
+   and the site's printed-paper texture across the whole window (copied from ans-website/site/styles.css,
+   body::before): the panels are see-through so the one sheet of paper runs under them. */
+:root[data-skin="site"] {
+  --font: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --bg: #1f4fbf; --panel: transparent; --raised: #2a59c6; --input: rgba(245, 243, 238, 0.1);
+  --line: rgba(245, 243, 238, 0.6); --rule: rgba(245, 243, 238, 0.35); --rule-soft: rgba(245, 243, 238, 0.18); --btn-line: rgba(245, 243, 238, 0.6);
+  --text: #f5f3ee; --muted: rgba(245, 243, 238, 0.62); --muted-strong: rgba(245, 243, 238, 0.8);
+  --accent: #f5f3ee; --accent-text: #1f4fbf; --accent-soft: rgba(245, 243, 238, 0.16); --accent-ink: #f5f3ee;
+  --solid: #f5f3ee; --solid-text: #1f4fbf;
+  --stage: #1c1c1c; --stage-edge: #000000; --guide: rgba(255, 255, 255, 0.3); --warn: #ffd27a;
+  --texture: none;
+}
+:root[data-skin="site"] body { font-weight: 600; }
+:root[data-skin="site"] option { color: #111111; background: #ffffff; } /* (the browser's own drop-down list is white) */
+:root[data-skin="site"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; mix-blend-mode: soft-light;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.45'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1400' height='1400'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004' numOctaves='5' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='1.4' intercept='-0.2'/%3E%3CfeFuncG type='linear' slope='1.4' intercept='-0.2'/%3E%3CfeFuncB type='linear' slope='1.4' intercept='-0.2'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)' opacity='0.6'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1400' height='1400'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006' numOctaves='4' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  2.6 0 0 0 -1.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)' opacity='0.13'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 65% 55% at 100% 0%, rgba(255, 255, 255, 0.18), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 0% 100%, rgba(255, 255, 255, 0.14), transparent 70%),
+    radial-gradient(ellipse 70% 60% at 40% 45%, rgba(10, 30, 110, 0.22), transparent 75%);
+  box-shadow: inset 0 0 90px rgba(255, 255, 255, 0.16);
+  background-size: 240px 240px, cover, cover, auto, auto, auto;
+}
+/* (things that float over the photo or the panels keep a solid blue, so what's under them doesn't show through) */
+:root[data-skin="site"] .sticky, :root[data-skin="site"] .stage-tools, :root[data-skin="site"] .video-bar { background: #1f4fbf; }
+
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
@@ -92,7 +122,6 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
   display: flex; align-items: center; gap: 6px; padding: 6px 10px; flex-wrap: nowrap; min-width: 0;
   background: var(--panel); background-image: var(--texture); border-bottom: 1px solid var(--rule);
 }
-.brand { font-weight: 800; letter-spacing: -0.01em; margin-right: 4px; white-space: nowrap; }
 .project-name {
   border: 1px solid transparent; background: transparent; border-radius: 5px; padding: 3px 6px;
   font-weight: 700; width: 180px; min-width: 90px; flex: 0 1 180px;
@@ -344,7 +373,6 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
 .topbar .btn.icon { font-size: 17px; padding: 2px 8px; }
 #ratio-select { max-width: 150px; }
 @media (max-width: 1000px) {
-  .brand { font-size: 12px; }
   .topbar .segmented button { padding: 4px 7px; font-size: 12px; }
   #ratio-select { max-width: 110px; font-size: 12px; }
 }
@@ -383,13 +411,12 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23666' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 10px center; background-size: 10px 6px;
 }
-:root[data-skin="midnight"] .select, :root[data-skin="slate"] .select, :root[data-skin="print"] .select {
+:root[data-skin="midnight"] .select, :root[data-skin="slate"] .select, :root[data-skin="print"] .select, :root[data-skin="site"] .select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ddd' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 #ratio-select { width: 104px; max-width: none; flex: none; } /* (one size, whichever shape: fits "1:1 · all", the longest, and the arrow) */
-/* A narrow window: the name shortens to "Photo Editor" so the whole bar still fits on one row */
+/* A narrow window: a tighter bar, so it still fits on one row */
 @media (max-width: 900px) {
-  .brand-long { display: none; }
   .topbar { gap: 4px; padding: 6px 6px; }
 }
 /* ⚙ Projects Export sit over the panel: the bar's padding + gap + this = the panel's 320 + its
@@ -488,3 +515,9 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
 /* Layers: the picked photo's opacity and blend */
 .layer-mix { align-items: flex-end; gap: 10px; margin: 6px 0 2px; }
 .layer-mix select { height: 26px; }
+
+/* Home (top left): back to Identity; Post (by Export): the Social Media Calendar in Identity */
+#btn-home, #btn-post { text-decoration: none; color: var(--text); display: inline-flex; align-items: center; }
+
+/* Right-click menus (js/ui/menu.js) */
+.popover.context-menu { min-width: 180px; padding: 4px; }

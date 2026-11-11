@@ -13,7 +13,7 @@ shape joins it (`setRatio`). A slide with `ownLook` ("Same on every platform" ti
 alone. There's no "Linked" mode any more: `tidyProject` turns an old Linked record (project.items)
 into the three stages. Laptop first; phone later.
 
-**Live** (free, no login) at anewsong.club/photo-editor/ (the page, in ans-website) and
+**Live** (free, behind the site's login) at anewsong.club/photo-editor/ (the page, in ans-website) and
 /photo-editor/app/ (this app, installable: `manifest.webmanifest`, `sw.js`, `js/install.js`).
 ans-website's `deploy.sh` copies this folder in (left out: `.assetsignore`); GitHub Actions clones
 the public repo github.com/cryptoegg/ans-photo-editor instead. So: commit and push here, then push
@@ -43,7 +43,9 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   "single" / "free" (each moves, sizes, turns; later on top; style = corners, border, shadow, plus opacity
   and blend (`BLENDS` in render.js), set for the picked layer under the Layers list) or a
   grid from `LAYOUTS` (2h, 2v, 3h, 2x2, 1+2: layer i fills cell i, its crop placed in the cell;
-  `gap`, `radius`). The Layers box (top of the panel, `buildLayersBox` in panel.js; drag a row or ↑ ↓ to reorder, `placeLayer`) picks a layer
+  `gap`, `radius`; no template picker any more (Tom, 2026-11-11): new slides are free, a slide saved in a
+  grid keeps it). Duplicate a photo: ⌘D with it picked, or right-click it (canvas or Layers row) →
+  Duplicate (`duplicateLayer`; right-click menus: `js/ui/menu.js`). The Layers box (top of the panel, `buildLayersBox` in panel.js; drag a row or ↑ ↓ to reorder, `placeLayer`) picks a layer
   (`state.layerId`, `currentLayer()`), and Filters / Adjust / Crop then change just that one.
   Actions: `addLayerFiles`, `setLayout`, `moveLayer`, `removeLayer`. Not for videos or panoramas.
 - **Adding**: new photos / videos go into the set being edited and, with separate sets, every
@@ -86,12 +88,15 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   fit, − Fit + and pinch / ⌘-scroll to zoom; dark-mode stand-ins for Instagram, TikTok and YouTube copied from real screenshots; flick
   through; Feed | Profile: Profile = the post first on your page, Instagram's and TikTok's 3-across
   grids of 3:4 tiles (the first slide cut to 3:4 from the middle) and YouTube's Posts tab,
-  `buildProfile`), the top bar, one row (A New Song — Photo Editor · Instagram | TikTok | YouTube · shape
-  · Edit | Phone · ⚙ · Projects ▾ · Export). Opens on a blank project; `?open=<projectId>` (the
+  `buildProfile`; the phone and the panel follow each other, so edits in Phone view go to the slide
+  on the phone), the top bar, one row (Home · Instagram | TikTok | YouTube · shape · Edit | Phone · ⚙ ·
+  Projects ▾ · Post · Export; Post = the artist's Social Media Calendar in Identity). Opens on a blank project; `?open=<projectId>` (the
   Account page's link, anewsong.club/account/) reopens that one, then drops the param, undo / redo to the right of the "Editing slide…" header, Delete / Backspace removes the selected slides,
   fold-out cards (Light ▸, Colour ▸, Background ▸; the filter editor lists every effect like the
   lyric app: tick box, name ▸, one slider (`vibe`), ↺),
-  `dialogs.js` (Export, Projects), `skin.js` (same skins as the lyric app).
+  `dialogs.js` (Export, Projects), `skin.js` (Website, the default: the site's blue, Inter Tight and
+  paper texture under see-through panels; then the lyric app's skins). Home (top left) goes back to
+  Identity, the main app this sits in: the Identity page that opened it (kept for the tab), else /identity/.
 - **Main folder & saving**: `js/folder.js` (Chrome / Edge): a main folder chosen once (Settings ⚙
   or the first Save / Export); Save (⌘S) writes `<name> Project/<name>.ans` + Images/ + Backup/
   (last 5); Save as… (⇧⌘S) copies the project under a new name; Open project folder… reads a
@@ -115,5 +120,5 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 ## Keys
 
 ← → slides (or the phone) · ⇧-click / ⌘-click select · ⌘A all · ⌘C / ⌘V copy / paste a look ·
-⌘D duplicate · hold \ before / after · ⌘Z / ⇧⌘Z · Delete removes the picked text · ⌘-scroll
+⌘D duplicate (the picked photo, else the slides) · hold \ before / after · ⌘Z / ⇧⌘Z · Delete removes the picked text · ⌘-scroll
 zooms the view.

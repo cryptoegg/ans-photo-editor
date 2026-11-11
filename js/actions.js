@@ -392,6 +392,26 @@ export function placeLayer(layer, to) {
   commit();
 }
 
+// A copy of a photo on the slide, just above it (⌘D or right-click → Duplicate on a picked photo);
+// free, it sits a little down and right of the original so both show
+export function duplicateLayer(layer = currentLayer()) {
+  const item = currentItem();
+  if (!item || !layer || isVideo(item) || item.span > 1) return;
+  const copy = { id: newId("l"), kind: "photo", ...Object.fromEntries(LAYER_KEYS.map((k) => [k, clone(layer[k])])) };
+  if (!isGrid(item)) {
+    item.layout.kind = "free";
+    copy.crop.x += 0.04;
+    copy.crop.y += 0.04;
+  }
+  item.layers.splice(layersOf(item).indexOf(layer), 0, copy); // (just above it: layers come after the slide's own photo)
+  state.photoPicked = true;
+  state.textId = null;
+  state.layerId = copy.id;
+  changed("project");
+  commit();
+  toast("Photo duplicated", undoAction);
+}
+
 // Take a photo off the slide (the slide always keeps one)
 export function removeLayer(layer) {
   const item = currentItem();

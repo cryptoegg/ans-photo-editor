@@ -1,7 +1,9 @@
 // The app's skin: the colours around the photos, never the photos' own (styles.css has each
 // skin's values). A preference in this browser; index.html sets it before the first paint.
-const KEY = "ans_photo_skin";
+// (a new key 2026-11-11, so everyone starts once on the new default, Website)
+const KEY = "ans_photo_skin2";
 export const SKINS = [
+  { id: "site", label: "Website" },
   { id: "concrete", label: "Concrete" },
   { id: "midnight", label: "Midnight" },
   { id: "slate", label: "Slate" },
@@ -16,7 +18,7 @@ export const uiColour = (role) => getComputedStyle(document.documentElement).get
 
 // (picked in Settings)
 export function setSkin(id) {
-  document.documentElement.dataset.skin = SKINS.some((s) => s.id === id) ? id : "concrete";
+  document.documentElement.dataset.skin = SKINS.some((s) => s.id === id) ? id : "site";
   try { localStorage.setItem(KEY, document.documentElement.dataset.skin); } catch (err) { /* not kept */ }
   listeners.forEach((fn) => fn());
 }

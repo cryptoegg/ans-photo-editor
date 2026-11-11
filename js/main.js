@@ -12,7 +12,7 @@ import { newProject, slides as slideList, firstSlideOf, allLists } from './proje
 import { saveProject, loadProject } from './store.js';
 import { loadPicture } from './media.js';
 import { FONTS } from './render.js';
-import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setStage, setRatio, copySelectedTo, addLayerFiles } from './actions.js';
+import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setStage, setRatio, copySelectedTo, addLayerFiles, duplicateLayer } from './actions.js';
 import { loadMyFilters } from './filters.js';
 import { initInstall } from './install.js';
 import { STAGES, RATIO_NAMES, SHARED_RATIOS } from './project.js';
@@ -103,6 +103,18 @@ function setView(view) {
 }
 
 function wireTopBar() {
+  // Home (top left): back to Identity, the one main app this sits in: the Identity page that
+  // opened the editor (kept for this tab, so a reload or ?open= still finds it), else Identity's start
+  const home = $("btn-home");
+  try {
+    const from = document.referrer && new URL(document.referrer);
+    if (from && from.origin === location.origin && from.pathname.startsWith("/identity/")) sessionStorage.setItem("ans_photo_home", from.pathname + from.search);
+    const back = sessionStorage.getItem("ans_photo_home");
+    if (back) home.href = back;
+    // Post: that artist's Social Media Calendar in Identity
+    const artist = back && new URL(back, location.origin).searchParams.get("artist");
+    if (artist) $("btn-post").href = `/identity/calendar/?artist=${encodeURIComponent(artist)}`;
+  } catch (err) { /* the start page, then */ }
   $("btn-projects").onclick = (e) => openProjectsMenu(e.currentTarget);
   // Instagram | TikTok | YouTube
   document.querySelectorAll("#platform-switch button").forEach((b) => b.addEventListener("click", () => setStage(b.dataset.mode)));
@@ -180,7 +192,8 @@ function wireKeys() {
     if (cmd && key === "c") { e.preventDefault(); copyLook(); return; }
     if (cmd && key === "v") { e.preventDefault(); pasteLook(); return; }
     if (cmd && key === "a") { e.preventDefault(); selectAll(); return; }
-    if (cmd && key === "d") { e.preventDefault(); duplicateSelected(); return; }
+    // ⌘D: a picked photo (on the canvas or in Layers) is copied onto the slide; else the selected slides
+    if (cmd && key === "d") { e.preventDefault(); if (state.photoPicked && state.view === "edit" && currentItem()) duplicateLayer(); else duplicateSelected(); return; }
     if (cmd) return;
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();
