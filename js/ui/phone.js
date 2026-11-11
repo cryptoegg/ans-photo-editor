@@ -5,9 +5,9 @@
 // Feed | Profile: Profile shows the post on your page: Instagram's and TikTok's 3-across grids of
 // 3:4 tiles (the first slide, cropped to 3:4 from the middle) and YouTube's Posts tab.
 import { state, changed, onChange, select } from '../state.js';
-import { slides, setFor, aspectOf, tiktokFilled as filledShape } from '../project.js';
+import { slides, setFor, aspectOf, isVideo, tiktokFilled as filledShape } from '../project.js';
 import { setStage } from '../actions.js';
-import { drawSlides, composeTikTok } from '../render.js';
+import { drawSlides, composeTikTok, drawItem } from '../render.js';
 import { getPicture, loadPicture } from '../media.js';
 
 const SIDE = 720;
@@ -96,7 +96,7 @@ export function initPhone() {
   document.getElementById("phone-prev").onclick = () => go(-1);
   document.getElementById("phone-next").onclick = () => go(1);
   onChange((what) => {
-    if (state.view !== "phone") return;
+    if (state.view !== "phone") { stopPhoneVideo(); return; }
     // Phone view edits like Edit (Tom, 2026-11-11): the panel works on the slide on the phone, so
     // picking a slide in the filmstrip turns the phone to it (and turning the phone picks it, in go)
     if (what === "selection") {
@@ -197,6 +197,7 @@ function build() {
     c.width = src.width;
     c.height = src.height;
     c.getContext("2d").drawImage(src, 0, 0);
+    c.dataset.i = i;
     trackEl.append(c);
   }
   slideTo(state.phoneSlide, false);
@@ -293,13 +294,53 @@ const offsetFor = (i) => (state.phonePlatform === "youtube" ? `calc(${-i} * (89%
 
 function slideTo(i, animate) {
   const track = document.getElementById("ph-track");
-  if (!track) return;
+  if (!track) { stopPhoneVideo(); return; }
+  playShown();
   track.style.transition = animate ? "transform 0.28s cubic-bezier(.2,.8,.2,1)" : "none";
   track.style.transform = `translateX(${offsetFor(i)})`;
   const count = slideList(state.project).length;
   const label = document.getElementById("ph-count");
   if (label) label.textContent = `${i + 1}/${count}`;
   phone.querySelectorAll(".ph-dots").forEach((d) => d.querySelectorAll("i").forEach((dot, k) => dot.classList.toggle("on", k === i)));
+}
+
+// The video on the slide showing plays, as in the app: its trimmed part on a loop, with the look on
+// every frame (and its sound, unless it's muted)
+let playing = null;
+const videoFrame = document.createElement("canvas");
+function playShown() {
+  const slide = slideList(state.project)[state.phoneSlide];
+  const item = slide && isVideo(slide.item) ? slide.item : null;
+  const pic = item && getPicture(item.mediaId);
+  const target = document.querySelector(`#ph-track canvas[data-i="${state.phoneSlide}"]`);
+  if (playing && (!item || playing.item !== item || playing.target !== target)) stopPhoneVideo();
+  if (playing || !item || !pic || pic.kind !== "video" || !target) return;
+  const v = pic.player;
+  v.muted = !!item.muted;
+  if (v.currentTime < item.trim.start || v.currentTime >= item.trim.end) v.currentTime = item.trim.start;
+  const start = () => v.play().catch(() => { v.muted = true; v.play().catch(() => {}); }); // (no sound until the page has been clicked)
+  start();
+  playing = { item, target, v, raf: 0 };
+  const ctx = target.getContext("2d");
+  const tick = () => {
+    if (!playing || playing.v !== v) return;
+    if (v.currentTime >= item.trim.end) v.currentTime = item.trim.start;
+    if (v.paused && !v.seeking) start();
+    if (v.readyState >= 2) {
+      if (videoFrame.width !== pic.width) videoFrame.width = pic.width;
+      if (videoFrame.height !== pic.height) videoFrame.height = pic.height;
+      videoFrame.getContext("2d").drawImage(v, 0, 0, pic.width, pic.height);
+      drawItem(ctx, item, target.width, target.height, { frame: videoFrame, seed: state.project.seed });
+    }
+    playing.raf = requestAnimationFrame(tick);
+  };
+  playing.raf = requestAnimationFrame(tick);
+}
+export function stopPhoneVideo() {
+  if (!playing) return;
+  cancelAnimationFrame(playing.raf);
+  playing.v.pause();
+  playing = null;
 }
 
 // Drag the photos sideways like a finger: let go past 15% and it turns the page

@@ -193,7 +193,7 @@ function wireKeys() {
     if (cmd && key === "v") { e.preventDefault(); pasteLook(); return; }
     if (cmd && key === "a") { e.preventDefault(); selectAll(); return; }
     // ⌘D: a picked photo (on the canvas or in Layers) is copied onto the slide; else the selected slides
-    if (cmd && key === "d") { e.preventDefault(); if (state.photoPicked && state.view === "edit" && currentItem()) duplicateLayer(); else duplicateSelected(); return; }
+    if (cmd && key === "d") { e.preventDefault(); if (!(state.photoPicked && state.view === "edit" && currentItem() && duplicateLayer())) duplicateSelected(); return; }
     if (cmd) return;
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();

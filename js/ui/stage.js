@@ -259,10 +259,10 @@ function down(e) {
 // Right-click a photo: it's picked, with Duplicate / Remove
 function photoMenu(e) {
   const item = currentItem();
-  if (!item || !getPicture(item.mediaId) || isVideo(item) || item.span > 1) return;
+  if (!item || !getPicture(item.mediaId) || item.span > 1) return;
   const f = frameRect(item);
   const hit = layerAt(item, f, local(e, f));
-  if (!hit || !hit.layer) return;
+  if (!hit || !hit.layer || (hit.layer === item && isVideo(item))) return; // (a video slide's video: nothing to copy)
   pick("photo", null, hit.layer);
   changed("view");
   const entries = [{ label: "Duplicate", keys: "⌘D", action: () => duplicateLayer(hit.layer) }];

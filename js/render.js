@@ -172,9 +172,9 @@ const fontCss = (id) => (FONTS.find((f) => f.id === id) || FONTS[0]).css;
 
 // Ready-made text styles (Text → + Add)
 export const TEXT_STYLES = {
-  title: { label: "Title", content: "Your title", font: "Archivo Black", weight: 400, size: 0.1, colour: "#ffffff", align: "center", bubble: "none", bubbleColour: "#111111", stroke: 0, strokeColour: "#000000", rotation: 0, x: 0.5, y: 0.5 },
-  caption: { label: "Caption", content: "A short caption\nover two lines", font: "Inter Tight", weight: 500, size: 0.045, colour: "#111111", align: "left", bubble: "lines", bubbleColour: "#ffffff", stroke: 0, strokeColour: "#000000", rotation: 0, x: 0.5, y: 0.84 },
-  swipe: { label: "Swipe →", content: "Swipe →", font: "Inter Tight", weight: 700, size: 0.04, colour: "#ffffff", align: "center", bubble: "pill", bubbleColour: "#1f4fbf", stroke: 0, strokeColour: "#000000", rotation: 0, x: 0.82, y: 0.92 }
+  title: { label: "Title", content: "Your title", font: "Archivo Black", weight: 400, size: 0.1, colour: "#ffffff", align: "center", bubble: "none", bubbleColour: "#111111", stroke: 1, strokeColour: "#000000", rotation: 0, x: 0.5, y: 0.5 },
+  caption: { label: "Caption", content: "A short caption\nover two lines", font: "Inter Tight", weight: 500, size: 0.045, colour: "#111111", align: "left", bubble: "lines", bubbleColour: "#ffffff", stroke: 1, strokeColour: "#000000", rotation: 0, x: 0.5, y: 0.84 },
+  swipe: { label: "Swipe →", content: "Swipe →", font: "Inter Tight", weight: 700, size: 0.04, colour: "#ffffff", align: "center", bubble: "pill", bubbleColour: "#1f4fbf", stroke: 1, strokeColour: "#000000", rotation: 0, x: 0.82, y: 0.92 }
 };
 
 // Where a text's lines go (frame W x H): its font, lines, size and box (frame pixels; the box

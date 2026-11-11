@@ -306,12 +306,12 @@ export function setOwnLook(own) {
 const LAYER_KEYS = ["mediaId", "crop", "look", "style"];
 const frameOf = (item) => ({ W: item.span * aspectOf(set().ratio), H: 1 });
 
-// Photos onto the slide on the canvas, as layers: in a grid they fill the next empty cells; free,
+// Photos onto the slide on the canvas, as layers (a video slide too: the video stays at the bottom): in a grid they fill the next empty cells; free,
 // each comes in smaller and a little apart from the last
 export async function addLayerFiles(fileList) {
   const item = currentItem();
   if (!item) return;
-  if (isVideo(item) || item.span > 1) { toast(isVideo(item) ? "A video slide holds just the video." : "A panorama holds one photo."); return; }
+  if (item.span > 1) { toast("A panorama holds one photo."); return; }
   const files = [...fileList].filter((f) => isMediaFile(f) && !/^video\//.test(f.type) && !/\.(mp4|mov|m4v|webm)$/i.test(f.name));
   if (!files.length) { toast("Layers take photos."); return; }
   if (!isGrid(item)) item.layout.kind = "free";
@@ -381,6 +381,7 @@ export function placeLayer(layer, to) {
   const all = layersOf(item);
   const from = all.indexOf(layer);
   if (from < 0 || to < 0 || to >= all.length || to === from) return;
+  if (isVideo(item)) { if (from === 0) return; to = Math.max(1, to); if (to === from) { changed("project"); return; } } // (a video slide's video stays at the bottom: the photos go over it)
   // (the slide's own photo is the first layer: lift each layer's contents out, reorder, put back)
   const parts = all.map((l) => ({ ...(l === item ? { id: newId("l"), kind: "photo" } : l), ...Object.fromEntries(LAYER_KEYS.map((k) => [k, l[k]])) }));
   const [moved] = parts.splice(from, 1);
@@ -394,9 +395,10 @@ export function placeLayer(layer, to) {
 
 // A copy of a photo on the slide, just above it (⌘D or right-click → Duplicate on a picked photo);
 // free, it sits a little down and right of the original so both show
+// (false: nothing to copy, e.g. a video slide's video)
 export function duplicateLayer(layer = currentLayer()) {
   const item = currentItem();
-  if (!item || !layer || isVideo(item) || item.span > 1) return;
+  if (!item || !layer || item.span > 1 || (layer === item && isVideo(item))) return false;
   const copy = { id: newId("l"), kind: "photo", ...Object.fromEntries(LAYER_KEYS.map((k) => [k, clone(layer[k])])) };
   if (!isGrid(item)) {
     item.layout.kind = "free";
@@ -410,12 +412,13 @@ export function duplicateLayer(layer = currentLayer()) {
   changed("project");
   commit();
   toast("Photo duplicated", undoAction);
+  return true;
 }
 
 // Take a photo off the slide (the slide always keeps one)
 export function removeLayer(layer) {
   const item = currentItem();
-  if (!item || !item.layers.length) return;
+  if (!item || !item.layers.length || (layer === item && isVideo(item))) return;
   if (layer === item) {
     const next = item.layers.shift();
     LAYER_KEYS.forEach((k) => { item[k] = next[k]; });

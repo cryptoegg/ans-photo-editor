@@ -71,7 +71,7 @@ export const COLOUR_DEFAULTS = () => ({ mono: false, temperature: 0, tint: 0, sa
 export const lookDefaults = () => ({ preset: null, chain: null, strength: 100, light: LIGHT_DEFAULTS(), colour: COLOUR_DEFAULTS() });
 export const cropDefaults = () => ({ x: 0, y: 0, zoom: 1, stretch: 1, lockRatio: true, rotation: 0, flipH: false, flipV: false });
 export const BACKGROUND = "#ffffff";
-export const TEXT_DEFAULTS = () => ({ content: "", font: "Helvetica", weight: 400, size: 0.06, colour: "#ffffff", align: "center", bubble: "none", bubbleColour: "#111111", stroke: 0, strokeColour: "#000000", rotation: 0, x: 0.5, y: 0.5 });
+export const TEXT_DEFAULTS = () => ({ content: "", font: "Helvetica", weight: 400, size: 0.06, colour: "#ffffff", align: "center", bubble: "none", bubbleColour: "#111111", stroke: 1, strokeColour: "#000000", rotation: 0, x: 0.5, y: 0.5 });
 
 const newId = (kind) => `${kind}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 export { newId };

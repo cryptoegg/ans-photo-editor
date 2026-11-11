@@ -50,16 +50,24 @@ export function initPanel() {
 // cell), ✕ to take one off (or drag a row), right-click: Duplicate, ＋ Add layer. A slide saved in a
 // grid keeps its gap and rounded corners.
 
+// A layer's name in Layers: Photo 1, Photo 2…; on a video slide the bottom one is the Video
+function layerLabel(item, i) {
+  return isVideo(item) ? (i === 0 ? "Video" : `Photo ${i}`) : `Photo ${i + 1}`;
+}
+
 function buildLayersBox() {
   const box = document.getElementById("layers-box");
   const slide = currentItem();
   box.innerHTML = "";
   if (!slide) { box.hidden = true; return; }
   box.hidden = false;
-  if (isVideo(slide) || slide.span > 1) {
-    box.append(el("div", { className: "layers-head" }, el("strong", { textContent: "Layers" }), el("span", { className: "note", textContent: isVideo(slide) ? "A video slide holds just the video" : "A panorama holds one photo" })));
+  if (slide.span > 1) {
+    box.append(el("div", { className: "layers-head" }, el("strong", { textContent: "Layers" }), el("span", { className: "note", textContent: "A panorama holds one photo" })));
     return;
   }
+  // (a video slide: the video is the bottom layer and stays there; photos go over it)
+  const vid = isVideo(slide);
+  const nameOf = (i) => layerLabel(slide, i);
   // (no layout templates (Tom, 2026-11-11): photos sit freely; a slide saved in a grid keeps it)
   box.append(el("div", { className: "layers-head" }, el("strong", { textContent: "Layers" })));
 
@@ -72,19 +80,21 @@ function buildLayersBox() {
     const thumb = el("canvas", { width: 56, height: 56, className: "layer-thumb" });
     if (pic) { const src = pic.preview, s = Math.min(src.width, src.height); thumb.getContext("2d").drawImage(src, (src.width - s) / 2, (src.height - s) / 2, s, s, 0, 0, 56, 56); }
     const row = el("div", { className: "layer-row" + (state.photoPicked && layer === picked ? " on" : "") + (i >= cells ? " off" : "") },
-      thumb, el("span", { className: "layer-name", textContent: `Photo ${i + 1}${i >= cells ? " (no cell)" : ""}` }), el("span", { className: "spacer" }));
+      thumb, el("span", { className: "layer-name", textContent: `${nameOf(i)}${i >= cells ? " (no cell)" : ""}` }), el("span", { className: "spacer" }));
     const up = button("↑", (e) => { e.stopPropagation(); moveLayer(layer, 1); }, "btn ghost small");
     const down = button("↓", (e) => { e.stopPropagation(); moveLayer(layer, -1); }, "btn ghost small");
     const del = button("✕", (e) => { e.stopPropagation(); removeLayer(layer); }, "btn ghost small");
     up.disabled = i === all.length - 1;
-    down.disabled = i === 0;
+    down.disabled = i === 0 || (vid && i === 1);
+    if (vid && i === 0) up.disabled = true;
     up.title = isGrid(slide) ? "Later cell" : "Bring forward";
     down.title = isGrid(slide) ? "Earlier cell" : "Send back";
     del.title = "Take this photo off the slide";
-    del.disabled = all.length === 1;
+    del.disabled = all.length === 1 || (vid && i === 0);
     row.append(up, down, del);
     row.onclick = () => { if (dragged) return; state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view"); };
     row.addEventListener("contextmenu", (e) => {
+      if (vid && i === 0) return;
       state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view");
       const entries = [{ label: "Duplicate", keys: "⌘D", action: () => duplicateLayer(layer) }];
       if (all.length > 1) entries.push({ label: "Remove from slide", action: () => removeLayer(layer) });
@@ -99,8 +109,7 @@ function buildLayersBox() {
   // The picked layer's opacity and blend (how it mixes with the layers under it)
   if (all.length > 1) {
     const st = picked.style;
-    const n = all.indexOf(picked) + 1;
-    const opacity = slider({ label: `Photo ${n} opacity`, min: 0, max: 100, unit: "%", reset: 100, targets: [picked], get: (l) => (l.style.opacity ?? 1) * 100, set: (l, v) => { l.style.opacity = v / 100; }, onCommit: () => {} });
+    const opacity = slider({ label: `${nameOf(all.indexOf(picked))} opacity`, min: 0, max: 100, unit: "%", reset: 100, targets: [picked], get: (l) => (l.style.opacity ?? 1) * 100, set: (l, v) => { l.style.opacity = v / 100; }, onCommit: () => {} });
     const blend = el("select", { className: "select", title: "How this photo mixes with the ones under it" });
     Object.entries(BLENDS).forEach(([value, label]) => blend.append(el("option", { value, textContent: label })));
     blend.value = st.blend || "normal";
@@ -158,7 +167,7 @@ function dragRow(e, row, list, all) {
 // (each slide's own photo)
 const lookItems = () => (state.layerId ? [currentLayer()] : selectedItems());
 const lookItem = () => currentLayer() || currentItem();
-const layerName = (item, layer) => `photo ${layersOf(item).indexOf(layer) + 1}`;
+const layerName = (item, layer) => layerLabel(item, layersOf(item).indexOf(layer)).toLowerCase();
 
 // ---- Building
 
@@ -170,7 +179,7 @@ function build() {
   const text = document.getElementById("scope-text");
   if (!all) text.textContent = "No slides yet";
   else if (state.layerId && currentItem()) text.textContent = `Editing ${layerName(currentItem(), currentLayer())} · ${slideLabel(p, currentItem()).toLowerCase()}`;
-  else if (chosen.length === 1) text.textContent = `Editing ${slideLabel(p, chosen[0]).toLowerCase()}${layersOf(chosen[0]).length > 1 ? " · photo 1" : ""}`;
+  else if (chosen.length === 1) text.textContent = `Editing ${slideLabel(p, chosen[0]).toLowerCase()}${layersOf(chosen[0]).length > 1 ? ` · ${layerName(chosen[0], chosen[0])}` : ""}`;
   else if (chosen.length === all) text.textContent = `Editing all ${all} slides`;
   else text.textContent = `Editing ${chosen.length} slides`;
   scope.classList.toggle("many", chosen.length > 1);

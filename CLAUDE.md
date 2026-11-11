@@ -31,7 +31,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   (one photo across `span` squares). Crop = where the photo sits, free like the lyric app's
   pictures (zoom 1 = Fill; smaller shows the slide's `background`, white by default; Fit / Fill in
   `js/render.js`); look = filter preset + strength + Light / Colour; texts (align incl. justify,
-  backgrounds incl. "Around the words" = `lines`, stroke, rotation). **New settings go in the record, never in loose variables.**
+  backgrounds incl. "Around the words" = `lines`, stroke (1 to start), rotation). **New settings go in the record, never in loose variables.**
 - **State**: `js/state.js`: selection (item ids: what Filters / Adjust change), current item
   (what Crop / Text change), view, undo / redo (whole copies of the record; `commit()` = one
   step), `changed(what)` events ("project", "selection", "view", "look" mid-drag, "commit").
@@ -47,7 +47,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   grid keeps it). Duplicate a photo: ⌘D with it picked, or right-click it (canvas or Layers row) →
   Duplicate (`duplicateLayer`; right-click menus: `js/ui/menu.js`). The Layers box (top of the panel, `buildLayersBox` in panel.js; drag a row or ↑ ↓ to reorder, `placeLayer`) picks a layer
   (`state.layerId`, `currentLayer()`), and Filters / Adjust / Crop then change just that one.
-  Actions: `addLayerFiles`, `setLayout`, `moveLayer`, `removeLayer`. Not for videos or panoramas.
+  Actions: `addLayerFiles`, `setLayout`, `moveLayer`, `removeLayer`. Not for panoramas. A video slide takes
+  photo layers too: the video is the bottom layer and stays there (can't move, be removed or duplicated).
 - **Adding**: new photos / videos go into the set being edited and, with separate sets, every
   other platform's set too (fitted to its shape, as far as it has room); Remove only takes them
   out of the platform you're on; Copy to ▾ (filmstrip) copies selected slides to another platform.
@@ -88,7 +89,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   fit, − Fit + and pinch / ⌘-scroll to zoom; dark-mode stand-ins for Instagram, TikTok and YouTube copied from real screenshots; flick
   through; Feed | Profile: Profile = the post first on your page, Instagram's and TikTok's 3-across
   grids of 3:4 tiles (the first slide cut to 3:4 from the middle) and YouTube's Posts tab,
-  `buildProfile`; the phone and the panel follow each other, so edits in Phone view go to the slide
+  `buildProfile`; the video on the shown slide plays on a loop (`playShown`); the phone and the panel follow each other, so edits in Phone view go to the slide
   on the phone), the top bar, one row (Home · Instagram | TikTok | YouTube · shape · Edit | Phone · ⚙ ·
   Projects ▾ · Post · Export; Post = the artist's Social Media Calendar in Identity). Opens on a blank project; `?open=<projectId>` (the
   Account page's link, anewsong.club/account/) reopens that one, then drops the param, undo / redo to the right of the "Editing slide…" header, Delete / Backspace removes the selected slides,
