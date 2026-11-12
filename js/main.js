@@ -110,7 +110,7 @@ function wireTopBar() {
     const from = document.referrer && new URL(document.referrer);
     if (from && from.origin === location.origin && from.pathname.startsWith("/identity/")) sessionStorage.setItem("ans_photo_home", from.pathname + from.search);
     const back = sessionStorage.getItem("ans_photo_home");
-    if (back) home.href = back;
+    // (Tom, 2026-11-13: Home always goes to Identity's home page, /identity/)
     // Post: that artist's Social Media Calendar in Identity
     const artist = back && new URL(back, location.origin).searchParams.get("artist");
     if (artist) $("btn-post").href = `/identity/calendar/?artist=${encodeURIComponent(artist)}`;
