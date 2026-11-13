@@ -1,6 +1,6 @@
 // Storage in this browser (IndexedDB): projects (the records), media (each photo's original
 // file, once) and a little "meta" (the last project open, the export folder). Every project is
-// saved by itself shortly after each change, so nothing is lost; the Projects menu lists them.
+// saved by itself shortly after each change, so nothing is lost; File ▾ lists them.
 const NAME = "ans_photo";
 const VERSION = 1;
 let opening = null;

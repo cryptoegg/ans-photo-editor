@@ -22,6 +22,10 @@
 <body>
 <header class="topbar">
   <a id="btn-home" class="btn ghost" href="/identity/" title="Back to Identity">Home</a>
+  <button id="btn-file" class="btn ghost" title="New, save, open, your projects, Settings">File ▾</button>
+  <button id="btn-export" class="btn primary">Export</button>
+  <a id="btn-post" class="btn ghost" href="/identity/calendar/" title="Your Social Media Calendar in Identity, to plan the post">Post</a>
+  <span class="topbar-gap"></span>
   <div class="segmented" id="platform-switch" title="The platform you're editing. Platforms on the same shape are edited together.">
     <button data-mode="instagram">Instagram</button>
     <button data-mode="tiktok">TikTok</button>
@@ -33,13 +37,8 @@
     <button data-view="edit" class="on">Edit</button>
     <button data-view="phone">Phone</button>
   </div>
-  <!-- (over the panel, so Edit | Phone ends where the canvas does) -->
-  <div class="topbar-right">
-  <button id="btn-settings" class="btn ghost icon" title="Settings: your main folder, what's saved where, the skin, keys (⌘,)" aria-label="Settings">⚙</button>
-  <button id="btn-projects" class="btn ghost" title="Your projects, and this one's name">Projects ▾</button>
-  <a id="btn-post" class="btn ghost" href="/identity/calendar/" title="Your Social Media Calendar in Identity, to plan the post">Post</a>
-  <button id="btn-export" class="btn primary">Export</button>
-  </div>
+  <!-- (an empty box over the panel, so Edit | Phone ends where the canvas does) -->
+  <div class="topbar-right"></div>
 </header>
 
 <main class="workspace">

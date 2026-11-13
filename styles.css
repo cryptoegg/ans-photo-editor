@@ -421,8 +421,8 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
 }
 /* ⚙ Projects Export sit over the panel: the bar's padding + gap + this = the panel's 320 + its
    3px edges, so Edit | Phone's right edge meets the canvas's top-right corner */
-.topbar > .topbar-right { width: 310px; flex: 0 1 auto; min-width: max-content; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
-@media (max-width: 900px) { .topbar > .topbar-right { width: 316px; } }
+.topbar > .topbar-right { width: 310px; flex: 0 1 310px; min-width: 0; } /* (shrinks in a narrow window rather than push the bar off the edge) */
+@media (max-width: 900px) { .topbar > .topbar-right { width: 316px; flex-basis: 316px; } }
 /* (a window too narrow for that: it gives way rather than the bar running off the edge) */
 /* Undo / redo: line arrows, like Figma's or Google Docs' */
 .btn.icon.undo-redo { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
@@ -521,3 +521,5 @@ input[type="color"] { width: 34px; height: 24px; border: 1px solid var(--rule); 
 
 /* Right-click menus (js/ui/menu.js) */
 .popover.context-menu { min-width: 180px; padding: 4px; }
+/* (a little room between Home · File · Export · Post and the platforms) */
+.topbar-gap { width: 10px; }

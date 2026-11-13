@@ -1,4 +1,4 @@
-// The Export window and the Projects menu
+// The Export window and the File menu
 import { state, openProject, changed, commit } from '../state.js';
 import { saveToFolder, openFromFolder, mainFolder, chooseMainFolder, safeName } from '../folder.js';
 import { SKINS, setSkin } from './skin.js';
@@ -146,12 +146,14 @@ export async function openFromComputer() {
   } catch (err) { toast(err.message || String(err)); }
 }
 
-export async function openProjectsMenu(anchor) {
+// File ▾ (top left, by Home): this project's name, New / Save / Save as / Open, Settings, and the
+// projects kept in this browser
+export async function openFileMenu(anchor) {
   const menu = document.getElementById("projects-menu");
   if (!menu.hidden) { menu.hidden = true; return; }
   const r = anchor.getBoundingClientRect();
-  menu.style.left = "";
-  menu.style.right = `${Math.max(8, window.innerWidth - r.right)}px`; // (it sits at the top right, by Export)
+  menu.style.right = "";
+  menu.style.left = `${Math.max(8, r.left)}px`;
   menu.style.top = `${r.bottom + 6}px`;
   menu.innerHTML = "";
   const close = () => { menu.hidden = true; };
@@ -166,6 +168,8 @@ export async function openProjectsMenu(anchor) {
   menu.append(item("Save project", "⌘S", saveNow));
   menu.append(item("Save as…", "⇧⌘S", saveAs));
   menu.append(item("Open project folder…", "", openFromComputer));
+  menu.append(el("div", { className: "menu-sep" }));
+  menu.append(item("Settings…", "⌘,", openSettings));
   menu.append(el("div", { className: "menu-sep" }));
   menu.append(el("div", { className: "note menu-label", textContent: "In this browser" }));
   const list = await listProjects();
@@ -202,7 +206,7 @@ export async function openProjectsMenu(anchor) {
   setTimeout(() => document.addEventListener("pointerdown", away), 0);
 }
 
-// ---- Settings (⚙): where things are saved, the main folder, the skin, the keys
+// ---- Settings (File ▾ → Settings…, ⌘,): where things are saved, the main folder, the skin, the keys
 
 export async function openSettings() {
   const back = document.getElementById("export-dialog");
@@ -230,7 +234,7 @@ export async function openSettings() {
     const name = safeName(state.project.name);
     box.append(section("What's saved where",
       el("ul", { className: "where" },
-        el("li", {}, el("strong", { textContent: "In this browser: " }), "every project, saved by itself a moment after each change. Projects ▾ lists them."),
+        el("li", {}, el("strong", { textContent: "In this browser: " }), "every project, saved by itself a moment after each change. File ▾ lists them."),
         el("li", {}, el("strong", { textContent: "In your main folder, when you Save (⌘S): " }), `${name} Project/${name}.ans (the project), Images/ (its photos) and Backup/ (the last 5 saves).`),
         el("li", {}, el("strong", { textContent: "When you Export: " }), `${name} Project/Exports/Instagram, TikTok and YouTube (01.jpg, 02.jpg…).`))));
 

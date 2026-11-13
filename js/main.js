@@ -20,7 +20,7 @@ import { initFilmstrip } from './ui/filmstrip.js';
 import { initStage } from './ui/stage.js';
 import { initPanel } from './ui/panel.js';
 import { initPhone, go as phoneGo, showPhone } from './ui/phone.js';
-import { openExport, openProjectsMenu, openSettings, saveNow, saveAs } from './ui/dialogs.js';
+import { openExport, openFileMenu, openSettings, saveNow, saveAs } from './ui/dialogs.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -42,7 +42,7 @@ async function start() {
   if (document.fonts) Promise.all(FONTS.flatMap((f) => [document.fonts.load(`400 40px ${f.css}`), document.fonts.load(`700 40px ${f.css}`)])).catch(() => {}).then(() => changed("project"));
 
   // A blank project each time; ?open=<id> (the Account page's link) reopens that one instead.
-  // Earlier projects are in the Projects menu. (The param comes off the address, so a refresh
+  // Earlier projects are in File ▾. (The param comes off the address, so a refresh
   // doesn't keep forcing it.)
   let opened = false;
   try {
@@ -115,7 +115,7 @@ function wireTopBar() {
     const artist = back && new URL(back, location.origin).searchParams.get("artist");
     if (artist) $("btn-post").href = `/identity/calendar/?artist=${encodeURIComponent(artist)}`;
   } catch (err) { /* the start page, then */ }
-  $("btn-projects").onclick = (e) => openProjectsMenu(e.currentTarget);
+  $("btn-file").onclick = (e) => openFileMenu(e.currentTarget);
   // Instagram | TikTok | YouTube
   document.querySelectorAll("#platform-switch button").forEach((b) => b.addEventListener("click", () => setStage(b.dataset.mode)));
   $("ratio-select").addEventListener("change", (e) => setRatio(e.target.value));
@@ -123,7 +123,6 @@ function wireTopBar() {
   $("btn-undo").onclick = undo;
   $("btn-redo").onclick = redo;
   $("btn-export").onclick = openExport;
-  $("btn-settings").onclick = openSettings;
 }
 
 function wireStrip() {

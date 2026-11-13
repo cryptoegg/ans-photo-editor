@@ -36,7 +36,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   (what Crop / Text change), view, undo / redo (whole copies of the record; `commit()` = one
   step), `changed(what)` events ("project", "selection", "view", "look" mid-drag, "commit").
 - **Storage**: `js/store.js` (IndexedDB "ans_photo": projects, media, meta). Auto-saved after
-  every commit; the Projects menu lists them. Photos: `js/media.js` keeps each original once and
+  every commit; File ▾ lists them. Photos: `js/media.js` keeps each original once and
   decodes a full + preview (1600 px) picture.
 - **Layers** (several photos on one slide): the slide's own photo is layer 1 (item.mediaId / crop
   / look / style); more are `item.layers` [{ id, mediaId, crop, look, style }]. `item.layout.kind`:
@@ -90,18 +90,19 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   through; Feed | Profile: Profile = the post first on your page, Instagram's and TikTok's 3-across
   grids of 3:4 tiles (the first slide cut to 3:4 from the middle) and YouTube's Posts tab,
   `buildProfile`; the video on the shown slide plays on a loop (`playShown`); the phone and the panel follow each other, so edits in Phone view go to the slide
-  on the phone), the top bar, one row (Home · Instagram | TikTok | YouTube · shape · Edit | Phone · ⚙ ·
-  Projects ▾ · Post · Export; Post = the artist's Social Media Calendar in Identity). Opens on a blank project; `?open=<projectId>` (the
+  on the phone), the top bar, one row (Home · File ▾ · Export · Post · Instagram | TikTok | YouTube · shape ·
+  Edit | Phone, over an empty box the panel's width; File ▾ = `openFileMenu`: the name, New / Save /
+  Save as / Open, Settings…, the projects in this browser; Post = the artist's Social Media Calendar in Identity). Opens on a blank project; `?open=<projectId>` (the
   Account page's link, anewsong.club/account/) reopens that one, then drops the param, undo / redo to the right of the "Editing slide…" header, Delete / Backspace removes the selected slides,
   fold-out cards (Light ▸, Colour ▸, Background ▸; the filter editor lists every effect like the
   lyric app: tick box, name ▸, one slider (`vibe`), ↺),
   `dialogs.js` (Export, Projects), `skin.js` (Website, the default: the site's blue, Inter Tight and
   paper texture under see-through panels; then the lyric app's skins). Home (top left) goes back to
   Identity, the main app this sits in: the Identity page that opened it (kept for the tab), else /identity/.
-- **Main folder & saving**: `js/folder.js` (Chrome / Edge): a main folder chosen once (Settings ⚙
+- **Main folder & saving**: `js/folder.js` (Chrome / Edge): a main folder chosen once (Settings
   or the first Save / Export); Save (⌘S) writes `<name> Project/<name>.ans` + Images/ + Backup/
   (last 5); Save as… (⇧⌘S) copies the project under a new name; Open project folder… reads a
-  .ans and its Images/. Projects are also always auto-saved in this browser. Settings (⚙, ⌘,) =
+  .ans and its Images/. Projects are also always auto-saved in this browser. Settings (File ▾ → Settings…, ⌘,) =
   `openSettings` in `js/ui/dialogs.js`: the main folder, what's saved where, skin, keys.
   **Never use `confirm()` / `prompt()`**: the Claude app's pane answers No without showing them;
   use `ask()` in `js/ui/dialogs.js`.
