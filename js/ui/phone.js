@@ -6,7 +6,6 @@
 // 3:4 tiles (the first slide, cropped to 3:4 from the middle) and YouTube's Posts tab.
 import { state, changed, onChange, select } from '../state.js';
 import { slides, setFor, aspectOf, isVideo, tiktokFilled as filledShape } from '../project.js';
-import { setStage } from '../actions.js';
 import { drawSlides, composeTikTok, drawItem } from '../render.js';
 import { getPicture, loadPicture } from '../media.js';
 
@@ -52,15 +51,15 @@ const ICON = {
 const icon = (name, size = 22, fill = "none") => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="${fill}" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${stroke(ICON[name])}</svg>`;
 const STATUS = `<div class="ph-status"><b>9:41</b><span class="ph-status-right"><i class="ph-bars"></i>5G<i class="ph-battery">82</i></span></div>`;
 
-// The screen is laid out at a real phone's size (390 x 845 points) and scaled to fit the space,
+// The screen is laid out at a real phone's size (393 x 852 points, as the Lyric Visualiser's) and scaled to fit the space,
 // so it reads like the app at any window size
-const SCREEN = { w: 390, h: 845 };
+const SCREEN = { w: 393, h: 852 };
 let scale = 1;
 let zoom = 1;  // − Fit +: 1 = the whole screen fits; more = closer (scroll to look around)
 function fitPhone() {
   const row = document.querySelector(".phone-row"), fit = document.getElementById("phone-fit");
   if (!row || !fit || !row.clientHeight) return;
-  const fitted = Math.max(0.2, Math.min((row.clientHeight - 8) / SCREEN.h, (row.clientWidth - 130) / SCREEN.w, 1));
+  const fitted = Math.max(0.2, Math.min((row.clientHeight - 8) / SCREEN.h, (row.clientWidth - 140) / SCREEN.w, 1));
   scale = fitted * zoom;
   phone.style.transform = `scale(${scale})`;
   fit.style.width = `${SCREEN.w * scale}px`;
@@ -84,11 +83,7 @@ export function initPhone() {
     e.preventDefault();
     setZoom(zoom * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)));
   }, { passive: false });
-  document.querySelectorAll("#phone-platforms button").forEach((b) => b.addEventListener("click", () => {
-    state.phonePlatform = b.dataset.platform;
-    setStage(b.dataset.platform); // (the phone and the stage go together)
-    changed("view");
-  }));
+  // (the platform is the top bar's Instagram | TikTok | YouTube; Feed | Profile sits beside it)
   document.querySelectorAll("#phone-screens button").forEach((b) => b.addEventListener("click", () => {
     state.phoneScreen = b.dataset.screen;
     changed("view");
@@ -134,7 +129,6 @@ function renderSlides() {
 const tiktokSlide = (i) => (!tiktokFilled() ? rendered.squares[i] : rendered.tiktok[i] || (rendered.tiktok[i] = composeTikTok(rendered.squares[i], state.project, 720, 1280)));
 
 function build() {
-  document.querySelectorAll("#phone-platforms button").forEach((b) => b.classList.toggle("on", b.dataset.platform === state.phonePlatform));
   document.querySelectorAll("#phone-screens button").forEach((b) => b.classList.toggle("on", b.dataset.screen === state.phoneScreen));
   const profile = state.phoneScreen === "profile";
   document.getElementById("phone-view").classList.toggle("profile", profile);

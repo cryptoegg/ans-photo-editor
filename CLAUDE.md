@@ -62,9 +62,11 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 - **Looks**: `js/looks.js` runs Light / Colour then the filter's effect chain on the graphics
   card (`js/effects/gl.js`) and keeps the result, so moving / zooming never re-runs it.
 - **Filters**: `js/filters.js`: the presets plus "Your filters" (saved in IndexedDB meta, every
-  project). Picking one gives the slide its own copy (`look.chain`). Tabs: Filters · Adjust ·
-  Crop · Text overlay · Captions. Filters act like presets: no names shown once picked; Strength
-  floats at the top of Filters and Adjust (only with a filter on). Every setting is in **Adjust**
+  project). Picking one gives the slide its own copy (`look.chain`). Tiles: Filters · Adjust ·
+  Crop · Captions (words on the slide; `state.tab` "text") · Post text (the post's caption; `state.tab`
+  "captions"). Filter tiles show their names, grouped in folds; Strength floats at the top of Filters
+  and Adjust (only with a filter on). The presets row (Presets… menu, Save Preset, the dice) puts on
+  any filter, saves the slide's look to Your filters (`saveThisFilter`), or a random one. Every setting is in **Adjust**
   (the picked tile's Edit badge goes there): Light ▸, Colour ▸, the filter's own Filter light ▸ /
   Filter colour ▸ / Colour tint ▸, Effects ▸ (one fold opening to every effect, listed like the
   lyric app: tick box, name ▸, one slider, ↺), Background ▸ (one colour picker), then "Save this
@@ -76,34 +78,42 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   Filters = `effects/presets.js`, grouped in `js/ui/panel.js` (Everyday · A New Song · Creative).
 - **Drawing**: `js/render.js` (`drawItem`, `drawSlides`, `composeTikTok`). Screen, phone view and
   export all draw through it, so **preview = export**.
-- **UI**: `js/ui/stage.js` (Edit view, behaving like the lyric app's mediaFrame: click a photo
+- **Look: Style 2** (Tom, 2026-11-16), copied from the built Lyric Visualiser (../ans-visual-text-generator,
+  `ans-vtg-styles.css` "Style 2"): paper panels flush with the window, thin lines between, Inter Tight, blue
+  accent; tokens on `:root` in styles.css; one look, no skins (`skin.js` keeps `uiColour` only). Where the
+  ans-UI-kit mock-up and the built Visualiser differ, follow the built app.
+- **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Edit | Phone,
+  Instagram | TikTok | YouTube, Feed | Profile (faint while editing) | at the right ● name · Saved), then three
+  columns, Media 320 | canvas | Editor 320 (each folds to a 44px strip with its blue arrow, remembered in
+  localStorage), then the slides strip.
+- **UI**: `js/ui/mediaColumn.js` (Media: Photos, Videos (3 across), Your filters with their dates;
+  click a picture = its first slide), `js/ui/stage.js` (Edit view, behaving like the lyric app's mediaFrame: click a photo
   or text to pick it; dashed frame + corner squares on hover; drag inside = move, corner = size
   around the middle, just outside a corner or the ↻ knob = turn (Shift 15°, settles on quarter
   turns, double-click ↻ = upright); scroll / pinch zooms the photo; faint photo past the edges;
-  guides ▦ and Canva-style soft snapping 🧲, ⌘ = free; the faint photo past the edges shows only
-  while the photo is picked; pinch / ⌘-scroll over the grey zooms the view), `filmstrip.js`,
-  `panel.js` (scope header "Editing all 7 slides", This slide / All; tabs Filters · Adjust
-  (+ Background colour, follows the selection) · Crop · Text overlay · Captions; "mixed"
+  guides and Canva-style soft snapping, ⌘ = free; the faint photo past the edges shows only
+  while the photo is picked; pinch / ⌘-scroll over the desk zooms the view; the slide on a dotted desk
+  with a soft shadow; under it the floating canvas bar: ‹ Slide 3 of 7 ›, the shape menu, − Fit +,
+  guides, snapping, background colour, Before (hold), `showCanvasBar` in main.js), `filmstrip.js`
+  (the slides strip: toolbar with fold, Add (blue), trays of actions, "7 of 20"; slides numbered above,
+  the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow; five tiles;
+  presets row; This slide | All 7 slides; Layers (count, +, Bottom / Top); then the tile's settings:
+  sliders with a blue fill (`fillTrack`), switches, blue fold names after a chevron; "mixed"
   sliders; a note with Undo when a change hits several slides),
-  `phone.js` (Phone view: no phone outline, just the screen, laid out at 390 × 845 and scaled to
-  fit, − Fit + and pinch / ⌘-scroll to zoom; dark-mode stand-ins for Instagram, TikTok and YouTube copied from real screenshots; flick
+  `phone.js` (Phone view: just the screen, rounded, laid out at 393 × 852 (as the Visualiser's) and scaled to
+  fit, ‹ › beside it, − Fit + floating under it and pinch / ⌘-scroll to zoom; dark-mode stand-ins for Instagram, TikTok and YouTube copied from real screenshots; flick
   through; Feed | Profile: Profile = the post first on your page, Instagram's and TikTok's 3-across
   grids of 3:4 tiles (the first slide cut to 3:4 from the middle) and YouTube's Posts tab,
   `buildProfile`; the video on the shown slide plays on a loop (`playShown`); the phone and the panel follow each other, so edits in Phone view go to the slide
-  on the phone), the top bar, one row (Home · File ▾ · Export · Post · Instagram | TikTok | YouTube · shape ·
-  Edit | Phone, over an empty box the panel's width; File ▾ = `openFileMenu`: the name, New / Save /
-  Save as / Open, Settings…, the projects in this browser; Post = the artist's Social Media Calendar in Identity). Opens on a blank project; `?open=<projectId>` (the
-  Account page's link, anewsong.club/account/) reopens that one, then drops the param, undo / redo to the right of the "Editing slide…" header, Delete / Backspace removes the selected slides,
-  fold-out cards (Light ▸, Colour ▸, Background ▸; the filter editor lists every effect like the
-  lyric app: tick box, name ▸, one slider (`vibe`), ↺),
-  `dialogs.js` (Export, Projects), `skin.js` (Website, the default: the site's blue, Inter Tight and
-  paper texture under see-through panels; then the lyric app's skins). Home (top left) goes back to
-  Identity, the main app this sits in: the Identity page that opened it (kept for the tab), else /identity/.
+  on the phone). File = `openFileMenu`: the name, New / Save / Save as / Open, Settings…, the projects in
+  this browser; Post = the artist's Social Media Calendar in Identity. Opens on a blank project; `?open=<projectId>` (the
+  Account page's link, anewsong.club/account/) reopens that one, then drops the param, Delete / Backspace removes the selected slides,
+  `dialogs.js` (Export, Projects). Home (top left) goes back to Identity's home page, /identity/.
 - **Main folder & saving**: `js/folder.js` (Chrome / Edge): a main folder chosen once (Settings
   or the first Save / Export); Save (⌘S) writes `<name> Project/<name>.ans` + Images/ + Backup/
   (last 5); Save as… (⇧⌘S) copies the project under a new name; Open project folder… reads a
   .ans and its Images/. Projects are also always auto-saved in this browser. Settings (File ▾ → Settings…, ⌘,) =
-  `openSettings` in `js/ui/dialogs.js`: the main folder, what's saved where, skin, keys.
+  `openSettings` in `js/ui/dialogs.js`: the main folder, what's saved where, keys.
   **Never use `confirm()` / `prompt()`**: the Claude app's pane answers No without showing them;
   use `ask()` in `js/ui/dialogs.js`.
 - **Export**: `js/exporter.js`. JPEG per slide, numbered in swipe order: Instagram and YouTube

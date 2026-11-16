@@ -55,6 +55,8 @@ function redraw() {
   requestAnimationFrame(() => { pending = false; build(); });
 }
 
+const clock = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+
 function build() {
   const p = state.project;
   const set = activeSet(p);
@@ -74,9 +76,8 @@ function build() {
     num.className = "num";
     num.textContent = item.span > 1 ? `${firstSlideOf(p, item)}–${firstSlideOf(p, item) + item.span - 1}` : String(firstSlideOf(p, item));
     el.append(num);
-    if (item.span > 1) el.append(Object.assign(document.createElement("span"), { className: "pano-tag", textContent: "Panorama" }));
     if (isEdited(item)) el.append(Object.assign(document.createElement("span"), { className: "dot", title: "Edited" }));
-    if (isVideo(item)) el.append(Object.assign(document.createElement("span"), { className: "vid", textContent: `▶ ${(item.trim.end - item.trim.start).toFixed(1)} s` }));
+    if (isVideo(item)) el.append(Object.assign(document.createElement("span"), { className: "vid", textContent: clock(item.trim.end - item.trim.start) }));
     el.addEventListener("click", (e) => select(item.id, e.shiftKey ? "range" : e.metaKey || e.ctrlKey ? "toggle" : "one"));
     el.addEventListener("dragstart", (e) => {
       dragIds = state.selected.has(item.id) ? set.items.filter((i) => state.selected.has(i.id)).map((i) => i.id) : [item.id];
@@ -90,7 +91,7 @@ function build() {
   if (slideCount(p) < set.max) {
     const add = document.createElement("button");
     add.className = "add-tile";
-    add.textContent = "＋";
+    add.textContent = "+";
     add.title = "Add photos";
     add.onclick = () => document.getElementById("file-input").click();
     strip.append(add);

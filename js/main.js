@@ -7,8 +7,8 @@
 //   js/render.js    drawing a slide (screen = export)            js/exporter.js  JPEGs out
 //   js/ui/…         filmstrip, stage (Edit view), panel, phone (Phone view), dialogs
 //   js/effects/…    the effects and filters, copied from the lyric video app
-import { state, changed, onChange, commit, undo, redo, canUndo, canRedo, openProject, currentItem, select, selectAll, items } from './state.js';
-import { newProject, slides as slideList, firstSlideOf, allLists } from './project.js';
+import { state, changed, onChange, commit, undo, redo, canUndo, canRedo, openProject, currentItem, select, selectAll, items, selectedItems } from './state.js';
+import { newProject, slides as slideList, firstSlideOf, allLists, slideCount } from './project.js';
 import { saveProject, loadProject } from './store.js';
 import { loadPicture } from './media.js';
 import { FONTS } from './render.js';
@@ -19,6 +19,7 @@ import { STAGES, RATIO_NAMES, SHARED_RATIOS } from './project.js';
 import { initFilmstrip } from './ui/filmstrip.js';
 import { initStage } from './ui/stage.js';
 import { initPanel } from './ui/panel.js';
+import { initMediaColumn } from './ui/mediaColumn.js';
 import { initPhone, go as phoneGo, showPhone } from './ui/phone.js';
 import { openExport, openFileMenu, openSettings, saveNow, saveAs } from './ui/dialogs.js';
 
@@ -30,6 +31,7 @@ async function start() {
   initFilmstrip();
   initStage();
   initPanel();
+  initMediaColumn();
   initPhone();
   wireTopBar();
   wireStrip();
@@ -87,8 +89,46 @@ function refresh(what) {
   const twins = Object.keys(STAGES).filter((k) => k !== p.stage && p.stages[k].ratio === p.stages[p.stage].ratio).map((k) => ({ instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube" })[k]);
   select.title = `This platform's shape. "· all": all three take it.${twins.length ? ` Same as ${twins.join(" and ")}, so edits go to ${twins.length > 1 ? "all three" : "both"}.` : ""}`;
   if (state.phonePlatform !== p.stage) state.phonePlatform = p.stage;
+  // Feed | Profile in the top bar is faint while editing (as in the Lyric Visualiser)
+  document.body.classList.toggle("phone-on", state.view === "phone");
+  showStatus();
+  showCanvasBar();
   $("edit-view").hidden = state.view !== "edit";
   $("phone-view").hidden = state.view !== "phone";
+}
+
+// The next / previous slide on the canvas (← →, and ‹ › in the canvas bar)
+function stepSlide(step, how = "one") {
+  const list = items();
+  const i = list.findIndex((x) => x.id === state.current);
+  const next = list[Math.max(0, Math.min(list.length - 1, i + step))];
+  if (next) select(next.id, how);
+}
+
+// The canvas bar: "Slide 3 of 7" (a panorama "Slides 5–6 of 7"), ‹ › and the background colour of the slides chosen
+function showCanvasBar() {
+  const p = state.project, item = currentItem(), list = items();
+  $("canvas-bar").hidden = !list.length; // (an empty project: just "Drop photos here")
+  const total = slideCount(p);
+  const first = item ? firstSlideOf(p, item) : 0;
+  $("slide-of").textContent = !item ? "No slides" : item.span > 1 ? `Slides ${first}–${first + item.span - 1} of ${total}` : `Slide ${first} of ${total}`;
+  const i = list.indexOf(item);
+  $("btn-slide-prev").disabled = i <= 0;
+  $("btn-slide-next").disabled = i < 0 || i >= list.length - 1;
+  const backs = selectedItems().map((x) => x.background || "#ffffff");
+  const back = backs[0] || "#ffffff";
+  $("bg-pick").style.setProperty("--bg-now", backs.every((b) => b === back) ? back : "conic-gradient(#fff 0 25%, #3b3a37 0 50%, #fff 0 75%, #3b3a37 0)");
+  if (document.activeElement !== $("bg-colour")) $("bg-colour").value = back;
+}
+
+// At the right of the top bar: ● while there are changes not saved to your folder, the project's name in blue,
+// then "· Not saved yet" / "· Not saved" / "· Saved" (Save ⌘S stamps project.savedAt)
+function showStatus() {
+  const [dot, name, note] = $("topbar-status").children;
+  const p = state.project, saved = p.savedAt || 0, dirty = !saved || (p.updated || 0) > saved;
+  dot.hidden = !dirty || !allLists(p).flat().length;
+  name.textContent = p.name || "Untitled";
+  note.textContent = ` · ${!saved ? "Not saved yet" : dirty ? "Not saved" : "Saved"}`;
 }
 
 function setView(view) {
@@ -119,6 +159,16 @@ function wireTopBar() {
   // Instagram | TikTok | YouTube
   document.querySelectorAll("#platform-switch button").forEach((b) => b.addEventListener("click", () => setStage(b.dataset.mode)));
   $("ratio-select").addEventListener("change", (e) => setRatio(e.target.value));
+  // The canvas bar's ‹ ›, the background colour (the slides chosen), Before (held)
+  $("btn-slide-prev").onclick = () => stepSlide(-1);
+  $("btn-slide-next").onclick = () => stepSlide(1);
+  const bg = $("bg-colour");
+  bg.addEventListener("input", () => { selectedItems().forEach((x) => { x.background = bg.value; }); $("bg-pick").style.setProperty("--bg-now", bg.value); changed("look"); });
+  bg.addEventListener("change", () => { changed("project"); commit(); });
+  const before = $("btn-before");
+  const hold = (on) => { if (state.before !== on) { state.before = on; changed("look"); } };
+  before.addEventListener("pointerdown", (e) => { before.setPointerCapture(e.pointerId); hold(true); });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((t) => before.addEventListener(t, () => hold(false)));
   document.querySelectorAll("#view-switch button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
   $("btn-undo").onclick = undo;
   $("btn-redo").onclick = redo;
@@ -131,6 +181,10 @@ function wireStrip() {
   $("btn-add").onclick = pick;
   $("btn-empty-add").onclick = pick;
   input.addEventListener("change", () => { if (input.files.length) addFiles(input.files); input.value = ""; });
+  // The strip's fold: the toolbar stays, the slides go (remembered in this browser)
+  const foldStrip = (on) => { document.body.classList.toggle("strip-folded", on); try { localStorage.setItem("ans_photo_strip_folded", on ? "1" : "0"); } catch (e) {} window.dispatchEvent(new Event("resize")); };
+  try { foldStrip(localStorage.getItem("ans_photo_strip_folded") === "1"); } catch (e) {}
+  $("btn-strip-fold").onclick = () => foldStrip(!document.body.classList.contains("strip-folded"));
   $("btn-duplicate").onclick = duplicateSelected;
   $("btn-delete").onclick = removeSelected;
   $("btn-reset").onclick = resetSelected;
@@ -198,10 +252,7 @@ function wireKeys() {
       e.preventDefault();
       const step = e.key === "ArrowRight" ? 1 : -1;
       if (state.view === "phone") { phoneGo(step); return; }
-      const list = items();
-      const i = list.findIndex((x) => x.id === state.current);
-      const next = list[Math.max(0, Math.min(list.length - 1, i + step))];
-      if (next) select(next.id, e.shiftKey ? "range" : "one");
+      stepSlide(step, e.shiftKey ? "range" : "one");
       return;
     }
     if (e.key === "\\" && !e.repeat) { state.before = true; changed("look"); return; }

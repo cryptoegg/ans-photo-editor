@@ -44,7 +44,11 @@ export const lastProjectId = () => dbGet("meta", "last").catch(() => null);
 export async function listProjects() {
   const all = await dbAll("projects").catch(() => []);
   return all
-    .map((p) => ({ id: p.id, name: p.name, updated: p.updated || 0, slides: (p.items || []).reduce((n, i) => n + (i.span || 1), 0), cover: p.items && p.items[0] ? p.items[0].mediaId : null }))
+    .map((p) => {
+      // (the set being edited: each platform has its own since Linked went; an old record still has items)
+      const list = (p.stages && p.stages[p.stage] && p.stages[p.stage].items) || p.items || [];
+      return { id: p.id, name: p.name, updated: p.updated || 0, slides: list.reduce((n, i) => n + (i.span || 1), 0), cover: list[0] ? list[0].mediaId : null };
+    })
     .sort((a, b) => b.updated - a.updated);
 }
 

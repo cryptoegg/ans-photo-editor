@@ -5,13 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Photo Editor — A New Song</title>
 <meta name="description" content="A free photo editor for carousels: Instagram, TikTok and YouTube in one go.">
-<script>
-  // The skin before the first paint (js/ui/skin.js), so a dark one never flashes light
-  try { document.documentElement.dataset.skin = localStorage.getItem("ans_photo_skin2") || "site"; } catch (e) { document.documentElement.dataset.skin = "site"; }
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Caveat:wght@500;700&family=DM+Serif+Display&family=Inter+Tight:wght@400;500;700;800&family=Playfair+Display:wght@400;700&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Caveat:wght@500;700&family=DM+Serif+Display&family=Inter+Tight:wght@400;500;600;700;800&family=Playfair+Display:wght@400;700&family=Space+Mono:wght@400;700&display=swap">
 <link rel="stylesheet" href="styles.css">
 <!-- Installable (an icon on the dock / desktop, works offline): js/install.js -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -20,28 +16,37 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
+<!-- The top bar (Style 2, like the Lyric Visualiser's): Home · File · Export · Post at the left; in the middle Edit | Phone,
+     the platform being edited, and Feed | Profile (faint while editing); at the right ● the project's name and whether
+     it's saved to your folder -->
 <header class="topbar">
-  <a id="btn-home" class="btn ghost" href="/identity/" title="Back to Identity">Home</a>
-  <button id="btn-file" class="btn ghost" title="New, save, open, your projects, Settings">File ▾</button>
-  <button id="btn-export" class="btn primary">Export</button>
-  <a id="btn-post" class="btn ghost" href="/identity/calendar/" title="Your Social Media Calendar in Identity, to plan the post">Post</a>
-  <span class="topbar-gap"></span>
-  <div class="segmented" id="platform-switch" title="The platform you're editing. Platforms on the same shape are edited together.">
-    <button data-mode="instagram">Instagram</button>
-    <button data-mode="tiktok">TikTok</button>
-    <button data-mode="youtube">YouTube</button>
+  <div class="topbar-left">
+    <a id="btn-home" class="topbar-btn" href="/identity/" title="Back to Identity">Home</a>
+    <button id="btn-file" class="topbar-btn" title="New, open, save, Settings, your projects">File</button>
+    <button id="btn-export" class="topbar-btn">Export</button>
+    <a id="btn-post" class="topbar-btn" href="/identity/calendar/" title="Your Social Media Calendar in Identity, to plan the post">Post</a>
   </div>
-  <select id="ratio-select" class="select" title="This platform's shape"></select>
-  <span class="spacer"></span>
-  <div class="segmented" id="view-switch" role="tablist" aria-label="View">
-    <button data-view="edit" class="on">Edit</button>
-    <button data-view="phone">Phone</button>
+  <div class="topbar-centre">
+    <div class="segmented" id="view-switch" role="tablist" aria-label="View">
+      <button data-view="edit" class="on">Edit</button>
+      <button data-view="phone">Phone</button>
+    </div>
+    <div class="segmented" id="platform-switch" title="The platform you're editing. Platforms on the same shape are edited together.">
+      <button data-mode="instagram">Instagram</button>
+      <button data-mode="tiktok">TikTok</button>
+      <button data-mode="youtube">YouTube</button>
+    </div>
+    <div class="segmented" id="phone-screens" title="Feed: the post as people scroll past it. Profile: how it sits on your page.">
+      <button data-screen="feed" class="on">Feed</button>
+      <button data-screen="profile">Profile</button>
+    </div>
   </div>
-  <!-- (an empty box over the panel, so Edit | Phone ends where the canvas does) -->
-  <div class="topbar-right"></div>
+  <div class="topbar-status" id="topbar-status"><span class="topbar-dirty" title="Changes not saved to your folder"></span><span class="topbar-name"></span><span class="topbar-note"></span></div>
 </header>
 
-<main class="workspace">
+<main class="workspace" id="workspace">
+  <!-- Media (js/ui/mediaColumn.js): the project's photos and videos, and your saved filters -->
+  <aside class="media-col" id="media-col"></aside>
   <section class="stage-area" id="stage-area">
     <!-- Edit view -->
     <div class="edit-view" id="edit-view">
@@ -51,73 +56,91 @@
         <button class="btn primary" id="btn-empty-add">Add photos</button>
       </div>
       <div class="video-bar" id="video-bar" hidden></div>
-      <div class="stage-tools">
+      <!-- The canvas bar (Style 2, as the Lyric Visualiser's): ‹ Slide 1 of 7 ›, the shape, − Fit +, guides, snapping,
+           the background colour, Before (hold) -->
+      <div class="stage-tools canvas-bar" id="canvas-bar">
+        <button class="cb-icon" id="btn-slide-prev" title="Previous slide (←)" aria-label="Previous slide"></button>
+        <span class="cb-slide" id="slide-of">Slide 1 of 1</span>
+        <button class="cb-icon" id="btn-slide-next" title="Next slide (→)" aria-label="Next slide"></button>
+        <span class="cb-sep"></span>
+        <select id="ratio-select" class="cb-ratio" title="This platform's shape"></select>
+        <span class="cb-sep"></span>
+        <button class="cb-icon" id="btn-zoom-out" title="Zoom out" aria-label="Zoom out"></button>
+        <button class="cb-btn" id="btn-zoom-fit" title="Fit">Fit</button>
+        <button class="cb-icon" id="btn-zoom-in" title="Zoom in" aria-label="Zoom in"></button>
+        <span class="cb-sep"></span>
+        <button class="cb-icon" id="btn-guides" title="Guides" aria-label="Guides"></button>
+        <button class="cb-icon" id="btn-magnet" title="Snapping" aria-label="Snapping"></button>
+        <label class="cb-icon cb-bg" id="bg-pick" title="Background colour"><input type="color" id="bg-colour" aria-label="Background colour"></label>
+        <span class="cb-sep"></span>
+        <button class="cb-btn" id="btn-before" title="Hold to see the photos without their look (or hold \)">Before</button>
         <span class="hint" id="before-hint" hidden>Before</span>
-        <button class="btn ghost small" id="btn-guides" title="Guides">▦</button>
-        <button class="btn ghost small" id="btn-magnet" title="Snapping">🧲</button>
-        <button class="btn ghost small" id="btn-zoom-out" title="Zoom out">−</button>
-        <button class="btn ghost small" id="btn-zoom-fit" title="Fit">Fit</button>
-        <button class="btn ghost small" id="btn-zoom-in" title="Zoom in">＋</button>
       </div>
     </div>
     <!-- Phone view -->
+    <!-- Phone view (Style 2, as the Lyric Visualiser's): just the screen, rounded, on the dotted desk; ‹ › beside it;
+         − Fit + in a floating bar under it -->
     <div class="phone-view" id="phone-view" hidden>
-      <div class="phone-switches">
-        <div class="segmented" id="phone-platforms">
-          <button data-platform="instagram" class="on">Instagram</button>
-          <button data-platform="tiktok">TikTok</button>
-          <button data-platform="youtube">YouTube</button>
-        </div>
-        <div class="segmented" id="phone-screens" title="Feed: the post as people scroll past it. Profile: how it sits on your page.">
-          <button data-screen="feed" class="on">Feed</button>
-          <button data-screen="profile">Profile</button>
-        </div>
-      </div>
       <div class="phone-row">
-        <button class="btn ghost round" id="phone-prev" aria-label="Previous slide">‹</button>
+        <button class="phone-nav" id="phone-prev" title="Previous slide (←)" aria-label="Previous slide"></button>
         <div class="phone-fit" id="phone-fit"><div class="phone" id="phone"></div></div>
-        <button class="btn ghost round" id="phone-next" aria-label="Next slide">›</button>
+        <button class="phone-nav" id="phone-next" title="Next slide (→)" aria-label="Next slide"></button>
       </div>
-      <p class="muted small">← → or swipe to flick through · double-click a slide to edit it · pinch or ⌘-scroll to zoom</p>
-      <div class="stage-tools">
-        <button class="btn ghost small" id="phone-zoom-out" title="Zoom out">−</button>
-        <button class="btn ghost small" id="phone-zoom-fit" title="Fit">Fit</button>
-        <button class="btn ghost small" id="phone-zoom-in" title="Zoom in">＋</button>
+      <div class="stage-tools canvas-bar phone-bar">
+        <button class="cb-icon" id="phone-zoom-out" title="Zoom out" aria-label="Zoom out"></button>
+        <button class="cb-btn" id="phone-zoom-fit" title="Fit">Fit</button>
+        <button class="cb-icon" id="phone-zoom-in" title="Zoom in" aria-label="Zoom in"></button>
       </div>
     </div>
   </section>
 
   <aside class="panel" id="panel">
-    <div class="scope" id="scope">
-      <span class="scope-text" id="scope-text">No slides yet</span>
+    <!-- Style 2 (as the Lyric Visualiser's editor): Editor and its fold arrow; five kind tiles; the presets row; This slide | All;
+         Layers; then the tile's own settings -->
+    <div class="ed-head">
+      <span class="ed-title">Editor</span>
       <button id="btn-undo" class="btn ghost icon undo-redo" title="Undo (⌘Z)" aria-label="Undo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
       <button id="btn-redo" class="btn ghost icon undo-redo" title="Redo (⇧⌘Z)" aria-label="Redo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
-      <div class="segmented small" id="scope-switch">
-        <button data-scope="one" class="on">This slide</button>
-        <button data-scope="all">All</button>
-      </div>
+      <button type="button" class="ed-fold" id="btn-editor-fold" title="Fold the Editor" aria-label="Fold the Editor"></button>
+    </div>
+    <nav class="kinds" id="tabs">
+      <button data-tab="filters" class="on"><i class="k-ico"></i>Filters</button>
+      <button data-tab="adjust"><i class="k-ico"></i>Adjust</button>
+      <button data-tab="crop"><i class="k-ico"></i>Crop</button>
+      <button data-tab="text"><i class="k-ico"></i>Captions</button>
+      <button data-tab="captions"><i class="k-ico"></i>Post text</button>
+    </nav>
+    <div class="presets-row" id="presets-row">
+      <select class="select" id="preset-pick" aria-label="Presets"></select>
+      <button type="button" class="btn" id="btn-save-preset">Save Preset</button>
+      <button type="button" class="btn dice" id="btn-random" title="A random filter" aria-label="A random filter"></button>
+    </div>
+    <div class="segmented scope-seg" id="scope-switch">
+      <button data-scope="one" class="on">This slide</button>
+      <button data-scope="all">All</button>
     </div>
     <div class="layers-box" id="layers-box" hidden></div>
-    <nav class="tabs" id="tabs">
-      <button data-tab="filters" class="on">Filters</button>
-      <button data-tab="adjust">Adjust</button>
-      <button data-tab="crop">Crop</button>
-      <button data-tab="text">Text Overlay</button>
-      <button data-tab="captions">Captions</button>
-    </nav>
     <div class="tab-body" id="tab-body"></div>
   </aside>
 </main>
 
 <footer class="filmstrip-area">
+  <!-- The slides strip's toolbar (Style 2, as the Lyric Visualiser's timeline bar): fold, Add (blue), trays of actions, the count -->
   <div class="strip-tools">
-    <button class="btn small" id="btn-add">＋ Add photos or videos</button>
-    <button class="btn ghost small" id="btn-duplicate" title="Duplicate (⌘D)">Duplicate</button>
-    <button class="btn ghost small" id="btn-pano" title="Join the selected slides into one panorama">Make panorama</button>
-    <button class="btn ghost small" id="btn-split" title="Turn a panorama back into separate slides">Split apart</button>
-    <button class="btn ghost small" id="btn-copy-to" title="Copy the selected slides to another platform's set">Copy to ▾</button>
-    <button class="btn ghost small" id="btn-reset" title="Back to the photo as it came in">Reset</button>
-    <button class="btn ghost small" id="btn-delete" title="Remove from the set">Remove</button>
+    <button type="button" class="strip-fold" id="btn-strip-fold" title="Fold the slides" aria-label="Fold the slides"></button>
+    <button class="btn primary small" id="btn-add">Add photos or videos</button>
+    <div class="tray">
+      <button id="btn-duplicate" title="Duplicate (⌘D)">Duplicate</button>
+      <button id="btn-pano" title="Join the selected slides into one panorama">Make panorama</button>
+      <button id="btn-split" title="Turn a panorama back into separate slides">Split apart</button>
+    </div>
+    <div class="tray">
+      <button id="btn-copy-to" title="Copy the selected slides to another platform's set">Copy to</button>
+    </div>
+    <div class="tray">
+      <button id="btn-reset" title="Back to the photo as it came in">Reset</button>
+      <button id="btn-delete" title="Remove from the set">Remove</button>
+    </div>
     <span class="spacer"></span>
     <span class="count" id="slide-count">0 of 10</span>
   </div>

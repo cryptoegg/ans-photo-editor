@@ -1,7 +1,6 @@
 // The Export window and the File menu
 import { state, openProject, changed, commit } from '../state.js';
 import { saveToFolder, openFromFolder, mainFolder, chooseMainFolder, safeName } from '../folder.js';
-import { SKINS, setSkin } from './skin.js';
 import { installApp, isInstalled } from '../install.js';
 import { newProject, slideCount, newId } from '../project.js';
 import { listProjects, loadProject, deleteProject, saveProject } from '../store.js';
@@ -117,6 +116,7 @@ export async function saveNow() {
   if (!foldersPossible()) { toast("Saved in this browser (this browser can't save to a folder; Chrome or Edge can)"); return; }
   try {
     const path = await saveToFolder(state.project);
+    if (path) { state.project.savedAt = Date.now(); changed("view"); saveProject(state.project).catch(() => {}); } // (the top bar's "Saved")
     toast(path ? `Saved to ${path}` : "Saved in this browser. Choose a main folder in Settings to save it on your computer too.");
   } catch (err) {
     console.error(err);
@@ -206,7 +206,7 @@ export async function openFileMenu(anchor) {
   setTimeout(() => document.addEventListener("pointerdown", away), 0);
 }
 
-// ---- Settings (File ▾ → Settings…, ⌘,): where things are saved, the main folder, the skin, the keys
+// ---- Settings (File ▾ → Settings…, ⌘,): where things are saved, the main folder, the keys
 
 export async function openSettings() {
   const back = document.getElementById("export-dialog");
@@ -243,10 +243,6 @@ export async function openSettings() {
       el("span", { className: "spacer" }),
       isInstalled() ? "" : el("button", { className: "btn small", textContent: "Install as an app", onclick: installApp }))));
 
-    const skin = el("select", { className: "select" });
-    SKINS.forEach((s) => skin.append(el("option", { value: s.id, textContent: s.label, selected: s.id === (document.documentElement.dataset.skin || "concrete") })));
-    skin.onchange = () => setSkin(skin.value);
-    box.append(section("Display", el("div", { className: "row" }, el("span", { textContent: "Skin (the app's colours, never your photos')" }), el("span", { className: "spacer" }), skin)));
 
     const keys = [["⌘S / ⇧⌘S", "Save / Save as…"], ["⌘Z / ⇧⌘Z", "Undo / Redo"], ["← →", "Previous / next slide"], ["⇧-click / ⌘-click", "Select a run / add a slide"], ["⌘A", "Select all slides"], ["Delete", "Remove the selected slides (or the picked text)"], ["⌘C / ⌘V", "Copy / paste a look"], ["⌘D", "Duplicate"], ["Hold \\", "See the photo before"], ["⌘ while dragging", "No snapping"], ["⌘-scroll", "Zoom the view"]];
     box.append(section("Keys", el("div", { className: "keys" }, ...keys.flatMap(([k, what]) => [el("kbd", { textContent: k }), el("span", { textContent: what })]))));

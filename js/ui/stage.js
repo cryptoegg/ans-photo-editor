@@ -91,9 +91,12 @@ function frameRect(item) {
   const W = area.clientWidth, H = area.clientHeight;
   const span = item ? item.span : 1;
   const a = aspectOf(activeSet(state.project).ratio);
-  const fit = Math.min((W - PAD * 2) / (span * a), H - PAD * 2 - 30);
+  // (room under it for the floating canvas bar, and the video bar over that on a video slide)
+  const below = isVideo(item) ? 124 : 76;
+  const top = 24, room = H - below - top;
+  const fit = Math.min((W - PAD * 2) / (span * a), room - 12);
   const h = Math.max(40, fit * viewZoom), w = h * a * span;
-  return { x: Math.round((W - w) / 2), y: Math.round((H - 30 - h) / 2), w, h, pw: h * a };
+  return { x: Math.round((W - w) / 2), y: Math.round(top + (room - h) / 2), w, h, pw: h * a };
 }
 
 // ---- What's picked: the photo, a text, or nothing
@@ -399,7 +402,7 @@ function paint() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const item = currentItem();
   document.getElementById("empty-state").hidden = items().length > 0;
-  document.getElementById("before-hint").hidden = !state.before;
+  document.getElementById("btn-before").classList.toggle("on", !!state.before);
   if (!item) return;
   const pic = getPicture(item.mediaId);
   if (!pic) { loadPicture(item.mediaId).then(draw); return; }
@@ -410,6 +413,15 @@ function paint() {
   // A video: the frame at the playhead, with its look (worked out once for both draws below)
   const raw = isVideo(item) ? videoFrame(item) : null;
   const frame = raw && !state.before ? lookedFrame(item, raw, "preview", state.project.seed) : raw;
+
+  // The slide lifted off the dotted desk: a soft shadow under it
+  ctx.save();
+  ctx.shadowColor = "rgba(59, 58, 55, 0.2)";
+  ctx.shadowBlur = 30 * ratio;
+  ctx.shadowOffsetY = 8 * ratio;
+  ctx.fillStyle = item.background || "#ffffff";
+  ctx.fillRect(0, 0, f.w, f.h);
+  ctx.restore();
 
   // The picked photo past its frame's edges (the slide's, or its grid cell's), faint: only while
   // it's picked (click the grey to see just the slide)
@@ -463,9 +475,6 @@ function paint() {
   guideLines("x", item, f).forEach((at) => line("x", at, guide));
   guideLines("y", item, f).forEach((at) => line("y", at, guide));
   for (let k = 1; k < item.span; k++) line("x", k * f.pw, "rgba(120,120,120,0.95)", 1.5, [6, 5]);
-  ctx.strokeStyle = uiColour("--stage-edge") || "#000";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(-0.5, -0.5, f.w + 1, f.h + 1);
   lit.forEach((l) => line(l.axis, l.at, uiColour("--snap") || "#ff2d8a", 1.5));
 
   // Slide numbers on a panorama
