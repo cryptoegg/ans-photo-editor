@@ -668,3 +668,12 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 #phone-zoom-in { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 6v12M6 12h12'/></svg>"); }
 /* (the status bar clear of the rounded corners, where an iPhone puts it) */
 .ph-status { padding: 17px 34px 7px 46px; font-size: 15px; }
+
+/* ---- Every section a box, as in the Lyric Visualiser (Tom, 2026-11-16): Media, the canvas, the Editor and the slides
+   strip each rounded (8px) with a thin outline, 3px apart, their outer edges level */
+.workspace { padding: 3px 3px 0; gap: 3px; }
+.media-col, .stage-area, .panel, .filmstrip-area { border: 1px solid var(--rule); border-radius: 8px; box-sizing: border-box; overflow: hidden; }
+.filmstrip-area { margin: 3px; }
+.media-col { overflow-y: auto; }
+/* (the top bar a box too, Tom 2026-11-16) */
+.topbar { margin: 3px 3px 0; border: 1px solid var(--rule); border-radius: 8px; box-sizing: border-box; }
