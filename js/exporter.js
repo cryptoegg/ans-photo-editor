@@ -9,6 +9,7 @@
 //   <name> Project/Exports/Instagram/01.jpg …   (TikTok/, YouTube/ beside it)
 // Exporting again replaces that platform's numbered photos. Other browsers (and app-embedded
 // ones, whose folder picker never opens): one zip download with the same folders inside.
+import { maskIdsOf } from './cutout.js';
 import { drawSlides, composeTikTok } from './render.js';
 import { setFor, aspectOf, tiktokFilled, isVideo } from './project.js';
 import { videoSlideToMp4 } from './video/mp4.js';
@@ -37,7 +38,7 @@ export { foldersPossible, safeName, mainFolder as savedPlace, chooseMainFolder a
 // Make the photos: { platformId: [Blob…] }. progress(0 - 1).
 export async function makeExports(project, platforms, scale, progress = () => {}) {
   const shapes = platforms.map((id) => ({ id, ...exportShape(project, id) }));
-  await Promise.all(shapes.flatMap((sh) => sh.set.items.flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId))]).map((id) => loadPicture(id))));
+  await Promise.all(shapes.flatMap((sh) => sh.set.items.flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId)), ...maskIdsOf([i, ...(i.layers || [])])]).map((id) => loadPicture(id))));
   const out = {};
   // (a video slide counts as much as ten photos in the progress bar: it takes longer)
   const weight = (sh, item) => (sh.id === "instagram" && isVideo(item) ? 10 : 1);

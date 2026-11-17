@@ -2,6 +2,8 @@
 // "Editing all 7 slides") and a This slide / All switch: Filters and Adjust change every slide
 // outlined in the filmstrip; Crop and Text always change the one on the canvas. Changing
 // several slides at once says so in a note with Undo.
+import { removeBackground, restoreBackground, cutoutStatus } from '../cutout.js';
+import { brush, setBrush, pickTool, clearTouchUps } from './brush.js';
 import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, select, selectAll, onChange, items } from '../state.js';
 import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, PLATFORMS, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
 import { PRESETS } from '../effects/presets.js';
@@ -29,11 +31,13 @@ function filterGroups() {
 }
 
 let body = null;
+let shownTab = null;
 
 export function initPanel() {
   body = document.getElementById("tab-body");
   document.querySelectorAll("#tabs button").forEach((b) => b.addEventListener("click", () => {
     state.tab = b.dataset.tab;
+    if (document.getElementById("panel").classList.contains("folded")) foldEditor(false); // (a tab opens a folded Editor)
     changed("view");
   }));
   document.querySelectorAll("#scope-switch button").forEach((b) => b.addEventListener("click", () => {
@@ -94,7 +98,13 @@ function buildLayersBox() {
   // (no layout templates (Tom, 2026-11-11): photos sit freely; a slide saved in a grid keeps it)
   const plus = button("+", () => document.dispatchEvent(new CustomEvent("add-layer")), "mc-plus");
   plus.title = "Another photo on this slide";
-  box.append(el("div", { className: "layers-head" }, el("span", { textContent: "Layers" }), el("span", { className: "mc-n", textContent: String(layersOf(slide).length) }), plus));
+  // (Layers folds up and down like Light, Colour and the rest: Tom, 2026-11-18)
+  const open = !openCards.has("layers:shut");
+  const name = el("button", { className: "fold-name layers-fold", title: "Show / hide the layers" }, el("span", { className: "fold-arrow" }), el("span", { textContent: "Layers" }), el("span", { className: "mc-n", textContent: String(layersOf(slide).length) }));
+  name.onclick = () => { if (open) openCards.add("layers:shut"); else openCards.delete("layers:shut"); changed("view"); };
+  box.classList.toggle("open", open);
+  box.append(el("div", { className: "layers-head" }, name, plus));
+  if (!open) return;
 
   const list = el("div", { className: "layer-list" });
   const all = layersOf(slide);
@@ -123,6 +133,9 @@ function buildLayersBox() {
       if (vid && i === 0) return;
       state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view");
       const entries = [{ label: "Duplicate", keys: "⌘D", action: () => duplicateLayer(layer) }];
+      if (!(vid && i === 0)) entries.push(layer.cutout && layer.cutout.on
+        ? { label: "Bring background back", action: () => restoreBackground(layer) }
+        : { label: "Remove background", action: () => removeBackground(layer) });
       if (all.length > 1) entries.push({ label: "Remove from slide", action: () => removeLayer(layer) });
       showMenu(e, entries);
     });
@@ -154,6 +167,64 @@ function buildLayersBox() {
   }
 }
 
+// ---- Tools (Tom, 2026-11-18): everything that works on the picked photo itself, in one fold under Layers:
+// Remove background now; the touch-up brushes (edge, spot heal, remove object) and skin smoothing next
+function buildToolsBox() {
+  const box = document.getElementById("tools-box");
+  const slide = currentItem();
+  box.innerHTML = "";
+  const picked = slide && currentLayer();
+  if (!slide || !picked || slide.span > 1 || (isVideo(slide) && picked === slide)) { box.hidden = true; return; }
+  box.hidden = false;
+  const open = !openCards.has("tools:shut");
+  const name = el("button", { className: "fold-name layers-fold", title: "Show / hide the tools" }, el("span", { className: "fold-arrow" }), el("span", { textContent: "Tools" }));
+  name.onclick = () => { if (open) openCards.add("tools:shut"); else openCards.delete("tools:shut"); changed("view"); };
+  box.classList.toggle("open", open);
+  box.append(el("div", { className: "layers-head" }, name));
+  if (!open) return;
+  // Remove background (js/cutout.js): the picked photo's cut-out, on / off; the model downloads the first time
+  box.append(cutoutRow(picked));
+  // The brushes (js/ui/brush.js): picked here, painted on the canvas; Esc or a second click puts one down
+  const cutOn = !!(picked.cutout && picked.cutout.on);
+  if (state.tool === "edge" && !cutOn) state.tool = null;
+  const toolBtn = (tool, label, title, disabled = false) => {
+    const b = button(label, () => pickTool(tool), "btn small cut-btn" + (state.tool === tool ? " on" : ""));
+    b.title = title;
+    b.disabled = disabled;
+    return b;
+  };
+  box.append(el("div", { className: "tool-row" },
+    toolBtn("edge", "Edge brush", cutOn ? "Tidy the cut-out's edge: Erase takes more away, Restore brings the photo back" : "Remove the background first", !cutOn),
+    toolBtn("heal", "Spot heal", "Brush over a spot, a mark or dust: it's filled from the photo around it")));
+  if (state.tool) {
+    const size = el("label", { className: "field" }, el("span", { className: "field-head" }, el("span", { textContent: "Size" }), el("span", { className: "value", textContent: String(brush.size) })),
+      el("input", { type: "range", min: 4, max: 300, value: brush.size, title: "[ and ] change it too", oninput: (e) => { brush.size = Number(e.target.value); e.target.previousSibling.lastChild.textContent = e.target.value; fillTrack(e.target); }, onchange: (e) => setBrush("size", Number(e.target.value)) }));
+    const soft = el("label", { className: "field" }, el("span", { className: "field-head" }, el("span", { textContent: "Softness" }), el("span", { className: "value", textContent: String(brush.softness) })),
+      el("input", { type: "range", min: 0, max: 100, value: brush.softness, oninput: (e) => { brush.softness = Number(e.target.value); e.target.previousSibling.lastChild.textContent = e.target.value; fillTrack(e.target); }, onchange: (e) => setBrush("softness", Number(e.target.value)) }));
+    box.append(el("div", { className: "pair" }, size, soft));
+    if (state.tool === "edge") {
+      const seg = el("div", { className: "segmented wide" });
+      [["erase", "Erase"], ["restore", "Restore"]].forEach(([v, l]) => seg.append(el("button", { textContent: l, className: brush.edge === v ? "on" : "", onclick: () => setBrush("edge", v) })));
+      box.append(seg);
+    }
+  }
+  if (picked.retouch) box.append(el("div", { className: "tool-row" }, button("Clear spot heals", () => clearTouchUps(picked), "btn small cut-btn")));
+}
+
+function cutoutRow(layer) {
+  const on = !!(layer.cutout && layer.cutout.on);
+  const busy = cutoutStatus.busy;
+  const label = busy && cutoutStatus.layer === layer.id
+    ? (cutoutStatus.progress !== null && cutoutStatus.progress < 1 ? `Downloading the cut-out model ${Math.round(cutoutStatus.progress * 100)}%` : "Removing background…")
+    : on ? "Background removed" : "Remove background";
+  const b = button(label, () => (on ? restoreBackground(layer) : removeBackground(layer)), "btn small cut-btn" + (on ? " on" : "") + (busy ? " busy" : ""));
+  b.disabled = busy;
+  b.title = on ? "Click to bring the background back" : "Cut out the person or thing in this photo (the photo itself is kept)";
+  const row = el("div", { className: "cut-row" }, b);
+  if (cutoutStatus.error) row.append(el("span", { className: "note", textContent: cutoutStatus.error }));
+  return row;
+}
+
 // Dragging a row in Layers up or down: the row moves through the list as you go, and letting go
 // puts the photo there (the list shows the top first, so place 0 is the last row)
 let dragged = false;
@@ -169,7 +240,7 @@ function dragRow(e, row, list, all) {
     const rows = [...list.children];
     const over = rows.find((r) => r !== row && ev.clientY > r.getBoundingClientRect().top && ev.clientY < r.getBoundingClientRect().bottom);
     if (!over) return;
-    const mid = over.getBoundingClientRect().top + over.offsetHeight / 2;
+    const box = over.getBoundingClientRect(), mid = box.top + box.height / 2; // (both in screen px: the panel is drawn at --ui-zoom)
     if (ev.clientY < mid) list.insertBefore(row, over); else list.insertBefore(row, over.nextSibling);
   };
   const up = () => {
@@ -211,8 +282,10 @@ function build() {
   fillPresets();
 
   buildLayersBox();
-  if (post || state.tab === "text") document.getElementById("layers-box").hidden = true;
-  const scroll = body.scrollTop;
+  buildToolsBox();
+  if (post || state.tab === "text") document.getElementById("layers-box").hidden = document.getElementById("tools-box").hidden = true;
+  const scroll = state.tab === shownTab ? body.scrollTop : 0; // (a different tab starts at its top)
+  shownTab = state.tab;
   body.innerHTML = "";
   if (!all && state.tab !== "captions") {
     body.append(note("Add photos to start. Everything you set here shows on the canvas straight away."));
@@ -221,6 +294,7 @@ function build() {
   if ((state.tab === "filters" || state.tab === "adjust") && chosen.length) body.append(sharedLook(chosen));
   ({ filters: buildFilters, adjust: buildAdjust, crop: buildCrop, text: buildText, captions: buildCaptions })[state.tab]();
   document.querySelectorAll('#panel input[type="range"]').forEach(fillTrack);
+  pairSliders(body);
   body.scrollTop = scroll;
 }
 
@@ -259,10 +333,28 @@ function slider({ label, min, max, step = 1, targets, get, set, unit = "", reset
     commit();
     saidAcross(`${label} reset`, targets.length);
   });
-  field.title = "Double-click the name to reset";
-  field.append(el("span", { className: "field-head" }, el("span", { textContent: label }), valueEl), input);
+  field.title = `${label} · double-click the name to reset`;
+  field.append(el("span", { className: "field-head" }, el("span", { textContent: short(label) }), valueEl), input);
   return field;
 }
+
+// Compact editor (Tom, 2026-11-17, as the Lyric Visualiser): sliders next to each other in the tab sit two to a
+// row (inside a fold the fold's own grid does it, in styles.css)
+function pairSliders(host) {
+  const isSlider = (n) => n && n.matches && n.matches("label.field") && n.querySelector(':scope > input[type="range"]');
+  [...host.children].forEach((n) => {
+    if (!isSlider(n) || n.parentElement !== host) return;
+    const run = [n];
+    for (let m = n.nextElementSibling; isSlider(m); m = m.nextElementSibling) run.push(m);
+    if (run.length < 2) return;
+    const pair = el("div", { className: "pair" });
+    n.before(pair);
+    pair.append(...run);
+  });
+}
+
+// A short label, the full name on hover: "Mirror (left / right)" → "Mirror"
+const short = (label) => String(label || "").replace(/\s*\(.*?\)\s*/g, " ").trim();
 
 // (the blue part of a slider's track, up to its knob)
 export function fillTrack(input) {
@@ -526,7 +618,7 @@ function effectControl(c, type, targets, shown, ensure) {
   if (c.kind === "toggle") {
     const input = el("input", { type: "checkbox", checked: !!value });
     input.onchange = () => { setAll(input.checked); done(); };
-    return el("label", { className: "check-row" }, input, el("span", { textContent: c.label }));
+    return el("label", { className: "check-row", title: c.label }, input, el("span", { textContent: short(c.label) }));
   }
   if (c.kind === "text") {
     const input = el("input", { className: "input", value: value || "" });

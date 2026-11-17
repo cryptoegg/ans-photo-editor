@@ -5,7 +5,7 @@
 import { runChain, available } from './effects/gl.js';
 import { getEffect } from './effects/registry.js';
 import { freshChain } from './filters.js';
-import { getPicture, stillAt } from './media.js';
+import { getPicture, loadPicture, stillAt } from './media.js';
 import { changed } from './state.js';
 
 // Finished looks by key, most recently used last: on-screen ones (a few per slide, so undo and
@@ -54,7 +54,29 @@ function sourceOf(item, quality) {
     const still = stillAt(item.mediaId, item.cover || 0, () => changed("view"));
     if (still) return quality === "full" ? still.full : still.preview;
   }
-  return quality === "full" ? picture.full : picture.preview;
+  return touchedUp(item, quality === "full" ? picture.full : picture.preview);
+}
+
+// The photo with its touch-ups (spot heal, js/ui/brush.js) laid over it: a picture the photo's full size, see-through
+// except where it was healed. Kept per picture, patch and change, so it's laid on once.
+const touched = new WeakMap(); // picture -> { key, canvas }
+function touchedUp(item, picture) {
+  const r = item.retouch;
+  if (!r || !r.patchId) return picture;
+  const patch = getPicture(r.patchId);
+  if (!patch) { loadPicture(r.patchId).then((m) => { if (m) changed("view"); }); return picture; }
+  const key = `${r.patchId}@${patch.rev || 0}`;
+  const was = touched.get(picture);
+  if (was && was.key === key) return was.canvas;
+  const canvas = document.createElement("canvas"); // (a new one each change: the cut-out keeps its own per picture)
+  canvas.width = picture.width;
+  canvas.height = picture.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(picture, 0, 0);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(patch.full, 0, 0, canvas.width, canvas.height);
+  touched.set(picture, { key, canvas });
+  return canvas;
 }
 
 // Run a look on a picture: the adjustments, then the filter at its strength. Returns a canvas
@@ -82,12 +104,13 @@ function applyLook(item, source, keyBase, seed, into = null) {
 
 // The slide's picture with its look: a canvas, or the plain picture when there's no look (or no
 // graphics card). quality: "preview" (on screen) or "full" (export). Kept, so it's worked out once.
-export function lookedPicture(item, quality = "preview", seed = 0) {
+function lookedOnly(item, quality = "preview", seed = 0) {
   const source = sourceOf(item, quality);
   if (!source) return null;
   if (!hasLook(item.look) || !available()) return source;
   const look = item.look;
-  const key = JSON.stringify([item.mediaId, item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.colour]);
+  const r = item.retouch, patch = r && r.patchId && getPicture(r.patchId);
+  const key = JSON.stringify([item.mediaId, patch ? `${r.patchId}@${patch.rev || 0}` : 0, item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.colour]);
   const found = find(quality, key);
   if (found) return found;
   let result;
@@ -95,6 +118,37 @@ export function lookedPicture(item, quality = "preview", seed = 0) {
   catch (err) { console.error("The look couldn't be drawn:", err); return source; }
   keep(quality, key, result);
   return result;
+}
+
+// The look without the cut-out (the edge brush shows the whole photo faintly under it)
+export const lookedWhole = (item, quality = "preview", seed = 0) => lookedOnly(item, quality, seed);
+
+// The slide's picture with its look, then its cut-out (js/cutout.js) when it has one switched on
+export function lookedPicture(item, quality = "preview", seed = 0) {
+  return cutOut(item, lookedOnly(item, quality, seed));
+}
+
+// A cut-out: the picture with its mask laid on (the background see-through). Kept per picture and mask, so
+// moving the photo never works it out again. While the mask loads the whole photo shows.
+const cut = new WeakMap(); // picture -> { key (mask and change), canvas }
+function cutOut(item, picture) {
+  const c = item.cutout;
+  if (!picture || !c || !c.on || !c.maskId) return picture;
+  const mask = getPicture(c.maskId);
+  if (!mask) { loadPicture(c.maskId).then((m) => { if (m) changed("view"); }); return picture; }
+  const key = `${c.maskId}@${mask.rev || 0}`;
+  const was = cut.get(picture);
+  if (was && was.key === key) return was.canvas;
+  const canvas = document.createElement("canvas");
+  canvas.width = picture.width;
+  canvas.height = picture.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(picture, 0, 0);
+  ctx.globalCompositeOperation = "destination-in";
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(mask.full, 0, 0, canvas.width, canvas.height);
+  cut.set(picture, { key, canvas });
+  return canvas;
 }
 
 // One frame of a video (a canvas) with the slide's look, worked out fresh every time (playing,

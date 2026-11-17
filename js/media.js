@@ -9,12 +9,13 @@ import { dbGet, dbPut } from './store.js';
 import { newId } from './project.js';
 
 export const PREVIEW_SIDE = 1600;
-const HEIC_LIB = "https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js";
 
 const pictures = new Map();  // mediaId -> { full, preview, width, height, name }
 const loading = new Map();   // mediaId -> promise of the above
 
 export const getPicture = (id) => pictures.get(id) || null;
+// (a picture made here, not from a file: a cut-out's mask or touch-ups while they're being painted, js/ui/brush.js)
+export const putPicture = (id, picture) => { pictures.set(id, picture); };
 
 // The picture for a media id, loading it from storage if needed (null if it's missing)
 export function loadPicture(id) {
@@ -125,25 +126,36 @@ export function stillAt(mediaId, seconds, ready) {
 }
 
 // Bring a file in: kept in storage, decoded, and given a media id. Resolves to the id.
+// An iPhone photo (HEIC) in a browser that can't read it is read in a worker (js/heic-worker.js): shown as soon as
+// it's read, and its JPEG copy kept a moment later.
 export async function addPhotoFile(file, projectId) {
-  let blob = file;
-  let picture;
-  try {
-    picture = await decode(blob, file.name);
-  } catch (err) {
-    if (!isHeic(file)) throw err;
-    blob = await heicToJpeg(file); // (this browser can't read HEIC itself)
-    picture = await decode(blob, file.name);
-  }
   const id = newId("m");
-  await dbPut("media", { id, projectId, name: file.name, type: blob.type, blob, width: picture.width, height: picture.height, added: Date.now() });
+  if (isHeic(file)) {
+    let native = null;
+    try { native = await decode(file, file.name); } catch (err) { /* (Chrome, Edge, Firefox: read it ourselves) */ }
+    if (!native) {
+      const { bitmap, jpeg } = await readHeic(file);
+      const picture = await fromBitmap(bitmap, file.name);
+      pictures.set(id, picture);
+      jpeg.then((blob) => dbPut("media", { id, projectId, name: file.name, type: blob.type, blob, width: picture.width, height: picture.height, added: Date.now() }))
+        .catch((err) => console.error("Couldn't keep the iPhone photo:", err));
+      return id;
+    }
+    await dbPut("media", { id, projectId, name: file.name, type: file.type, blob: file, width: native.width, height: native.height, added: Date.now() });
+    pictures.set(id, native);
+    return id;
+  }
+  const picture = await decode(file, file.name);
+  await dbPut("media", { id, projectId, name: file.name, type: file.type, blob: file, width: picture.width, height: picture.height, added: Date.now() });
   pictures.set(id, picture);
   return id;
 }
 
 async function decode(blob, name) {
   // (the photo turned the way the camera held it: browsers read the EXIF orientation here)
-  const full = await createImageBitmap(blob, { imageOrientation: "from-image" });
+  return fromBitmap(await createImageBitmap(blob, { imageOrientation: "from-image" }), name);
+}
+async function fromBitmap(full, name) {
   const scale = Math.min(1, PREVIEW_SIDE / Math.max(full.width, full.height));
   const preview = scale < 1
     ? await createImageBitmap(full, { resizeWidth: Math.round(full.width * scale), resizeHeight: Math.round(full.height * scale), resizeQuality: "high" })
@@ -151,18 +163,40 @@ async function decode(blob, name) {
   return { full, preview, width: full.width, height: full.height, name };
 }
 
-let heicLoading = null;
-async function heicToJpeg(file) {
-  if (!heicLoading) {
-    heicLoading = new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = HEIC_LIB;
-      s.onload = () => resolve(window.heic2any);
-      s.onerror = () => { heicLoading = null; reject(new Error("The HEIC reader couldn't be loaded (are you online?)")); };
-      document.head.appendChild(s);
-    });
+// ---- iPhone photos: a few workers, so a batch is read in parallel; the reader is loaded once the app is idle, so the
+// first iPhone photo doesn't wait for it to download
+const heicWorkers = [];
+let heicAsked = 0;
+const heicWaiting = new Map();
+function heicWorker() {
+  const most = Math.max(1, Math.min(4, Math.floor((navigator.hardwareConcurrency || 2) / 2)));
+  if (heicWorkers.length < most && heicWorkers.every((w) => w.busy > 0)) {
+    const worker = new Worker(new URL("./heic-worker.js", import.meta.url), { type: "module" });
+    const w = { worker, busy: 0 };
+    worker.onmessage = (e) => {
+      const d = e.data, job = heicWaiting.get(d.id);
+      if (!job) return;
+      if (d.error) { job.fail(new Error(d.error)); heicWaiting.delete(d.id); w.busy--; }
+      else if (d.bitmap) job.shown(d.bitmap);
+      else if (d.jpeg) { job.kept(d.jpeg); heicWaiting.delete(d.id); w.busy--; }
+    };
+    heicWorkers.push(w);
   }
-  const heic2any = await heicLoading;
-  const out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.95 });
-  return Array.isArray(out) ? out[0] : out;
+  return heicWorkers.reduce((a, b) => (b.busy < a.busy ? b : a));
+}
+function readHeic(file) {
+  const id = ++heicAsked;
+  const w = heicWorker();
+  w.busy++;
+  let kept, lost;
+  const jpeg = new Promise((res, rej) => { kept = res; lost = rej; });
+  jpeg.catch(() => {});
+  return new Promise((resolve, reject) => {
+    heicWaiting.set(id, { shown: (bitmap) => resolve({ bitmap, jpeg }), kept, fail: (err) => { reject(err); lost(err); } });
+    w.worker.postMessage({ id, blob: file });
+  });
+}
+export function warmHeicReader() {
+  const w = heicWorker();
+  w.worker.postMessage({ warm: true });
 }

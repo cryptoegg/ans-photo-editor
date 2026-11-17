@@ -20,7 +20,7 @@ the public repo github.com/cryptoegg/ans-photo-editor instead. So: commit and pu
 ans-website (or run its `./deploy.sh`) to put a change live.
 
 Plain JavaScript ES modules, **no build step**: `index.html` loads `js/main.js`. Libraries load
-from CDNs only when needed (heic2any for iPhone HEIC in browsers that can't read it, JSZip for the
+from CDNs only when needed (heic-to for iPhone HEIC in browsers that can't read it, JSZip for the
 zip export). Styles: `styles.css`. Run with any static server from this folder, e.g.
 `python3 -m http.server 8765` (`.claude/launch.json` has it).
 
@@ -59,6 +59,22 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   `lookedFrame` (looks.js) puts the look on each frame; export: `js/video/mp4.js` (frames from
   `js/video/clipReader.js`, copied from the lyric app, else by seeking; H.264 30 fps + the clip's
   AAC sound; mp4-muxer and mp4box.js load from the CDN when first needed). No video panoramas.
+- **Remove background** (Tom, 2026-11-18): `js/cutout.js` + `js/cutout-worker.js`. The button under Layers (or
+  right-click a layer) cuts out the picked photo. The model is BiRefNet 512 (MIT licence; onnx-community/BiRefNet_512x512-ONNX, fp16, about 470 MB),
+  run with Transformers.js in a worker: downloaded the first time (progress on the button), then kept by the browser,
+  about 1 s a photo on the graphics card (WebGPU), about 40 s without one. The mask is a PNG in the media store; the layer
+  gets `cutout: { maskId, on }` (the photo itself is never changed; on / off and undo as anything else). It's laid on
+  after the look (`cutOut` in looks.js), shared with the same photo on every platform, saved in the project folder, and
+  exported. Not for videos. Checked in Nov 2026: the smaller models (BiRefNet lite, BEN2) hit graphics-card limits, MODNet
+  isn't good enough, and imgly / ISNet (AGPL) and BRIA RMBG (non-commercial) aren't allowed on a paid site. Later: an
+  edge brush, and the desktop app shipping the model inside.
+- **Tools** (Tom, 2026-11-18): a fold under Layers (`buildToolsBox` in panel.js) for the picked photo: Remove
+  background, then the brushes (`js/ui/brush.js`, painted on the canvas through stage.js; `state.tool`; Size and
+  Softness in localStorage; [ ] size, Esc puts it down): **Edge brush** (Erase / Restore the cut-out's mask; the whole
+  photo shows faintly meanwhile) and **Spot heal** (on letting go: the best-matching patch nearby copied in, its colour
+  blended into the edge, like a healing brush; good on skin and plain surfaces, not on lettering: that's Remove object,
+  still to come). Touch-ups are a picture the photo's size laid over it before the look (`item.retouch = { patchId }`,
+  `touchedUp` in looks.js); every stroke saves a new mask / patch picture, so undo just points back.
 - **Looks**: `js/looks.js` runs Light / Colour then the filter's effect chain on the graphics
   card (`js/effects/gl.js`) and keeps the result, so moving / zooming never re-runs it.
 - **Filters**: `js/filters.js`: the presets plus "Your filters" (saved in IndexedDB meta, every
@@ -82,8 +98,13 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   `ans-vtg-styles.css` "Style 2"): paper panels flush with the window, thin lines between, Inter Tight, blue
   accent; tokens on `:root` in styles.css; one look, no skins (`skin.js` keeps `uiColour` only). Where the
   ans-UI-kit mock-up and the built Visualiser differ, follow the built app.
+- **Smaller, compact** (Tom, 2026-11-17, as the Visualiser): the top bar, Media, the Editor, the canvas bar, the video
+  bar and the strip's toolbar are drawn at `--ui-zoom: .85` (CSS `zoom`; the slide, phone and thumbnails never are).
+  The Editor is compact: an effect's on / off a small dot by its name; sliders two to a row (in a fold its grid, else
+  `pairSliders`); on / off settings small boxes lit when on; labels drop any "(…)" (full name on hover).
 - **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Edit | Phone,
-  Instagram | TikTok | YouTube, Feed | Profile (faint while editing) | at the right ● name · Saved), then three
+  Instagram | TikTok | YouTube, Feed | Profile as icons (faint while editing), centred over the canvas | at the right the
+  Editor's five tabs, spread over the Editor (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
   columns, Media 320 | canvas | Editor 320 (each folds to a 44px strip with its blue arrow, remembered in
   localStorage), then the slides strip.
 - **UI**: `js/ui/mediaColumn.js` (Media: Photos, Videos (3 across), Your filters with their dates;
@@ -96,7 +117,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   with a soft shadow; under it the floating canvas bar: ‹ Slide 3 of 7 ›, the shape menu, − Fit +,
   guides, snapping, background colour, Before (hold), `showCanvasBar` in main.js), `filmstrip.js`
   (the slides strip: toolbar with fold, Add (blue), trays of actions, "7 of 20"; slides numbered above,
-  the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow; five tiles;
+  the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow (its five tabs are in the top bar);
   presets row; This slide | All 7 slides; Layers (count, +, Bottom / Top); then the tile's settings:
   sliders with a blue fill (`fillTrack`), switches, blue fold names after a chevron; "mixed"
   sliders; a note with Undo when a change hits several slides),
@@ -124,13 +145,13 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 ## Tom's choices
 
 - Labels: a capital first letter, never all caps. Helvetica in the UI. New UI colours use a role.
-- Several photos per slide: Layers box, Free or a grid, each layer its own look. No background
-  removal. No sound (people add it in TikTok).
+- Several photos per slide: Layers box, Free or a grid, each layer its own look. Remove background
+  (Tom, 2026-11-18, replacing "no background removal"). No sound (people add it in TikTok).
 - Later: brand kit, video panoramas, text across panorama seams, "send to phone", direct
   posting (Instagram API / TikTok drafts; YouTube posts have no API).
 
 ## Keys
 
 ← → slides (or the phone) · ⇧-click / ⌘-click select · ⌘A all · ⌘C / ⌘V copy / paste a look ·
-⌘D duplicate (the picked photo, else the slides) · hold \ before / after · ⌘Z / ⇧⌘Z · Delete removes the picked text · ⌘-scroll
+⌘D duplicate (the picked photo, else the slides) · hold \ before / after · ⌘Z / ⇧⌘Z · [ ] brush size · Esc puts the brush down · Delete removes the picked text · ⌘-scroll
 zooms the view.

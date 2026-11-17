@@ -15,7 +15,8 @@
 import { state, changed, commit, currentItem, currentLayer, onChange, items } from '../state.js';
 import { activeSet, aspectOf, isVideo, layersOf, isGrid } from '../project.js';
 import { drawItem, drawPlaced, layoutText, textAt, photoBox, onBox, textBox, turn, layerFrame, cellRects } from '../render.js';
-import { lookedPicture, lookedFrame } from '../looks.js';
+import { lookedPicture, lookedFrame, lookedWhole } from '../looks.js';
+import { brushReady, brushDown, brushMove, brushUp, brushLeave, drawBrush } from './brush.js';
 import { initVideoBar, videoFrame } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
 import { uiColour, onSkinChange } from './skin.js';
@@ -72,7 +73,7 @@ export function initStage() {
   canvas.addEventListener("pointermove", move);
   canvas.addEventListener("pointerup", up);
   canvas.addEventListener("pointercancel", up);
-  canvas.addEventListener("pointerleave", () => { if (!drag && hovering) { hovering = false; draw(); } });
+  canvas.addEventListener("pointerleave", () => { brushLeave(); canvas.style.cursor = ""; if (!drag && hovering) { hovering = false; draw(); } });
   canvas.addEventListener("wheel", wheel, { passive: false });
   canvas.addEventListener("dblclick", (e) => {
     const item = currentItem();
@@ -236,6 +237,7 @@ function down(e) {
   const f = frameRect(item);
   const p = local(e, f);
   canvas.setPointerCapture(e.pointerId);
+  if (brushDown(e, f, p)) return; // (a touch-up brush in hand: it paints, js/ui/brush.js)
   const picked = pickedBox(item, f);
   const zone = picked ? zoneAt(picked.box, p) : null;
   if (e.button === 2) return; // (right-click: the menu picks what's under it)
@@ -283,6 +285,7 @@ function startDrag(picked, zone, p, f) {
 }
 
 function move(e) {
+  if (!drag && brushReady()) { const item = currentItem(), f = frameRect(item); canvas.style.cursor = "none"; brushMove(e, f, local(e, f)); return; }
   if (!drag) { hover(e); return; }
   const { f, box, zone } = drag;
   const item = currentItem();
@@ -323,7 +326,7 @@ function move(e) {
 }
 
 function up() {
-  if (!drag) return;
+  if (!drag) { brushUp(); return; }
   const moved = drag.moved;
   drag = null;
   lit = [];
@@ -438,6 +441,16 @@ function paint() {
   }
 
   drawItem(ctx, item, f.w, f.h, { before: state.before, seed: state.project.seed, frame, frameLooked: true });
+  // The edge brush in hand: the whole photo faintly over the slide (to see what Restore brings back; over the kept part
+  // it's the same picture, so only the cut-away part shows it)
+  if (state.tool === "edge" && brushReady() && layerPic && rect) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, f.w, f.h); ctx.clip();
+    ctx.globalAlpha = 0.28;
+    ctx.translate(rect.x, rect.y);
+    drawPlaced(ctx, lookedWhole(layer, "preview", state.project.seed), layer.crop, rect.w, rect.h);
+    ctx.restore();
+  }
 
   // A grid's empty cells: click (or drop a photo) to fill them
   const cells = cellRects(item, f.w, f.h);
@@ -495,7 +508,7 @@ function paint() {
 
   // The picked photo / text: its dashed frame, corner squares and ↻ (while the pointer is on it)
   const picked = pickedBox(item, f);
-  if (picked && (hovering || drag)) {
+  if (picked && (hovering || drag) && !brushReady()) {
     const { box } = picked;
     const accent = uiColour("--accent-ink") || "#1f4fbf";
     ctx.save();
@@ -545,4 +558,5 @@ function paint() {
     }
     ctx.restore();
   }
+  drawBrush(ctx, f, ratio); // (a touch-up brush in hand: its circle)
 }

@@ -7,10 +7,11 @@
 //   js/render.js    drawing a slide (screen = export)            js/exporter.js  JPEGs out
 //   js/ui/…         filmstrip, stage (Edit view), panel, phone (Phone view), dialogs
 //   js/effects/…    the effects and filters, copied from the lyric video app
+import { maskIdsOf } from './cutout.js';
 import { state, changed, onChange, commit, undo, redo, canUndo, canRedo, openProject, currentItem, select, selectAll, items, selectedItems } from './state.js';
 import { newProject, slides as slideList, firstSlideOf, allLists, slideCount } from './project.js';
 import { saveProject, loadProject } from './store.js';
-import { loadPicture } from './media.js';
+import { loadPicture, warmHeicReader } from './media.js';
 import { FONTS } from './render.js';
 import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setStage, setRatio, copySelectedTo, addLayerFiles, duplicateLayer } from './actions.js';
 import { loadMyFilters } from './filters.js';
@@ -52,7 +53,7 @@ async function start() {
     const id = url.searchParams.get("open");
     if (id) { url.searchParams.delete("open"); history.replaceState(null, "", url.pathname + url.search + url.hash); }
     const p = id ? await loadProject(id) : null;
-    if (p) { openProject(p); opened = true; await Promise.all(allLists(state.project).flat().flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId))]).map((id) => loadPicture(id))); changed("project"); }
+    if (p) { openProject(p); opened = true; await Promise.all(allLists(state.project).flat().flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId)), ...maskIdsOf([i, ...(i.layers || [])])]).map((id) => loadPicture(id))); changed("project"); }
   } catch (err) { console.error("Couldn't open that project:", err); }
   if (!opened) openProject(newProject());
 }
@@ -121,14 +122,35 @@ function showCanvasBar() {
   if (document.activeElement !== $("bg-colour")) $("bg-colour").value = back;
 }
 
-// At the right of the top bar: ● while there are changes not saved to your folder, the project's name in blue,
-// then "· Not saved yet" / "· Not saved" / "· Saved" (Save ⌘S stamps project.savedAt)
+// The project's name is the window's title (Tom, 2026-11-17, as the Lyric Visualiser): "● Trial — Photo Editor",
+// the ● while there are changes not saved to your folder (Save ⌘S stamps project.savedAt)
 function showStatus() {
-  const [dot, name, note] = $("topbar-status").children;
-  const p = state.project, saved = p.savedAt || 0, dirty = !saved || (p.updated || 0) > saved;
-  dot.hidden = !dirty || !allLists(p).flat().length;
-  name.textContent = p.name || "Untitled";
-  note.textContent = ` · ${!saved ? "Not saved yet" : dirty ? "Not saved" : "Saved"}`;
+  const p = state.project, saved = p.savedAt || 0, dirty = (!saved || (p.updated || 0) > saved) && allLists(p).flat().length > 0;
+  const title = `${dirty ? "● " : ""}${p.name || "Untitled"} — Photo Editor`;
+  if (document.title !== title) document.title = title;
+  alignBar();
+}
+
+// The top bar lined up with the columns (Tom, 2026-11-17, as the Lyric Visualiser): Edit | Phone, the platform and
+// Feed | Profile centred over the canvas; the Editor's tabs spread over the Editor (folded: at the bar's right)
+function alignBar() {
+  const bar = document.querySelector(".topbar"), centre = document.querySelector(".topbar-centre"), right = $("topbar-right");
+  if (!bar || !centre || !right) return;
+  const zoom = parseFloat(getComputedStyle(bar).zoom) || 1, b = bar.getBoundingClientRect();
+  const canvas = $("stage-area").getBoundingClientRect(), cw = centre.getBoundingClientRect().width;
+  const e = $("panel").getBoundingClientRect(), open = e.width > 150;
+  right.classList.toggle("over-editor", open);
+  right.style.left = open ? `${(e.left - b.left) / zoom}px` : "";
+  right.style.width = open ? `${e.width / zoom}px` : "";
+  // (never over the buttons either side: a narrow window moves it off the canvas's middle first, then the tabs
+  // drop their names, the icons alone, name on hover)
+  bar.classList.remove("tight");
+  const roomFor = () => right.getBoundingClientRect().left - 8 - (document.querySelector(".topbar-left").getBoundingClientRect().right + 8);
+  if (roomFor() < cw) bar.classList.add("tight");
+  const leftEdge = document.querySelector(".topbar-left").getBoundingClientRect().right + 8;
+  const rightEdge = right.getBoundingClientRect().left - 8;
+  const left = Math.max(leftEdge, Math.min(canvas.left + canvas.width / 2 - cw / 2, rightEdge - cw));
+  centre.style.left = `${(left - b.left) / zoom}px`;
 }
 
 function setView(view) {
@@ -158,6 +180,10 @@ function wireTopBar() {
   $("btn-file").onclick = (e) => openFileMenu(e.currentTarget);
   // Instagram | TikTok | YouTube
   document.querySelectorAll("#platform-switch button").forEach((b) => b.addEventListener("click", () => setStage(b.dataset.mode)));
+  { const watch = new ResizeObserver(() => alignBar()); ["stage-area", "panel", "media-col"].forEach((id) => watch.observe($(id))); watch.observe(document.querySelector(".topbar")); }
+  window.addEventListener("resize", () => alignBar());
+  // (the iPhone photo reader loaded once the app has settled, so the first iPhone photo doesn't wait for it)
+  setTimeout(() => (window.requestIdleCallback || setTimeout)(() => warmHeicReader()), 3000);
   $("ratio-select").addEventListener("change", (e) => setRatio(e.target.value));
   // The canvas bar's ‹ ›, the background colour (the slides chosen), Before (held)
   $("btn-slide-prev").onclick = () => stepSlide(-1);

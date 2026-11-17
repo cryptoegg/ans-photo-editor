@@ -677,3 +677,77 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 .media-col { overflow-y: auto; }
 /* (the top bar a box too, Tom 2026-11-16) */
 .topbar { margin: 3px 3px 0; border: 1px solid var(--rule); border-radius: 8px; box-sizing: border-box; }
+
+/* ---- Smaller, like Ableton (Tom, 2026-11-17, as the Lyric Visualiser): the top bar, Media, the Editor, the bars on
+   the canvas and the strip's toolbar are drawn at --ui-zoom (text, buttons and boxes together), so the slide gets the
+   room. One number: 1 = the old size. The slide, the phone screen and the strip's thumbnails are never zoomed; the
+   post's caption keeps full size (it's read). */
+:root { --ui-zoom: .85; --col: calc(320px * var(--ui-zoom)); --col-shut: calc(44px * var(--ui-zoom)); }
+.topbar, .media-col, .panel, .canvas-bar, .video-bar, .strip-tools { zoom: var(--ui-zoom); }
+.panel textarea { font-size: calc(15px / var(--ui-zoom)); }
+.workspace { grid-template-columns: var(--col) minmax(0, 1fr) var(--col); }
+.workspace.no-media { grid-template-columns: var(--col-shut) minmax(0, 1fr) var(--col); }
+.workspace.no-editor { grid-template-columns: var(--col) minmax(0, 1fr) var(--col-shut); }
+.workspace.no-media.no-editor { grid-template-columns: var(--col-shut) minmax(0, 1fr) var(--col-shut); }
+
+/* ---- Compact editor (Tom, 2026-11-17, like Ableton's devices, as the Lyric Visualiser): an effect is switched on
+   and off by a small round dot by its name; in an open fold its sliders sit two to a row (name and value above, the
+   slider under); on / off settings are small boxes, lit when on; menus, colours and choices keep the whole width */
+.panel .fold-head > input[type="checkbox"] { width: 11px; height: 11px; min-width: 11px; margin: 0 3px; border-radius: 50%;
+  border: 1.5px solid var(--accent); background: transparent; }
+.panel .fold-head > input[type="checkbox"]::after { content: none; }
+.panel .fold-head > input[type="checkbox"]:checked { background: var(--accent); }
+.panel .fold-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; row-gap: 8px; align-items: end; }
+.panel .fold-body > * { grid-column: 1 / -1; min-width: 0; }
+.panel .fold-body > label.field:has(> input[type="range"]), .panel .fold-body > .check-row { grid-column: auto; }
+.panel .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; row-gap: 8px; align-items: end; }
+.panel :is(.fold-body, .pair) > label.field .field-head > :first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.panel :is(.fold-body, .pair) > label.field .field-head { gap: 6px; }
+/* (the small boxes: the name lit blue when on) */
+.panel :is(.fold-body, .row) > .check-row { justify-content: center; height: 22px; padding: 0 8px; gap: 0; border: 1px solid var(--line); border-radius: 4px;
+  font: 500 var(--t-label, 11px) var(--font); color: var(--muted); white-space: nowrap; overflow: hidden; cursor: pointer; }
+.panel :is(.fold-body, .row) > .check-row > span { overflow: hidden; text-overflow: ellipsis; }
+.panel :is(.fold-body, .row) > .check-row > input { display: none; }
+.panel :is(.fold-body, .row) > .check-row:hover { color: var(--text); }
+.panel :is(.fold-body, .row) > .check-row:has(> input:checked) { color: var(--accent-ink); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* ---- Top bar (Tom, 2026-11-17, as the Lyric Visualiser): the middle row centred over the canvas, the Editor's five
+   tabs at the right as small icon-over-name buttons spread over the Editor's width (js/main.js alignBar); the
+   platforms and Feed | Profile plain icons (name on hover); the project's name is the window's title */
+.topbar-centre { transform: translateY(-50%); }
+.segmented button.seg-icon { display: inline-flex; align-items: center; justify-content: center; padding: 0 9px; }
+.topbar-right { margin-left: auto; display: flex; }
+.topbar-right.over-editor { position: absolute; top: 50%; transform: translateY(-50%); margin: 0; padding: 0 8px; box-sizing: border-box; }
+.topbar .kinds { display: flex; gap: 2px; margin: 0; }
+.topbar-right.over-editor .kinds { width: 100%; }
+.topbar .kinds button { width: 52px; height: 40px; padding: 2px 0 0; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--muted);
+  gap: 2px; font: 500 var(--t-label, 11px) var(--font); box-shadow: none; }
+.topbar-right.over-editor .kinds button { flex: 1 1 0; width: auto; min-width: 0; }
+.topbar .kinds button:hover { color: var(--text); border-color: var(--line); background: transparent; }
+.topbar .kinds button.on { color: var(--accent-ink); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: none; font-weight: 500; }
+.topbar .k-ico { width: 18px; height: 18px; background: currentColor; }
+.topbar .kinds button.on .k-ico { background: currentColor; }
+
+/* ---- Remove background (js/cutout.js): one button under Layers for the picked photo, lit when its cut-out is on */
+.cut-row { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.cut-row .cut-btn { width: 100%; height: 28px; border: 1px solid var(--line); border-radius: 4px; background: transparent; font: 500 var(--t-label, 11px) var(--font); color: var(--text); }
+.cut-row .cut-btn:hover:not(:disabled) { background: var(--tray); }
+.cut-row .cut-btn.on { color: var(--accent-ink); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.cut-row .cut-btn.busy { color: var(--accent-ink); }
+/* (a narrow window: the tabs as icons only, the name on hover) */
+.topbar.tight .kinds button { width: 34px; font-size: 0; gap: 0; }
+.topbar.tight .topbar-right.over-editor .kinds button { width: auto; }
+
+/* ---- Layers folds like Light and Colour (Tom, 2026-11-18): the chevron, name and count, + at the right */
+.panel .layers-head { margin-bottom: 0; }
+.panel .layers-box.open .layers-head { margin-bottom: 4px; }
+.panel .layers-fold .mc-n { font-weight: 400; color: var(--muted); }
+.panel .layers-box.open .layers-fold .fold-arrow::before { transform: translateY(-2px) rotate(45deg); }
+/* (Tools: the same fold, straight under Layers) */
+.panel .tools-box { margin-top: 0; }
+.panel .tools-box .cut-row { margin-top: 0; }
+/* (the brushes: two buttons side by side, then Size and Softness, then Erase | Restore) */
+.panel .tool-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+.panel .tool-row:has(> :only-child) { grid-template-columns: 1fr; }
+.panel .tools-box .pair, .panel .tools-box .segmented { margin-top: 8px; }
+.panel .tools-box .segmented.wide { display: flex; }

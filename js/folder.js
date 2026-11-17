@@ -10,6 +10,7 @@
 // for having it on your computer (and in your backups), not for not losing work.
 // Browsers that can't open folders (Safari, Firefox, app-embedded ones like the Claude app's
 // pane): projects live in this browser only, and exports download as a zip.
+import { maskIdsOf } from './cutout.js';
 import { dbGet, dbPut, dbAll } from './store.js';
 
 const KEY = "place";      // (IndexedDB meta: the main folder's handle)
@@ -52,7 +53,7 @@ async function exists(dir, name) {
   try { await dir.getFileHandle(name); return true; } catch (err) { return false; }
 }
 const stamp = () => { const d = new Date(), z = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}.${z(d.getMinutes())}`; };
-const mediaIdsOf = (p) => [...new Set([p.items || [], ...(p.stages ? Object.values(p.stages).map((s) => s.items || []) : [])].flat().flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId))]))];
+const mediaIdsOf = (p) => [...new Set([p.items || [], ...(p.stages ? Object.values(p.stages).map((s) => s.items || []) : [])].flat().flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId)), ...maskIdsOf([i, ...(i.layers || [])])]))];
 const imageName = (m) => `${m.id}-${safeName(m.name || "photo")}`;
 
 // Save: "<name> Project/<name>.ans", its photos into Images/, the last save into Backup/.

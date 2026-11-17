@@ -20,7 +20,8 @@ export const state = {
   phoneSlide: 0,          // the slide the phone shows (0-based)
   phoneScreen: "feed",    // "feed" (the post in the feed) | "profile" (on your profile page)
   tab: "filters",         // the panel's tab
-  before: false           // \ held: the photos without their look
+  before: false,          // \ held: the photos without their look
+  tool: null              // a brush in hand (js/ui/brush.js): "edge" (the cut-out's edge) | "heal" (spot heal) | null
 };
 
 let undoStack = [];
@@ -47,7 +48,7 @@ export const currentItem = () => itemById(state.current);
 export const selectedItems = () => items().filter((i) => state.selected.has(i.id));
 
 // The same slide on the other platforms (the same lookGroup) follows the one being edited: its
-// look always, and while that platform has the same shape, its crop, texts and layers too, so a
+// look always (and the photo's cut-out, js/cutout.js), and while that platform has the same shape, its crop, texts and layers too, so a
 // set on one shape is edited once for all three. A slide with its own look (ownLook) on either
 // side is left alone.
 export const SAME_SHAPE_KEYS = ["mediaId", "crop", "texts", "layers", "layout", "style", "background"];
@@ -64,6 +65,7 @@ function shareSlides() {
       const source = from.get(other.lookGroup);
       if (!source || other.ownLook) return;
       const keys = sameShape && other.span === source.span && other.kind === source.kind ? ["look", ...SAME_SHAPE_KEYS] : ["look"];
+      if (other.mediaId === source.mediaId) keys.push("cutout", "retouch"); // (the same photo: its cut-out too, on every shape)
       keys.forEach((k) => { if (JSON.stringify(other[k]) !== JSON.stringify(source[k])) other[k] = clone(source[k]); });
     });
   });
