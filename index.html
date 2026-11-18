@@ -31,7 +31,7 @@
       <button data-view="edit" class="on">Edit</button>
       <button data-view="phone">Phone</button>
     </div>
-    <div class="segmented" id="platform-switch" title="The platform you're editing. Platforms on the same shape are edited together.">
+    <div class="segmented" id="platform-switch">
       <button data-mode="instagram" class="seg-icon" title="Instagram" aria-label="Instagram"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r=".6" fill="currentColor"/></svg></button>
       <button data-mode="tiktok" class="seg-icon" title="TikTok" aria-label="TikTok"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18.5a3 3 0 1 1-3-3"/><path d="M9 18.5V4.5c.8 2.6 3 4.4 6 4.5"/></svg></button>
       <button data-mode="youtube" class="seg-icon" title="YouTube" aria-label="YouTube"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10.5 9.5v5l4.5-2.5z" fill="currentColor"/></svg></button>
@@ -41,14 +41,13 @@
       <button data-screen="profile" class="seg-icon" title="Profile" aria-label="Profile"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9.33 4v16M14.67 4v16M4 9.33h16M4 14.67h16"/></svg></button>
     </div>
   </div>
-  <!-- the Editor's five tabs, over the Editor (js/main.js alignBar); the project's name is the window's title -->
+  <!-- the Editor's four tabs, over the Editor (js/main.js alignBar); the project's name is the window's title -->
   <div class="topbar-right" id="topbar-right">
   <nav class="kinds" id="tabs">
     <button data-tab="filters" class="on" title="Filters"><i class="k-ico"></i>Filters</button>
     <button data-tab="adjust" title="Adjust"><i class="k-ico"></i>Adjust</button>
     <button data-tab="crop" title="Crop"><i class="k-ico"></i>Crop</button>
     <button data-tab="text" title="Captions"><i class="k-ico"></i>Captions</button>
-    <button data-tab="captions" title="Post text"><i class="k-ico"></i>Post text</button>
   </nav>
   </div>
 </header>
@@ -74,7 +73,7 @@
         <span class="cb-slide" id="slide-of">Slide 1 of 1</span>
         <button class="cb-icon" id="btn-slide-next" title="Next slide (→)" aria-label="Next slide"></button>
         <span class="cb-sep"></span>
-        <select id="ratio-select" class="cb-ratio" title="This platform's shape"></select>
+        <select id="ratio-select" class="cb-ratio" title="The set's shape"></select>
         <span class="cb-sep"></span>
         <button class="cb-icon" id="btn-zoom-out" title="Zoom out" aria-label="Zoom out"></button>
         <button class="cb-btn" id="btn-zoom-fit" title="Fit">Fit</button>
@@ -140,9 +139,6 @@
       <button id="btn-split" title="Turn a panorama back into separate slides">Split apart</button>
     </div>
     <div class="tray">
-      <button id="btn-copy-to" title="Copy the selected slides to another platform's set">Copy to</button>
-    </div>
-    <div class="tray">
       <button id="btn-reset" title="Back to the photo as it came in">Reset</button>
       <button id="btn-delete" title="Remove from the set">Remove</button>
     </div>
@@ -156,7 +152,6 @@
 <input type="file" id="file-input" accept="image/*,.heic,.heif,video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm" multiple hidden>
 <div class="toast" id="toast" hidden></div>
 <div class="popover" id="projects-menu" hidden></div>
-<div class="popover" id="copy-menu" hidden></div>
 <div class="dialog-backdrop" id="export-dialog" hidden></div>
 <div class="dialog-backdrop" id="ask-dialog" hidden></div>
 

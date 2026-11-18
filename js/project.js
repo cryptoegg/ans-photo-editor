@@ -4,9 +4,8 @@
 //
 //   project = {
 //     id, name, created, updated, seed,
-//     items: [item],                 the filmstrip, in swipe order (see below)
-//     captions: { instagram, tiktok, youtube },
-//     tiktok: { fill: "colour" | "blur" | "title", colour, title, titleColour }
+//     set: { ratio, items: [item] }, the one set of slides (its shape, and the filmstrip in swipe order)
+//     stage,                         the app the set is shown as (Phone view, Feed / Profile): instagram | tiktok | youtube
 //   }
 //   item = {                         one photo; a panorama is one item covering `span` slides
 //     id, mediaId, span,
@@ -21,8 +20,6 @@
 //                                    preset: the filter picked (an id, js/filters.js); chain: this
 //                                    slide's own copy of that filter's effects, edited freely
 //                                    ([{ id, type, on, …settings }]; null = the filter as it comes)
-//     lookGroup, ownLook,            slides with the same lookGroup on different platforms share
-//                                    one look (js/state.js keeps them the same), unless ownLook
 //     texts: [text]
 //   }
 //   text = { id, content, font, weight, size, colour, align, bubble, bubbleColour, stroke,
@@ -33,12 +30,15 @@
 //                                    rounded | pill | outline | lines (around each line's words);
 //                                    stroke: an outline round the letters, 0 - 20 (% of the size)
 //
-// Each platform is its own stage, project.stages[platform] = { ratio, items }, with its own shape
-// and slides; a new project starts on 1:1 for all three. The same slide on each platform (its
-// lookGroup) shares its look, and while two platforms have the same shape, its crop, texts and
-// layers too (shareSlides in state.js), so a set on one shape is edited once for all three.
-// A slide with ownLook stands alone on its platform. (Older records had a "Linked" square set in
-// project.items: tidyProject turns it into the three stages.)
+// One set, edited once (Tom, 2026-11-18): the top bar's Instagram | TikTok | YouTube only changes how it's
+// shown (Phone view), and its icons say how well the set's shape and slides suit each app (`fitFor`). A new
+// project starts on 4:5, which all three take. (Older records had a set per platform, project.stages, or a
+// "Linked" set in project.items: tidyProject keeps the one last edited.)
+import curves from './effects/curves.js';
+import grade from './effects/grade.js';
+import hsl from './effects/hsl.js';
+import lut from './effects/lut.js';
+import { tintIntoGrade } from './effects/oldTint.js';
 export const MAX_SLIDES = 10;
 export const RATIOS = { "1:1": [1, 1], "4:5": [4, 5], "3:4": [3, 4], "1.91:1": [1.91, 1], "9:16": [9, 16], "16:9": [16, 9] };
 // The shapes each platform takes for sure (checked October 2026):
@@ -48,16 +48,27 @@ export const RATIOS = { "1:1": [1, 1], "4:5": [4, 5], "3:4": [3, 4], "1.91:1": [
 //              them, so TikTok always gets a full-screen picture
 //   YouTube    1:1, 4:5, 16:9 (its help suggests 1:1; the feed shows 4:5 and 16:9 posts too),
 //              up to 10 images
-// 1:1 and 4:5: the shapes all three show in full (TikTok with the fill), marked "· all" in the menu
-export const SHARED_RATIOS = ["1:1", "4:5"];
 export const STAGES = {
-  instagram: { ratios: ["4:5", "3:4", "1:1", "1.91:1"], ratio: "4:5", max: 20 },
-  tiktok: { ratios: ["9:16", "4:5", "1:1"], ratio: "9:16", max: 35 },
-  youtube: { ratios: ["1:1", "4:5", "16:9"], ratio: "1:1", max: 10 }
+  instagram: { ratios: ["4:5", "3:4", "1:1", "1.91:1"], max: 20, video: true },
+  tiktok: { ratios: ["9:16", "4:5", "1:1"], max: 35, video: false },
+  youtube: { ratios: ["1:1", "4:5", "16:9"], max: 10, video: false }
 };
+// Every shape, in the menu's order (the ones all three take first)
+export const SHAPES = ["4:5", "1:1", "3:4", "1.91:1", "9:16", "16:9"];
+export const SET_MAX = Math.max(...Object.values(STAGES).map((s) => s.max));
+// How well the set suits an app: { ok, framed, notes: [why not / what's left out] }. framed: TikTok shows a shape
+// other than 9:16 inside its tall screen.
+export function fitFor(p, platform) {
+  const st = STAGES[platform], set = p.set, notes = [];
+  const label = PLATFORMS.find((x) => x.id === platform).label;
+  const shapeOk = st.ratios.includes(set.ratio);
+  if (!shapeOk) notes.push(`${label} doesn't take ${set.ratio}: it takes ${st.ratios.join(", ")}`);
+  const count = slideCount(p);
+  if (count > st.max) notes.push(`${label} takes up to ${st.max} slides (this set has ${count})`);
+  if (!st.video && set.items.some(isVideo)) notes.push(`${label} posts take photos only: the videos are left out there`);
+  return { ok: shapeOk && !notes.length, shapeOk, framed: shapeOk && platform === "tiktok" && set.ratio !== "9:16", notes };
+}
 export const RATIO_NAMES = { "1:1": "1:1", "4:5": "4:5", "3:4": "3:4", "1.91:1": "1.91:1", "9:16": "9:16", "16:9": "16:9" };
-// (TikTok: a shape other than 9:16 goes out on a 9:16 frame with the fill)
-export const tiktokFilled = (ratio) => ratio !== "9:16";
 // A shape's width over its height
 export const aspectOf = (ratio) => { const [w, h] = RATIOS[ratio] || [1, 1]; return w / h; };
 export const PLATFORMS = [
@@ -68,7 +79,20 @@ export const PLATFORMS = [
 
 export const LIGHT_DEFAULTS = () => ({ exposure: 0, contrast: 0, highlights: 0, shadows: 0, fade: 0, detail: 0 });
 export const COLOUR_DEFAULTS = () => ({ mono: false, temperature: 0, tint: 0, saturation: 0, vibrance: 0 });
-export const lookDefaults = () => ({ preset: null, chain: null, strength: 100, light: LIGHT_DEFAULTS(), colour: COLOUR_DEFAULTS() });
+// The Colour card's other tabs (Tom, 2026-11-18, as the Lyric Visualiser): Curves, Wheels (Colour Grading), Per colour
+// and LUT, each the settings of its effect (js/effects/curves.js, grade.js, hsl.js, lut.js)
+export const COLOUR_PARTS = { curves, grade, hsl, lut };
+export const partDefaults = (part) => COLOUR_PARTS[part].defaults();
+export const lookDefaults = () => ({ preset: null, chain: null, strength: 100, light: LIGHT_DEFAULTS(), colour: COLOUR_DEFAULTS(),
+  curves: partDefaults("curves"), grade: partDefaults("grade"), hsl: partDefaults("hsl"), lut: partDefaults("lut") });
+// A saved look brought up to date: every setting filled in, an old Colour tint turned into the wheels
+export function tidyLook(look = {}) {
+  const out = { ...lookDefaults(), ...look, light: { ...LIGHT_DEFAULTS(), ...(look.light || {}) }, colour: { ...COLOUR_DEFAULTS(), ...(look.colour || {}) } };
+  Object.keys(COLOUR_PARTS).forEach((k) => { out[k] = { ...partDefaults(k), ...(look[k] || {}) }; });
+  if (out.chain !== undefined && !Array.isArray(out.chain)) out.chain = null;
+  if (out.chain) out.chain = tintIntoGrade(out.chain);
+  return out;
+}
 export const cropDefaults = () => ({ x: 0, y: 0, zoom: 1, stretch: 1, lockRatio: true, rotation: 0, flipH: false, flipV: false });
 export const BACKGROUND = "#ffffff";
 export const TEXT_DEFAULTS = () => ({ content: "", font: "Helvetica", weight: 400, size: 0.06, colour: "#ffffff", align: "center", bubble: "none", bubbleColour: "#111111", stroke: 1, strokeColour: "#000000", rotation: 0, x: 0.5, y: 0.5 });
@@ -81,11 +105,8 @@ export function newProject(name = "Untitled") {
   return {
     version: 1, id: newId("p"), name, created: now, updated: now,
     seed: Math.floor(Math.random() * 2147483647),
-    items: [],
-    linked: false, stage: "instagram",
-    stages: Object.fromEntries(Object.keys(STAGES).map((k) => [k, { ratio: "1:1", items: [] }])),
-    captions: { instagram: "", tiktok: "", youtube: "" },
-    tiktok: { fill: "blur", colour: "#111111", title: "", titleColour: "#ffffff" }
+    set: { ratio: "4:5", items: [] },
+    stage: "instagram"
   };
 }
 
@@ -94,7 +115,7 @@ export function newProject(name = "Untitled") {
 export const VIDEO_MAX = 60, VIDEO_MIN = 3;
 export function newItem(mediaId, kind = "photo", duration = 0) {
   const id = newId("s");
-  const item = { id, mediaId, kind, span: 1, crop: cropDefaults(), background: BACKGROUND, look: lookDefaults(), lookGroup: id, ownLook: false, texts: [], layers: [], layout: layoutDefaults(), style: styleDefaults() };
+  const item = { id, mediaId, kind, span: 1, crop: cropDefaults(), background: BACKGROUND, look: lookDefaults(), texts: [], layers: [], layout: layoutDefaults(), style: styleDefaults() };
   if (kind === "video") Object.assign(item, { trim: { start: 0, end: Math.min(duration || VIDEO_MAX, VIDEO_MAX) }, cover: 0, muted: false });
   return item;
 }
@@ -124,48 +145,30 @@ export function newLayer(mediaId) {
 export const layersOf = (item) => [item, ...(item.layers || [])];
 // Every photo / video a slide uses
 export const mediaOf = (item) => layersOf(item).map((l) => l.mediaId);
-// Which sets can hold a video: Instagram's (TikTok photo posts and YouTube posts take pictures only)
-export const takesVideo = (platform) => !platform || platform === "instagram";
+// ---- The set: { items, ratio, max }
 
-// ---- The set being edited: the current platform's stage
-
-// { items, ratio, max, platform }
-export const activeSet = (p) => setFor(p, p.stage);
-// The set a platform posts
-export function setFor(p, platform) {
-  const stage = p.stages[platform];
-  return { items: stage.items, ratio: stage.ratio, max: STAGES[platform].max, platform };
-}
-export function setActiveItems(p, list) { p.stages[p.stage].items = list; }
-// Every list of slides in the record (each stage)
-export const allLists = (p) => Object.values(p.stages || {}).map((s) => s.items);
+export const activeSet = (p) => ({ items: p.set.items, ratio: p.set.ratio, max: SET_MAX });
+export function setActiveItems(p, list) { p.set.items = list; }
+// Every list of slides in the record (just the one now)
+export const allLists = (p) => [p.set.items];
 
 // Older or partly-written records filled in with today's settings (in place)
 export function tidyProject(p) {
-  p.items = Array.isArray(p.items) ? p.items : [];
   p.stage = STAGES[p.stage] ? p.stage : "instagram";
-  // (a Linked square set from before: it becomes each platform's set, on its shape)
-  if (p.linked !== false || !p.stages) {
-    const ratio = SHARED_RATIOS.includes(p.linkedRatio) ? p.linkedRatio : "1:1";
-    p.stages = Object.fromEntries(Object.keys(STAGES).map((k) => [k, { ratio, items: p.items.filter((i) => takesVideo(k) || i.kind !== "video").map((i) => clone(i)) }]));
+  // (from before one set: the platform set last edited, else the first with slides; a "Linked" set: that)
+  if (!p.set || !Array.isArray(p.set.items)) {
+    const st = p.stages || {};
+    const linked = p.linked !== false && Array.isArray(p.items) && p.items.length;
+    const pick = linked ? { ratio: p.linkedRatio, items: p.items } : (st[p.stage] && st[p.stage].items && st[p.stage].items.length ? st[p.stage] : Object.values(st).find((x) => x && x.items && x.items.length)) || { ratio: "4:5", items: [] };
+    p.set = { ratio: pick.ratio, items: pick.items || [] };
   }
-  p.items = [];
-  p.linked = false;
-  delete p.linkedRatio;
-  Object.keys(STAGES).forEach((k) => {
-    const st = p.stages[k] || { items: [] };
-    st.ratio = STAGES[k].ratios.includes(st.ratio) ? st.ratio : STAGES[k].ratio;
-    st.items = Array.isArray(st.items) ? st.items : [];
-    p.stages[k] = st;
-  });
+  p.set.ratio = RATIOS[p.set.ratio] ? p.set.ratio : "4:5";
+  ["items", "stages", "linked", "linkedRatio", "captions", "tiktok"].forEach((k) => { delete p[k]; });
   allLists(p).flat().forEach((item) => {
     item.span = Math.max(1, Math.round(item.span || 1));
     item.crop = { ...cropDefaults(), ...(item.crop || {}) };
-    const look = item.look || {};
-    item.look = { ...lookDefaults(), ...look, light: { ...LIGHT_DEFAULTS(), ...(look.light || {}) }, colour: { ...COLOUR_DEFAULTS(), ...(look.colour || {}) } };
-    if (item.look.chain !== undefined && !Array.isArray(item.look.chain)) item.look.chain = null;
-    item.lookGroup = item.lookGroup || item.id;
-    item.ownLook = !!item.ownLook;
+    item.look = tidyLook(item.look || {});
+    delete item.lookGroup; delete item.ownLook;
     item.kind = item.kind === "video" ? "video" : "photo";
     if (item.kind === "video") {
       item.trim = { start: 0, end: VIDEO_MAX, ...(item.trim || {}) };
@@ -178,14 +181,12 @@ export function tidyProject(p) {
     item.style = { ...styleDefaults(), ...(item.style || {}) };
     item.layers = (Array.isArray(item.layers) ? item.layers : []).map((l) => ({
       ...l, kind: "photo", crop: { ...cropDefaults(), ...(l.crop || {}) },
-      look: { ...lookDefaults(), ...(l.look || {}), light: { ...LIGHT_DEFAULTS(), ...((l.look || {}).light || {}) }, colour: { ...COLOUR_DEFAULTS(), ...((l.look || {}).colour || {}) } },
+      look: tidyLook(l.look || {}),
       style: { ...styleDefaults(), ...(l.style || {}) }
     }));
     item.background = item.background || BACKGROUND;
     item.texts = (Array.isArray(item.texts) ? item.texts : []).map((t) => ({ ...TEXT_DEFAULTS(), ...t }));
   });
-  p.captions = { instagram: "", tiktok: "", youtube: "", ...(p.captions || {}) };
-  p.tiktok = { fill: "blur", colour: "#111111", title: "", titleColour: "#ffffff", ...(p.tiktok || {}) };
   return p;
 }
 
@@ -217,6 +218,7 @@ export function isEdited(item) {
   return item.texts.length > 0 || (item.layers && item.layers.length > 0) || (item.layout && item.layout.kind !== "single") || item.look.preset !== null || item.background !== BACKGROUND ||
     Object.keys(plain.light).some((k) => item.look.light[k] !== plain.light[k]) ||
     Object.keys(plain.colour).some((k) => item.look.colour[k] !== plain.colour[k]) ||
+    Object.keys(COLOUR_PARTS).some((k) => JSON.stringify(item.look[k] || plain[k]) !== JSON.stringify(plain[k])) ||
     Object.keys(crop).some((k) => item.crop[k] !== crop[k]);
 }
 

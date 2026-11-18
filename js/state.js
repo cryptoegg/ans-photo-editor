@@ -16,7 +16,7 @@ export const state = {
   layerId: null,          // which layer of the slide is picked (null: the slide's own photo);
                           // Filters, Adjust and Crop work on it
   view: "edit",           // "edit" | "phone"
-  phonePlatform: "instagram",
+  phonePlatform: "instagram", // (the app the set is shown as: project.stage, Phone view)
   phoneSlide: 0,          // the slide the phone shows (0-based)
   phoneScreen: "feed",    // "feed" (the post in the feed) | "profile" (on your profile page)
   tab: "filters",         // the panel's tab
@@ -35,41 +35,16 @@ export const onChange = (fn) => listeners.add(fn);
 // Something changed: what = "project" (the record), "selection", "view" or "look" (only how it
 // looks, mid-drag / mid-slide)
 export function changed(what = "project") {
-  if (what === "look" || what === "project") shareSlides();
   listeners.forEach((fn) => { try { fn(what); } catch (err) { console.error(err); } });
 }
 
 export const project = () => state.project;
-// The slides being edited: the current platform's stage
+// The slides being edited: the one set
 export const items = () => activeSet(state.project).items;
 export const setItems = (list) => setActiveItems(state.project, list);
 export const itemById = (id) => items().find((i) => i.id === id) || null;
 export const currentItem = () => itemById(state.current);
 export const selectedItems = () => items().filter((i) => state.selected.has(i.id));
-
-// The same slide on the other platforms (the same lookGroup) follows the one being edited: its
-// look always (and the photo's cut-out, js/cutout.js), and while that platform has the same shape, its crop, texts and layers too, so a
-// set on one shape is edited once for all three. A slide with its own look (ownLook) on either
-// side is left alone.
-export const SAME_SHAPE_KEYS = ["mediaId", "crop", "texts", "layers", "layout", "style", "background"];
-function shareSlides() {
-  const p = state.project;
-  const here = activeSet(p);
-  const from = new Map();
-  here.items.forEach((item) => { if (!item.ownLook) from.set(item.lookGroup, item); });
-  if (!from.size) return;
-  Object.values(p.stages).forEach((stage) => {
-    if (stage.items === here.items) return;
-    const sameShape = stage.ratio === here.ratio;
-    stage.items.forEach((other) => {
-      const source = from.get(other.lookGroup);
-      if (!source || other.ownLook) return;
-      const keys = sameShape && other.span === source.span && other.kind === source.kind ? ["look", ...SAME_SHAPE_KEYS] : ["look"];
-      if (other.mediaId === source.mediaId) keys.push("cutout", "retouch"); // (the same photo: its cut-out too, on every shape)
-      keys.forEach((k) => { if (JSON.stringify(other[k]) !== JSON.stringify(source[k])) other[k] = clone(source[k]); });
-    });
-  });
-}
 
 // One undo step for everything changed since the last one
 export function commit() {

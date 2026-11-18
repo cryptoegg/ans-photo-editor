@@ -7,7 +7,7 @@
 //   later         - (optional) true: being reworked, so left out of the menu (saved ones still draw)
 //   only          - (optional) the layer types it's offered for, e.g. ["image"]
 //   adjust        - (optional) true: in the Adjust section at the top (always on, no one slider)
-//   inside        - (optional) the Adjust card it's shown inside (Colour tint: "colour")
+//   inside        - (optional) the Adjust card it's shown inside (Curves, Per colour, LUT, Colour Grading: "colour")
 //   defaults()    - its settings, with their starting values
 //   videoDefaults() - (optional) the starting values that differ on a video / camera
 //   controls      - what the panel shows for it, built from this list:
@@ -27,8 +27,12 @@
 //                   recipe can use)
 // To add an effect: create its file and add it here.
 import tone from './tone.js';
-import tint from './tint.js';
 import colour from './colour.js';
+import curves from './curves.js';
+import hsl from './hsl.js';
+import lut from './lut.js';
+import grade from './grade.js';
+import halation from './halation.js';
 import solarise from './solarise.js';
 import duotone from './duotone.js';
 import negative from './negative.js';
@@ -58,10 +62,10 @@ import disintegrate from './disintegrate.js';
 // warps, light and blur, textures, and damage / the frame last (so the border sits on top).
 // A layer's chain is always kept in this order, with at most one of each effect.
 export const EFFECTS = [
-  tone, colour, tint,                           // Adjust: Light, Colour (+ its Colour tint)
+  tone, curves, colour, hsl, lut, grade,        // Adjust: Light, then Colour (its Curves, Per colour, LUT and Wheels tabs)
   duotone, negative, solarise,                  // colour effects
   fisheye, liquify, stretch, slice, datamosh, melt, scan, // warp
-  blur, bloom, leak,                            // light & blur
+  blur, bloom, halation, leak,                  // light & blur
   halftone, ascii, screen, lines, paper, grain, dust, // texture
   burn, vhs, frame,                             // damage & frames
   disintegrate                                  // last: the finished look crumbles away (pictures only)

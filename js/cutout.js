@@ -85,7 +85,7 @@ export async function removeBackground(layer) {
 }
 
 function findLayer(id) {
-  const lists = [activeSet(state.project).items, ...Object.values(state.project.stages || {}).map((st) => st.items)];
+  const lists = [activeSet(state.project).items];
   for (const items of lists) for (const item of items || []) {
     if (item.id === id) return item;
     const l = (item.layers || []).find((x) => x.id === id);

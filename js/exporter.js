@@ -1,95 +1,76 @@
-// Export: every slide for each platform, numbered in swipe order (01.jpg, 02.mp4…): photos as
-// JPEG; video slides as MP4 for Instagram (js/video/mp4.js; the other sets hold no video),
-// 1080 px wide in each platform's own shape (4:5 = 1080 x 1350, 9:16 = 1080 x 1920…; a 1:1 or 4:5
-// TikTok set goes out on 1080 x 1920 with the fill round it). "Extra sharp" doubles it. Photos are drawn fresh, so no location or camera details from
-// the originals go with them.
+// Export (Tom, 2026-11-18: one export for the one set): every slide, numbered in swipe order (01.jpg, 02.mp4…):
+// photos as JPEG, video slides as MP4 (js/video/mp4.js), 1080 px wide in the set's shape (4:5 = 1080 x 1350,
+// 9:16 = 1080 x 1920…). "Extra sharp" doubles it. Photos are drawn fresh, so no location or camera details from the
+// originals go with them. The same files go to every app (each takes them as they are; Post is where each gets them).
 //
 // Where they go: in Chrome / Edge, a project folder like the lyric video app's, made once in a
 // place you choose and remembered:
-//   <name> Project/Exports/Instagram/01.jpg …   (TikTok/, YouTube/ beside it)
-// Exporting again replaces that platform's numbered photos. Other browsers (and app-embedded
-// ones, whose folder picker never opens): one zip download with the same folders inside.
+//   <name> Project/Exports/01.jpg …
+// Exporting again replaces the numbered files. Other browsers (and app-embedded ones, whose folder picker never
+// opens): one zip download.
 import { maskIdsOf } from './cutout.js';
-import { drawSlides, composeTikTok } from './render.js';
-import { setFor, aspectOf, tiktokFilled, isVideo } from './project.js';
+import { drawSlides } from './render.js';
+import { activeSet, aspectOf, isVideo } from './project.js';
 import { videoSlideToMp4 } from './video/mp4.js';
 import { safeName, allowed } from './folder.js';
 import { loadPicture } from './media.js';
 
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
-export const EXPORT_PLATFORMS = [
-  { id: "instagram", folder: "Instagram", label: "Instagram" },
-  { id: "tiktok", folder: "TikTok", label: "TikTok" },
-  { id: "youtube", folder: "YouTube", label: "YouTube" }
-];
 
-// What a platform's export will be: { width, height, count, fill } (at scale 1)
-export function exportShape(project, platform) {
-  const set = setFor(project, platform);
-  const a = aspectOf(set.ratio);
+// What the export will be: { width, height, count, set } (at scale 1)
+export function exportShape(project) {
+  const set = activeSet(project);
   const count = set.items.reduce((n, i) => n + i.span, 0);
-  if (platform === "tiktok" && tiktokFilled(set.ratio)) return { width: 1080, height: 1920, count, fill: true, set, slideHeight: Math.round(1080 / a) };
-  return { width: 1080, height: Math.round(1080 / a), count, fill: false, set };
+  return { width: 1080, height: Math.round(1080 / aspectOf(set.ratio)), count, set };
 }
 
 // (the main folder: js/folder.js)
 export { foldersPossible, safeName, mainFolder as savedPlace, chooseMainFolder as choosePlace } from './folder.js';
 
-// Make the photos: { platformId: [Blob…] }. progress(0 - 1).
-export async function makeExports(project, platforms, scale, progress = () => {}) {
-  const shapes = platforms.map((id) => ({ id, ...exportShape(project, id) }));
-  await Promise.all(shapes.flatMap((sh) => sh.set.items.flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId)), ...maskIdsOf([i, ...(i.layers || [])])]).map((id) => loadPicture(id))));
-  const out = {};
+// Make the files: [Blob…] in swipe order. progress(0 - 1).
+export async function makeExports(project, scale, progress = () => {}) {
+  const sh = exportShape(project);
+  await Promise.all(sh.set.items.flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId)), ...maskIdsOf([i, ...(i.layers || [])])]).map((id) => loadPicture(id)));
   // (a video slide counts as much as ten photos in the progress bar: it takes longer)
-  const weight = (sh, item) => (sh.id === "instagram" && isVideo(item) ? 10 : 1);
-  const total = shapes.reduce((n, sh) => n + sh.set.items.reduce((m, i) => m + i.span * weight(sh, i), 0), 0);
+  const weight = (item) => (isVideo(item) ? 10 : 1);
+  const total = sh.set.items.reduce((m, i) => m + i.span * weight(i), 0);
   let done = 0;
-  for (const sh of shapes) {
-    const w = 1080 * scale;
-    const pieceH = sh.fill ? sh.slideHeight * scale : sh.height * scale;
-    const slides = drawSlides(sh.set, w, pieceH, { quality: "full", seed: project.seed });
-    out[sh.id] = [];
-    for (const slide of slides) {
-      if (sh.id === "instagram" && isVideo(slide.item)) {
-        const even = (n) => Math.round(n / 2) * 2; // (H.264 wants even sizes)
-        const share = weight(sh, slide.item);
-        out[sh.id].push(await videoSlideToMp4(slide.item, even(w), even(pieceH), project.seed, (f) => progress((done + f * share) / total)));
-        done += share;
-        continue;
-      }
-      const canvas = sh.fill ? composeTikTok(slide.canvas, project, w, Math.round((w * 16) / 9)) : slide.canvas;
-      out[sh.id].push(await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92)));
-      progress(++done / total);
-      await new Promise((r) => setTimeout(r, 0)); // (let the progress bar move)
+  const w = 1080 * scale, h = sh.height * scale;
+  const out = [];
+  for (const slide of drawSlides(sh.set, w, h, { quality: "full", seed: project.seed })) {
+    if (isVideo(slide.item)) {
+      const even = (n) => Math.round(n / 2) * 2; // (H.264 wants even sizes)
+      out.push(await videoSlideToMp4(slide.item, even(w), even(h), project.seed, (f) => progress((done + f * 10) / total)));
+      done += 10;
+      continue;
     }
+    out.push(await new Promise((resolve) => slide.canvas.toBlob(resolve, "image/jpeg", 0.92)));
+    progress(++done / total);
+    await new Promise((r) => setTimeout(r, 0)); // (let the progress bar move)
   }
   return out;
 }
 
 const fileName = (i, blob) => `${String(i + 1).padStart(2, "0")}.${blob && blob.type === "video/mp4" ? "mp4" : "jpg"}`;
 
-// Write them into "<name> Project/Exports/<Platform>/" in `place`. Resolves to the path written.
-export async function writeToFolder(place, project, files) {
+// Write them into "<name> Project/Exports/" in `place`. Resolves to the path written.
+export async function writeToFolder(place, project, blobs) {
   if (!(await allowed(place))) throw new Error("The folder wasn't allowed");
   const projectDir = await place.getDirectoryHandle(`${safeName(project.name)} Project`, { create: true });
-  const exportsDir = await projectDir.getDirectoryHandle("Exports", { create: true });
-  for (const [id, blobs] of Object.entries(files)) {
-    const platform = EXPORT_PLATFORMS.find((p) => p.id === id);
-    const dir = await exportsDir.getDirectoryHandle(platform.folder, { create: true });
-    // (the last export's numbered photos go, so the folder matches this set exactly)
-    for await (const [name] of dir.entries()) { if (/^\d{2}\.(jpg|mp4)$/.test(name)) await dir.removeEntry(name); }
-    for (let i = 0; i < blobs.length; i++) {
-      const handle = await dir.getFileHandle(fileName(i, blobs[i]), { create: true });
-      const writable = await handle.createWritable();
-      await writable.write(blobs[i]);
-      await writable.close();
-    }
+  const dir = await projectDir.getDirectoryHandle("Exports", { create: true });
+  // (the last export's numbered files go, so the folder matches this set exactly)
+  for await (const [name] of dir.entries()) { if (/^\d{2}\.(jpg|mp4)$/.test(name)) await dir.removeEntry(name); }
+  for (let i = 0; i < blobs.length; i++) {
+    const handle = await dir.getFileHandle(fileName(i, blobs[i]), { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(blobs[i]);
+    await writable.close();
   }
   return `${place.name}/${safeName(project.name)} Project/Exports`;
 }
 
-// One zip download with a folder per platform
-export async function downloadZip(project, files) {
+// One zip download
+export async function downloadZip(project, blobs) {
   if (!window.JSZip) {
     await new Promise((resolve, reject) => {
       const s = document.createElement("script");
@@ -101,10 +82,7 @@ export async function downloadZip(project, files) {
   }
   const zip = new window.JSZip();
   const root = zip.folder(`${safeName(project.name)} Exports`);
-  Object.entries(files).forEach(([id, blobs]) => {
-    const folder = root.folder(EXPORT_PLATFORMS.find((p) => p.id === id).folder);
-    blobs.forEach((blob, i) => folder.file(fileName(i, blob), blob));
-  });
+  blobs.forEach((blob, i) => root.file(fileName(i, blob), blob));
   const blob = await zip.generateAsync({ type: "blob" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);

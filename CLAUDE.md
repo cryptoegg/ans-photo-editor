@@ -1,17 +1,16 @@
 # ans-photo-editor
 
 A browser photo editor for social carousels: an **Instagram carousel**, a **TikTok photo post**
-and a **YouTube post**. The top bar picks the platform (Instagram | TikTok | YouTube); each is its
-own stage with its own shape and slides (checked Oct 2026, `STAGES` in js/project.js: Instagram
-4:5 / 1:1 / 1.91:1 / 3:4 (app only since May 2025), up to 20; TikTok 9:16, or 4:5 / 1:1 exported on
-a 9:16 frame with the fill, up to 35; YouTube 1:1 / 4:5 / 16:9, up to 10). A new project starts on
-1:1 for all three; the shape menu marks the shapes all three take ("1:1 · all", "4:5 · all",
-`SHARED_RATIOS`). The same slide on each platform (`lookGroup`) shares its look, and while
-platforms have the same shape its crop, texts and layers too (`shareSlides` in `js/state.js`,
-`SAME_SHAPE_KEYS`), so a set on one shape is edited once; switching a platform onto another's
-shape joins it (`setRatio`). A slide with `ownLook` ("Same on every platform" tick box off) stands
-alone. There's no "Linked" mode any more: `tidyProject` turns an old Linked record (project.items)
-into the three stages. Laptop first; phone later.
+and a **YouTube post**. **One set, edited once** (Tom, 2026-11-18): `project.set = { ratio, items }`. The top bar's
+Instagram | TikTok | YouTube only changes how it's shown (Phone view, Feed / Profile; `project.stage`), and each icon says
+how well the set suits that app (`fitFor` in js/project.js): faded = it doesn't take the set's shape, a dot = something to
+know (too many slides, videos left out), said in its hover box; TikTok shows a shape other than 9:16 inside its tall screen,
+on black. What each app takes (checked Oct 2026, `STAGES`): Instagram 4:5 / 3:4 (app only since May 2025) / 1:1 / 1.91:1,
+up to 20, videos; TikTok 9:16 / 4:5 / 1:1, up to 35, photos only; YouTube 1:1 / 4:5 / 16:9, up to 10, photos only. The
+shape menu (`SHAPES`) names the apps each shape suits ("4:5 · all three", "9:16 · TikTok"). A new project starts on 4:5.
+Older records (a set per platform, `project.stages`, or a "Linked" `project.items`) open with the set last edited; the
+others, the post text and the TikTok fill are dropped (`tidyProject`). No "Same on every platform" switch, no Copy to,
+no Post text (the post's words are written in Post). Laptop first; phone later.
 
 **Live** (free, behind the site's login) at anewsong.club/photo-editor/ (the page, in ans-website) and
 /photo-editor/app/ (this app, installable: `manifest.webmanifest`, `sw.js`, `js/install.js`).
@@ -26,8 +25,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 
 ## How it fits together
 
-- **Project record**: `js/project.js`. One object holds everything (items = the filmstrip,
-  captions, TikTok fill). An **item** is one photo; a **panorama** is one item with `span` > 1
+- **Project record**: `js/project.js`. One object holds everything (set.items = the filmstrip). An **item** is one photo; a **panorama** is one item with `span` > 1
   (one photo across `span` squares). Crop = where the photo sits, free like the lyric app's
   pictures (zoom 1 = Fill; smaller shows the slide's `background`, white by default; Fit / Fill in
   `js/render.js`); look = filter preset + strength + Light / Colour; texts (align incl. justify,
@@ -49,10 +47,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   (`state.layerId`, `currentLayer()`), and Filters / Adjust / Crop then change just that one.
   Actions: `addLayerFiles`, `setLayout`, `moveLayer`, `removeLayer`. Not for panoramas. A video slide takes
   photo layers too: the video is the bottom layer and stays there (can't move, be removed or duplicated).
-- **Adding**: new photos / videos go into the set being edited and, with separate sets, every
-  other platform's set too (fitted to its shape, as far as it has room); Remove only takes them
-  out of the platform you're on; Copy to ▾ (filmstrip) copies selected slides to another platform.
-- **Video** (Instagram carousels only): an
+- **Adding**: new photos / videos go into the set after the current slide.
+- **Video** (Instagram carousels only; the TikTok and YouTube icons warn, and their Phone view leaves them out): an
   item with `kind: "video"`, `trim` { start, end } (3 to 60 s), `cover` (seconds: its still),
   `muted`. `js/media.js` keeps a player (with sound), a seeker for stills (`stillAt`) and the
   file; `js/ui/videoBar.js` is the bar under the canvas (▶ / space, trim strip, ◆ cover, sound);
@@ -98,15 +94,26 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   card (`js/effects/gl.js`) and keeps the result, so moving / zooming never re-runs it.
 - **Filters**: `js/filters.js`: the presets plus "Your filters" (saved in IndexedDB meta, every
   project). Picking one gives the slide its own copy (`look.chain`). Tiles: Filters · Adjust ·
-  Crop · Captions (words on the slide; `state.tab` "text") · Post text (the post's caption; `state.tab`
-  "captions"). Filter tiles show their names, grouped in folds; Strength floats at the top of Filters
+  Crop · Captions (words on the slide; `state.tab` "text"). Filter tiles show their names, grouped in folds; Strength floats at the top of Filters
   and Adjust (only with a filter on). The presets row (Presets… menu, Save Preset, the dice) puts on
   any filter, saves the slide's look to Your filters (`saveThisFilter`), or a random one. Every setting is in **Adjust**
   (the picked tile's Edit badge goes there): Light ▸, Colour ▸, the filter's own Filter light ▸ /
-  Filter colour ▸ / Colour tint ▸, Effects ▸ (one fold opening to every effect, listed like the
+  Filter colour ▸ (plus Filter curves / per colour / LUT / wheels when its chain has them), Effects ▸ (one fold opening to every effect, listed like the
   lyric app: tick box, name ▸, one slider, ↺), Background ▸ (one colour picker), then "Save this
   filter" (always there: saves the slide's Light, Colour, filter and effects to Your filters) and
   Reset filter. Switching an effect on with no filter makes the slide's own "custom".
+- **Colour card** (Tom, 2026-11-18, copied from the Lyric Visualiser's one Colour card): Adjust → Colour = Presets…
+  (`js/effects/colourPresets.js`: each sets Basic, Curves and the wheels, all still movable after) then tabs Basic ·
+  Curves · Wheels · Mixer · LUT (`colourCard` in panel.js; the tab kept in localStorage `ans_photo_colour_tab`; ↺ resets
+  all five). The slide's own settings are `look.colour`, `look.curves`, `look.grade`, `look.hsl`, `look.lut` (`tidyLook`
+  in project.js), run in looks.js after Light: Curves, Colour, Mixer, LUT, Wheels. Curves (`curves.js`) and Colour
+  Grading (`grade.js`, the three wheels + Luminance, Blending, Balance) are drawn by `js/ui/colourControls.js` (as in the
+  Visualiser). **Mixer** (`hsl.js`, this app's own; "Per colour"): eight colour dots (Red, Orange, Yellow, Green, Aqua,
+  Blue, Purple, Pink) and Hue / Saturation / Luminance for the picked one; each pixel shared between the two colours
+  its hue sits between, greys untouched. LUT (`lut.js`, `lutStore.js`): your own .cube files ("Load a .cube file…"),
+  kept in this browser (IndexedDB `ans_photo_luts`). **Colour tint is gone**: `tintIntoGrade` (`js/effects/oldTint.js`)
+  turns any tint in the ready-made filters, Your filters and saved projects into the wheels (+ B&W for Monotone).
+  Halation (`halation.js`, Light & blur) is in Effects. Your filters keep the whole Colour card.
 - **Effects**: `js/effects/` is copied from ans-visual-text-generator (minus chain.js, chop,
   framerate). `lines.js` (Screen lines: fine
   bright lines over the photo, LED-wall look) is this app's own. `standalone.js` stands in for the song / lyrics the effects used to ask about.
@@ -123,7 +130,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   `pairSliders`); on / off settings small boxes lit when on; labels drop any "(…)" (full name on hover).
 - **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Edit | Phone,
   Instagram | TikTok | YouTube, Feed | Profile as icons (faint while editing), centred over the canvas | at the right the
-  Editor's five tabs, spread over the Editor (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
+  Editor's four tabs, spread over the Editor (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
   columns, Media 320 | canvas | Editor 320 (each folds to a 44px strip with its blue arrow, remembered in
   localStorage), then the slides strip.
 - **UI**: `js/ui/mediaColumn.js` (Media: Photos, Videos (3 across), Your filters with their dates;
@@ -136,7 +143,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   with a soft shadow; under it the floating canvas bar: ‹ Slide 3 of 7 ›, the shape menu, − Fit +,
   guides, snapping, background colour, Before (hold), `showCanvasBar` in main.js), `filmstrip.js`
   (the slides strip: toolbar with fold, Add (blue), trays of actions, "7 of 20"; slides numbered above,
-  the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow (its five tabs are in the top bar);
+  the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow (its four tabs are in the top bar);
   presets row; This slide | All 7 slides; Layers (count, +, Bottom / Top); then the tile's settings:
   sliders with a blue fill (`fillTrack`), switches, blue fold names after a chevron; "mixed"
   sliders; a note with Undo when a change hits several slides),
@@ -156,9 +163,9 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   `openSettings` in `js/ui/dialogs.js`: the main folder, what's saved where, keys.
   **Never use `confirm()` / `prompt()`**: the Claude app's pane answers No without showing them;
   use `ask()` in `js/ui/dialogs.js`.
-- **Export**: `js/exporter.js`. JPEG per slide, numbered in swipe order: Instagram and YouTube
-  1080², TikTok 1080×1920 (the square plus the fill: blurred photo or a colour, plus an optional
-  title). Chrome / Edge: written into `<name> Project/Exports/<Platform>/` in a place chosen once.
+- **Export**: `js/exporter.js`. One export (Tom, 2026-11-18): a JPEG per slide (MP4 for a video), numbered in swipe
+  order, 1080 wide in the set's shape (4:5 = 1080 × 1350). Chrome / Edge: written into `<name> Project/Exports/` in a
+  place chosen once.
   Other browsers and the Claude app's pane: one zip. Re-drawn on canvas, so no EXIF / GPS.
 
 ## Tom's choices

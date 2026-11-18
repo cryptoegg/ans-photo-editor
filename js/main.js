@@ -1,5 +1,5 @@
-// ANS Photo Editor: a set of slides for an Instagram carousel, a TikTok photo post and a YouTube post,
-// one per platform, edited together while they share a shape. Plain JavaScript modules, no build
+// ANS Photo Editor: one set of slides for an Instagram carousel, a TikTok photo post and a YouTube post,
+// edited once; Instagram | TikTok | YouTube only changes how it's shown. Plain JavaScript modules, no build
 // step: run any static server from this folder (python3 -m http.server).
 //
 //   js/project.js   the project record          js/state.js     selection, undo / redo, events
@@ -15,10 +15,12 @@ import { newProject, slides as slideList, firstSlideOf, allLists, slideCount } f
 import { saveProject, loadProject } from './store.js';
 import { loadPicture, warmHeicReader } from './media.js';
 import { FONTS } from './render.js';
-import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setStage, setRatio, copySelectedTo, addLayerFiles, duplicateLayer } from './actions.js';
+import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setStage, setRatio, addLayerFiles, duplicateLayer } from './actions.js';
 import { loadMyFilters } from './filters.js';
 import { initInstall } from './install.js';
-import { STAGES, RATIO_NAMES, SHARED_RATIOS } from './project.js';
+import { STAGES, SHAPES, PLATFORMS, fitFor } from './project.js';
+// The apps a shape suits, for the shape menu: "all three", else their names
+const appsFor = (r) => { const ok = PLATFORMS.filter((x) => STAGES[x.id].ratios.includes(r)).map((x) => x.label); return ok.length === PLATFORMS.length ? "all three" : ok.join(", "); };
 import { initFilmstrip } from './ui/filmstrip.js';
 import { initStage } from './ui/stage.js';
 import { initPanel } from './ui/panel.js';
@@ -77,20 +79,21 @@ function refresh(what) {
   const has = items().length > 0;
   ["btn-duplicate", "btn-reset", "btn-delete", "btn-pano"].forEach((id) => { $(id).disabled = !has; });
   $("btn-split").disabled = !item || item.span < 2;
-  $("btn-copy-to").disabled = !has;
   $("btn-pano").textContent = state.selected.size > 1 ? "Join as panorama" : item && item.span > 1 ? "Add a slide to it" : "Make panorama";
   document.querySelectorAll("#view-switch button").forEach((b) => b.classList.toggle("on", b.dataset.view === state.view));
-  // The platform being edited, and its shape ("· all": a shape all three take)
+  // The app the set is shown as, and how well the set suits each (faded: it doesn't take this shape; a dot: something
+  // to know, in its hover box: too many slides, videos left out, or TikTok's tall frame)
   const p = state.project;
-  document.querySelectorAll("#platform-switch button").forEach((b) => b.classList.toggle("on", b.dataset.mode === p.stage));
+  document.querySelectorAll("#platform-switch button").forEach((b) => {
+    const id = b.dataset.mode, fit = fitFor(p, id), label = PLATFORMS.find((x) => x.id === id).label;
+    b.classList.toggle("on", id === p.stage);
+    b.classList.toggle("fit-no", !fit.shapeOk);
+    b.classList.toggle("fit-note", fit.shapeOk && fit.notes.length > 0);
+    b.title = [`${label}${fit.ok ? (fit.framed ? `: takes ${p.set.ratio}, shown inside its tall screen` : `: takes ${p.set.ratio}`) : ""}`, ...fit.notes].join(" · ");
+  });
   const select = $("ratio-select");
-  if (select.dataset.for !== p.stage) {
-    select.innerHTML = STAGES[p.stage].ratios.map((r) => `<option value="${r}">${RATIO_NAMES[r]}${SHARED_RATIOS.includes(r) ? " · all" : ""}</option>`).join("");
-    select.dataset.for = p.stage;
-  }
-  select.value = p.stages[p.stage].ratio;
-  const twins = Object.keys(STAGES).filter((k) => k !== p.stage && p.stages[k].ratio === p.stages[p.stage].ratio).map((k) => ({ instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube" })[k]);
-  select.title = `This platform's shape. "· all": all three take it.${twins.length ? ` Same as ${twins.join(" and ")}, so edits go to ${twins.length > 1 ? "all three" : "both"}.` : ""}`;
+  if (!select.options.length) select.innerHTML = SHAPES.map((r) => `<option value="${r}">${r} · ${appsFor(r)}</option>`).join("");
+  select.value = p.set.ratio;
   if (state.phonePlatform !== p.stage) state.phonePlatform = p.stage;
   // Feed | Profile in the top bar is faint while editing (as in the Lyric Visualiser)
   document.body.classList.toggle("phone-on", state.view === "phone");
@@ -224,25 +227,6 @@ function wireStrip() {
   const layerInput = $("layer-input");
   document.addEventListener("add-layer", () => layerInput.click());
   layerInput.addEventListener("change", () => { if (layerInput.files.length) addLayerFiles(layerInput.files); layerInput.value = ""; });
-  // Copy to ▾ (separate sets): the other platforms, or all of them
-  $("btn-copy-to").onclick = (e) => {
-    const menu = $("copy-menu");
-    if (!menu.hidden) { menu.hidden = true; return; }
-    const r = e.currentTarget.getBoundingClientRect();
-    menu.innerHTML = "";
-    const here = state.project.stage;
-    [["instagram", "Instagram"], ["tiktok", "TikTok"], ["youtube", "YouTube"]].filter(([id]) => id !== here).concat([["all", "All other platforms"]]).forEach(([id, label]) => {
-      const row = Object.assign(document.createElement("div"), { className: "menu-item", textContent: label });
-      row.onclick = () => { menu.hidden = true; copySelectedTo(id); };
-      menu.append(row);
-    });
-    menu.style.left = `${r.left}px`;
-    menu.style.top = "";
-    menu.style.bottom = `${window.innerHeight - r.top + 6}px`;
-    menu.hidden = false;
-    const away = (ev) => { if (!menu.contains(ev.target) && ev.target !== e.currentTarget) { menu.hidden = true; document.removeEventListener("pointerdown", away); } };
-    setTimeout(() => document.addEventListener("pointerdown", away), 0);
-  };
 }
 
 // Photos dropped anywhere on the window

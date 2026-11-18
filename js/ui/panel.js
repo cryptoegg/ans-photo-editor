@@ -5,15 +5,19 @@
 import { removeBackground, restoreBackground, cutoutStatus } from '../cutout.js';
 import { brush, setBrush, clearTouchUps, brushStatus, cloneHasSource, sizeToSlider, sliderToSize, toolIcons } from './brush.js';
 import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, select, selectAll, onChange, items } from '../state.js';
-import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, PLATFORMS, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
+import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, partDefaults, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
 import { PRESETS } from '../effects/presets.js';
 import { getEffect, EFFECTS, effectOrder } from '../effects/registry.js';
 import { vibeSettings, VIBE_DEFAULT } from '../effects/vibe.js';
+import { COLOUR_PRESETS } from '../effects/colourPresets.js';
+import { HSL_COLOURS } from '../effects/hsl.js';
+import { addLutFile } from '../effects/lutStore.js';
+import { curveControl, wheelsControl } from './colourControls.js';
 import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, deleteMyFilter, isMine } from '../filters.js';
 import { presetSwatch } from '../looks.js';
 import { getPicture } from '../media.js';
 import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS } from '../render.js';
-import { setSpan, splitPanorama, makePanorama, setOwnLook, moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
+import { setSpan, splitPanorama, makePanorama, moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
 import { showMenu } from './menu.js';
 import { toast } from './toast.js';
 import { ask } from './dialogs.js';
@@ -277,24 +281,22 @@ function build() {
     if (b.dataset.scope === "all") b.textContent = all > 1 ? `All ${all} slides` : "All";
   });
   document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === state.tab));
-  // (Post text is the whole post's: no presets, slides or layers; Captions goes on the slide, not a layer)
-  const post = state.tab === "captions";
-  document.getElementById("presets-row").hidden = post || !all;
-  document.getElementById("scope-switch").hidden = post || !all;
+  if (state.tab === "captions") state.tab = "filters"; // (Post text is gone: the post's words are written in Post)
+  document.getElementById("presets-row").hidden = !all;
+  document.getElementById("scope-switch").hidden = !all;
   fillPresets();
 
   buildLayersBox();
   buildToolsBox();
-  if (post || state.tab === "text") document.getElementById("layers-box").hidden = document.getElementById("tools-box").hidden = true;
+  if (state.tab === "text") document.getElementById("layers-box").hidden = document.getElementById("tools-box").hidden = true;
   const scroll = state.tab === shownTab ? body.scrollTop : 0; // (a different tab starts at its top)
   shownTab = state.tab;
   body.innerHTML = "";
-  if (!all && state.tab !== "captions") {
+  if (!all) {
     body.append(note("Add photos to start. Everything you set here shows on the canvas straight away."));
     return;
   }
-  if ((state.tab === "filters" || state.tab === "adjust") && chosen.length) body.append(sharedLook(chosen));
-  ({ filters: buildFilters, adjust: buildAdjust, crop: buildCrop, text: buildText, captions: buildCaptions })[state.tab]();
+  ({ filters: buildFilters, adjust: buildAdjust, crop: buildCrop, text: buildText })[state.tab]();
   document.querySelectorAll('#panel input[type="range"]').forEach(fillTrack);
   pairSliders(body);
   body.scrollTop = scroll;
@@ -370,20 +372,6 @@ function segmented(options, value, onPick) {
   return seg;
 }
 
-// ---- Shared slides: a slide's filter and adjustments are the same on every platform (and its crop,
-// text and layers on platforms with the same shape),
-// unless it has its own here
-
-function sharedLook(chosen) {
-  const own = chosen.map((i) => !!i.ownLook);
-  const box = el("input", { type: "checkbox", checked: !own.some(Boolean) });
-  box.indeterminate = own.some(Boolean) && !own.every(Boolean);
-  box.onchange = () => setOwnLook(!box.checked);
-  const platform = PLATFORMS.find((x) => x.id === state.project.stage);
-  return el("label", { className: "check-row note", title: "On: the look is the same on all three, and the crop, text and layers too on platforms with the same shape. Off: these slides stand alone here." }, box,
-    el("span", { textContent: box.checked ? "Same on every platform" : `Only on ${platform ? platform.label : "this platform"}` }));
-}
-
 // The presets row's menu: Presets… (or the filter the chosen slides have), Original, Your filters, then the groups
 function fillPresets() {
   const pick = document.getElementById("preset-pick");
@@ -412,7 +400,7 @@ async function saveThisFilter(chosen) {
   if (name === null) return;
   const id = item.look.preset;
   const chain = item.look.chain || (id && id !== "custom" ? freshChain(id) : []);
-  const filter = await saveMyFilter(name || "My filter", chain, { ...item.look.light }, { ...item.look.colour });
+  const filter = await saveMyFilter(name || "My filter", chain, { ...item.look.light }, { ...item.look.colour }, copy({ curves: item.look.curves, grade: item.look.grade, hsl: item.look.hsl, lut: item.look.lut }));
   chosen.forEach((i) => { if (i === item || JSON.stringify(i.look) === JSON.stringify(item.look)) i.look.preset = filter.id; });
   item.look.preset = filter.id;
   if (!item.look.chain) item.look.chain = chain;
@@ -444,6 +432,7 @@ export function useFilter(chosen, id) {
     // (one of yours brings its Light and Colour with it)
     if (filter && filter.light) i.look.light = { ...LIGHT_DEFAULTS(), ...filter.light };
     if (filter && filter.colour) i.look.colour = { ...COLOUR_DEFAULTS(), ...filter.colour };
+    if (filter && filter.colour) ["curves", "grade", "hsl", "lut"].forEach((k) => { i.look[k] = { ...partDefaults(k), ...copy(filter[k] || {}) }; });
   });
   changed("project");
   commit();
@@ -517,11 +506,12 @@ function foldCard({ key, name, tick = null, quick = null, onReset = null, build,
 }
 
 // ---- The filter's own settings and every effect (in Adjust), listed like the lyric app's
-// effects panel: the filter's Light, Colour and Colour tint, then Effects, each with its tick
+// effects panel: the filter's Light and Colour (and its Curves, Per colour, LUT, wheels), then Effects, each with its tick
 // box, its one slider and its settings folded under its name. Moving a setting of an effect
 // that's off switches it on. A slide with no filter can switch effects on too (its own "Custom").
 
-const ADJUST_TYPES = ["tone", "colour", "tint"];
+const ADJUST_TYPES = ["tone", "curves", "colour", "hsl", "lut", "grade"];
+const FILTER_NAMES = { tone: "Filter light", colour: "Filter colour", curves: "Filter curves", hsl: "Filter per colour", lut: "Filter LUT", grade: "Filter wheels" };
 function effectsSection(chosen) {
   const item = lookItem();
   if (!item) return;
@@ -546,9 +536,10 @@ function effectsSection(chosen) {
   const resetTo = (type) => () => { targets.forEach((i) => { const fx = i.look.chain && i.look.chain.find((f) => f.type === type); if (fx) Object.assign(fx, getEffect(type).defaults()); }); done(); };
   const controlsOf = (effect) => (inner) => (effect.controls || []).forEach((c) => inner.append(effectControl(c, effect.type, targets, shown, ensure)));
 
+  // (the filter's Light and Colour always; its Curves, Per colour, LUT and wheels when it has them, e.g. an old Colour tint)
   if (id) {
-    EFFECTS.filter((e) => ADJUST_TYPES.includes(e.type)).forEach((effect) => {
-      body.append(foldCard({ key: `fx:${effect.type}`, name: effect.type === "tone" ? "Filter light" : effect.type === "colour" ? "Filter colour" : effect.label, onReset: resetTo(effect.type), build: controlsOf(effect) }));
+    EFFECTS.filter((e) => ADJUST_TYPES.includes(e.type) && (e.type === "tone" || e.type === "colour" || (fxOf(item, e.type) && fxOf(item, e.type).on !== false))).forEach((effect) => {
+      body.append(foldCard({ key: `fx:${effect.type}`, name: FILTER_NAMES[effect.type], onReset: resetTo(effect.type), build: controlsOf(effect) }));
     });
   }
   // Effects: one fold that opens to the whole list (each effect folds open in turn)
@@ -611,6 +602,10 @@ function effectControl(c, type, targets, shown, ensure) {
   const live = () => changed("look");
   const value = shown(type)[c.key];
   const setAll = (v) => targets.forEach((i) => { ensure(i, type)[c.key] = v; });
+  if (c.kind === "curve" || c.kind === "wheels" || c.kind === "perColour" || c.lut) {
+    const get = (i) => (i.look.chain || []).find((f) => f.type === type) || shown(type);
+    return drawnControl(c, targets, get, (i) => ensure(i, type));
+  }
   if (c.kind === "colour") {
     const input = el("input", { type: "color", value: value || "#000000" });
     input.oninput = () => { setAll(input.value); live(); };
@@ -662,22 +657,7 @@ function buildAdjust() {
       get: (i) => i.look.light[c.key], set: (i, v) => { i.look.light[c.key] = v; }
     })))
   }));
-  body.append(foldCard({
-    key: "adjust:colour", name: "Colour", onReset: resetPart("colour", COLOUR_DEFAULTS, "Colour"),
-    build: (inner) => {
-      const monos = chosen.map((i) => !!i.look.colour.mono);
-      inner.append(el("div", { className: "row" }, segmented([{ value: false, label: "Colour" }, { value: true, label: "B&W" }], monos.every((m) => m === monos[0]) ? monos[0] : null, (v) => {
-        chosen.forEach((i) => { i.look.colour.mono = v; });
-        changed("project");
-        commit();
-        saidAcross(v ? "B&W" : "Colour", chosen.length);
-      })));
-      colour.controls.filter((c) => !c.kind).forEach((c) => inner.append(slider({
-        label: c.label, min: c.min, max: c.max, step: c.step, targets: chosen,
-        get: (i) => i.look.colour[c.key], set: (i, v) => { i.look.colour[c.key] = v; }
-      })));
-    }
-  }));
+  body.append(colourCard(chosen));
   effectsSection(chosen);
   body.append(foldCard({
     key: "adjust:background", name: "Background",
@@ -693,6 +673,113 @@ function buildAdjust() {
     }
   }));
   saveFilterSection(chosen);
+}
+
+// ---- Colour (Tom, 2026-11-18, as the Lyric Visualiser's one Colour card): Presets… on top (js/effects/colourPresets.js:
+// each sets Basic, Curves and the wheels, so everything can still be moved after), then the tabs Basic (Temperature,
+// Tint, Saturation, Vibrance, Colour | B&W) · Curves · Wheels (Colour Grading) · Mixer (per colour: eight colours' hue,
+// saturation, luminance) · LUT (your own .cube files). The last tab is remembered in this browser. ↺ resets all five.
+
+const COLOUR_TABS = [{ value: "basic", label: "Basic" }, { value: "curves", label: "Curves" }, { value: "grade", label: "Wheels" }, { value: "hsl", label: "Mixer", title: "Per colour: the hue, saturation and luminance of each colour" }, { value: "lut", label: "LUT" }];
+const pref = (key, start) => { try { return localStorage.getItem(key) || start; } catch (err) { return start; } };
+const keepPref = (key, value) => { try { localStorage.setItem(key, value); } catch (err) { /* this time only */ } };
+const copy = (v) => JSON.parse(JSON.stringify(v));
+
+function colourCard(chosen) {
+  const reset = () => {
+    chosen.forEach((i) => { i.look.colour = COLOUR_DEFAULTS(); ["curves", "grade", "hsl", "lut"].forEach((k) => { i.look[k] = partDefaults(k); }); });
+    changed("project"); commit(); saidAcross("Colour reset", chosen.length);
+  };
+  return foldCard({ key: "adjust:colour", name: "Colour", onReset: reset, build: (inner) => {
+    const pick = el("select", { className: "select colour-presets", title: "A ready-made grade (every part can still be moved after)" });
+    pick.append(el("option", { value: "", textContent: "Presets…" }), ...COLOUR_PRESETS.map((p, n) => el("option", { value: String(n), textContent: p.name })));
+    pick.onchange = () => {
+      const p = COLOUR_PRESETS[Number(pick.value)];
+      if (!p) return;
+      chosen.forEach((i) => {
+        i.look.colour = { ...COLOUR_DEFAULTS(), ...(p.colour || {}) };
+        i.look.curves = { ...partDefaults("curves"), ...copy(p.curves || {}) };
+        i.look.grade = { ...partDefaults("grade"), ...(p.grade || {}) };
+      });
+      changed("project"); commit(); saidAcross(p.name, chosen.length);
+    };
+    const tab = COLOUR_TABS.some((t) => t.value === pref("ans_photo_colour_tab", "basic")) ? pref("ans_photo_colour_tab", "basic") : "basic";
+    const tabs = segmented(COLOUR_TABS, tab, (v) => { keepPref("ans_photo_colour_tab", v); changed("view"); });
+    [...tabs.children].forEach((b, n) => { if (COLOUR_TABS[n].title) b.title = COLOUR_TABS[n].title; });
+    tabs.classList.add("colour-tabs");
+    inner.append(pick, tabs);
+    if (tab === "basic") {
+      const colour = getEffect("colour");
+      const monos = chosen.map((i) => !!i.look.colour.mono);
+      inner.append(el("div", { className: "row" }, segmented([{ value: false, label: "Colour" }, { value: true, label: "B&W" }], monos.every((m) => m === monos[0]) ? monos[0] : null, (v) => {
+        chosen.forEach((i) => { i.look.colour.mono = v; });
+        changed("project"); commit(); saidAcross(v ? "B&W" : "Colour", chosen.length);
+      })));
+      colour.controls.filter((c) => !c.kind).forEach((c) => inner.append(slider({
+        label: c.label, min: c.min, max: c.max, step: c.step, targets: chosen,
+        get: (i) => i.look.colour[c.key], set: (i, v) => { i.look.colour[c.key] = v; }
+      })));
+      return;
+    }
+    const own = (i) => (i.look[tab] = i.look[tab] || partDefaults(tab));
+    effectControls(getEffect(tab), chosen, own, own).forEach((n) => inner.append(n));
+  } });
+}
+
+// An effect's settings for these slides: get(slide) = its settings to show, own(slide) = its settings to change
+function effectControls(effect, targets, get, own) {
+  const start = effect.defaults();
+  return (effect.controls || []).map((c) => (c.kind || c.lut) ? drawnControl(c, targets, get, own) : slider({
+    label: c.label, min: c.min, max: c.max, step: c.step || 1, targets, reset: typeof start[c.key] === "number" ? start[c.key] : 0,
+    get: (i) => Number(get(i)[c.key]) || 0, set: (i, v) => { own(i)[c.key] = v; }
+  }));
+}
+
+// The drawn colour controls (Curves, the wheels, Per colour) and the LUT menu, on these slides (the slide's own Colour
+// card, or a filter's: get / own as in effectControls)
+let hslPick = pref("ans_photo_hsl_pick", "red");
+function drawnControl(c, targets, get, own) {
+  const shownOn = () => lookItem() && targets.includes(lookItem()) ? lookItem() : targets[0];
+  const values = () => get(shownOn());
+  let root = null;
+  const set = (patch, done) => {
+    targets.forEach((i) => Object.assign(own(i), copy(patch)));
+    if (root && root.paint) root.paint(values());
+    if (done && !(Object.keys(patch).length === 1 && "channel" in patch)) { changed("project"); commit(); } else changed("look");
+  };
+  if (c.kind === "curve") return (root = curveControl({ values, set }));
+  if (c.kind === "wheels") return (root = wheelsControl({ values, set }, c.parts));
+  if (c.kind === "perColour") {
+    const box = el("div", { className: "per-colour" });
+    const dots = el("div", { className: "hsl-dots" });
+    const name = (HSL_COLOURS.find(([k]) => k === hslPick) || HSL_COLOURS[0])[1];
+    HSL_COLOURS.forEach(([k, label, , ink]) => {
+      const v = values(), moved = ["Hue", "Sat", "Lum"].some((w) => Number(v[k + w]));
+      dots.append(el("button", { className: "hsl-dot" + (k === hslPick ? " on" : "") + (moved ? " moved" : ""), title: label, style: `--dot:${ink}`, onclick: () => { hslPick = k; keepPref("ans_photo_hsl_pick", k); changed("view"); } }));
+    });
+    box.append(dots);
+    [["Hue", "Hue"], ["Sat", "Saturation"], ["Lum", "Luminance"]].forEach(([w, label]) => box.append(slider({
+      label: `${label} (${name})`, min: -100, max: 100, targets, get: (i) => Number(get(i)[hslPick + w]) || 0, set: (i, v) => { own(i)[hslPick + w] = v; }
+    })));
+    return box;
+  }
+  // (LUT: your own .cube files, and Load a .cube file… at the end)
+  const input = el("select", { className: "select" });
+  const now = values()[c.key];
+  c.options.forEach((o) => input.append(el("option", { value: String(o.value), textContent: o.label, selected: String(o.value) === String(now) })));
+  input.append(el("option", { value: "+load", textContent: "Load a .cube file…" }));
+  input.onchange = () => {
+    if (input.value !== "+load") { set({ [c.key]: input.value }, true); return; }
+    input.value = String(now);
+    const file = el("input", { type: "file", accept: ".cube" });
+    file.onchange = async () => {
+      if (!file.files[0]) return;
+      try { const id = await addLutFile(file.files[0]); set({ [c.key]: id }, true); }
+      catch (err) { toast(err.message || "That file couldn't be read"); }
+    };
+    file.click();
+  };
+  return el("div", { className: "row" }, el("span", { textContent: c.label }), input);
 }
 
 // ---- Crop (the slide on the canvas only)
@@ -836,28 +923,6 @@ function buildText() {
 }
 
 // ---- Captions
-
-function buildCaptions() {
-  const p = state.project;
-  PLATFORMS.filter((x) => x.id === p.stage).forEach((platform) => {
-    const box = el("textarea", { value: p.captions[platform.id] || "", placeholder: `${platform.label} caption` });
-    box.style.minHeight = "160px";
-    const count = el("div", { className: "counter" });
-    const show = () => {
-      const n = box.value.length, tags = (box.value.match(/#[\p{L}\p{N}_]+/gu) || []).length;
-      const over = platform.captionLimit && n > platform.captionLimit;
-      count.textContent = `${n}${platform.captionLimit ? ` / ${platform.captionLimit}` : ""} characters${tags ? ` · ${tags} hashtag${tags === 1 ? "" : "s"}` : ""}${platform.id === "instagram" && tags > 30 ? " (Instagram allows 30)" : ""}`;
-      count.classList.toggle("over", !!over || (platform.id === "instagram" && tags > 30));
-    };
-    box.addEventListener("input", () => { p.captions[platform.id] = box.value; show(); changed("look"); });
-    box.addEventListener("change", () => commit());
-    show();
-    const copy = button("Copy", async () => {
-      try { await navigator.clipboard.writeText(box.value); toast(`${platform.label} caption copied`); } catch (err) { box.select(); toast("Press ⌘C to copy"); }
-    }, "btn ghost small");
-    body.append(title(`${platform.label} caption`, copy), box, count);
-  });
-}
 
 // Left / centre / right / justify, as pictures of lines
 const ALIGN_ICONS = {

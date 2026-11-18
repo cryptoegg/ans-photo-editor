@@ -2,7 +2,7 @@
 // first Save / Export and remembered in this browser. Each project gets its own folder in it,
 // laid out like the lyric video app's:
 //   <name> Project/
-//     <name>.ans          the project (Save, ⌘S): slides, edits, captions, every platform's set
+//     <name>.ans          the project (Save, ⌘S): slides, edits, the set
 //     Images/             the photos it uses, copied in once each
 //     Backup/             the last 5 saves ("<name> [2026-10-26 21.10].ans")
 //     Exports/<Platform>/ 01.jpg, 02.jpg… (Export)
@@ -53,7 +53,7 @@ async function exists(dir, name) {
   try { await dir.getFileHandle(name); return true; } catch (err) { return false; }
 }
 const stamp = () => { const d = new Date(), z = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}.${z(d.getMinutes())}`; };
-const mediaIdsOf = (p) => [...new Set([p.items || [], ...(p.stages ? Object.values(p.stages).map((s) => s.items || []) : [])].flat().flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId)), ...maskIdsOf([i, ...(i.layers || [])])]))];
+const mediaIdsOf = (p) => [...new Set([(p.set && p.set.items) || [], p.items || [], ...(p.stages ? Object.values(p.stages).map((s) => s.items || []) : [])].flat().flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId)), ...maskIdsOf([i, ...(i.layers || [])])]))];
 const imageName = (m) => `${m.id}-${safeName(m.name || "photo")}`;
 
 // Save: "<name> Project/<name>.ans", its photos into Images/, the last save into Backup/.

@@ -4,18 +4,18 @@ import { saveToFolder, openFromFolder, mainFolder, chooseMainFolder, safeName } 
 import { installApp, isInstalled } from '../install.js';
 import { newProject, slideCount, newId } from '../project.js';
 import { listProjects, loadProject, deleteProject, saveProject } from '../store.js';
-import { EXPORT_PLATFORMS, exportShape, foldersPossible, savedPlace, choosePlace, makeExports, writeToFolder, downloadZip } from '../exporter.js';
+import { exportShape, foldersPossible, savedPlace, choosePlace, makeExports, writeToFolder, downloadZip } from '../exporter.js';
 import { toast } from './toast.js';
 
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); kids.forEach((k) => e.append(k)); return e; };
 
 // ---- Export
 
-const choices = { platforms: new Set(["instagram", "tiktok", "youtube"]), scale: 1 };
+const choices = { scale: 1 };
 
 export async function openExport() {
   const p = state.project;
-  if (!EXPORT_PLATFORMS.some((pl) => exportShape(p, pl.id).count)) { toast("Add photos first"); return; }
+  if (!exportShape(p).count) { toast("Add photos first"); return; }
   const back = document.getElementById("export-dialog");
   const folders = foldersPossible();
   let place = folders ? await savedPlace() : null;
@@ -28,14 +28,9 @@ export async function openExport() {
 
   const draw = () => {
     box.innerHTML = "";
-    box.append(el("h2", { textContent: "Export each platform's set" }));
-    EXPORT_PLATFORMS.forEach((pl) => {
-      const shape = exportShape(p, pl.id);
-      const tick = el("input", { type: "checkbox", checked: choices.platforms.has(pl.id) && shape.count > 0 });
-      tick.onchange = () => { if (tick.checked) choices.platforms.add(pl.id); else choices.platforms.delete(pl.id); };
-      const about = `${shape.count} slide${shape.count === 1 ? "" : "s"} · ${shape.width} × ${shape.height}${shape.fill ? ", your slides with the fill round them" : ""}`;
-      box.append(el("label", { className: "check" }, tick, el("span", { textContent: pl.label }), el("span", { className: "note", textContent: about })));
-    });
+    box.append(el("h2", { textContent: "Export" }));
+    const shape = exportShape(p);
+    box.append(el("p", { className: "note", textContent: `${shape.count} slide${shape.count === 1 ? "" : "s"} · ${p.set.ratio} · ${shape.width} × ${shape.height}` }));
     const size = el("select", { className: "select" });
     [[1, "Standard (1080 px wide)"], [2, "Extra sharp (2160 px wide)"]].forEach(([v, l]) => size.append(el("option", { value: v, textContent: l, selected: v === choices.scale })));
     size.onchange = () => { choices.scale = Number(size.value); };
@@ -46,30 +41,28 @@ export async function openExport() {
       if (place) where.append(el("button", { className: "btn ghost small", textContent: "Change…", onclick: async () => { const h = await choosePlace(); if (h) { place = h; draw(); } } }));
       box.append(where);
     } else {
-      box.append(el("p", { className: "note", textContent: "This browser can't save into folders, so you'll get one zip with a folder per platform. (Chrome and Edge can save straight into a project folder.)" }));
+      box.append(el("p", { className: "note", textContent: "This browser can't save into folders, so you'll get one zip. (Chrome and Edge can save straight into a project folder.)" }));
     }
-    box.append(el("p", { className: "note", textContent: "Numbered in swipe order (01.jpg, 02.mp4…). Videos go to Instagram as MP4 (30 fps, with their sound unless muted). Location and camera details are removed from every file." }));
+    box.append(el("p", { className: "note", textContent: "Numbered in swipe order (01.jpg, 02.mp4…). Videos as MP4 (30 fps, with their sound unless muted). Location and camera details are removed from every file." }));
     const bar = el("div", { className: "progress", hidden: true }, el("div"));
     box.append(bar);
     const go = el("button", { className: "btn primary", textContent: "Export" });
     const cancel = el("button", { className: "btn ghost", textContent: "Cancel", onclick: close });
     box.append(el("div", { className: "actions" }, cancel, go));
     go.onclick = async () => {
-      const platforms = EXPORT_PLATFORMS.map((x) => x.id).filter((id) => choices.platforms.has(id) && exportShape(p, id).count > 0);
-      if (!platforms.length) { toast("Tick at least one platform"); return; }
       if (folders && !place) { place = await choosePlace(); if (!place) return; }
       go.disabled = cancel.disabled = true;
       go.textContent = "Exporting…";
       bar.hidden = false;
       try {
-        const files = await makeExports(p, platforms, choices.scale, (f) => { bar.firstChild.style.width = `${Math.round(f * 100)}%`; });
-        const count = Object.values(files).reduce((n, list) => n + list.length, 0);
+        const files = await makeExports(p, choices.scale, (f) => { bar.firstChild.style.width = `${Math.round(f * 100)}%`; });
+        const count = files.length;
         if (folders) {
           const path = await writeToFolder(place, p, files);
-          toast(`Saved ${count} photos to ${path}`);
+          toast(`Saved ${count} files to ${path}`);
         } else {
           const name = await downloadZip(p, files);
-          toast(`Downloaded ${name} (${count} photos)`);
+          toast(`Downloaded ${name} (${count} files)`);
         }
         close();
       } catch (err) {
@@ -236,7 +229,7 @@ export async function openSettings() {
       el("ul", { className: "where" },
         el("li", {}, el("strong", { textContent: "In this browser: " }), "every project, saved by itself a moment after each change. File ▾ lists them."),
         el("li", {}, el("strong", { textContent: "In your main folder, when you Save (⌘S): " }), `${name} Project/${name}.ans (the project), Images/ (its photos) and Backup/ (the last 5 saves).`),
-        el("li", {}, el("strong", { textContent: "When you Export: " }), `${name} Project/Exports/Instagram, TikTok and YouTube (01.jpg, 02.jpg…).`))));
+        el("li", {}, el("strong", { textContent: "When you Export: " }), `${name} Project/Exports (01.jpg, 02.jpg…).`))));
 
     box.append(section("App", el("div", { className: "row" },
       el("span", { textContent: isInstalled() ? "Installed: it opens in its own window and works offline." : "Install it: an icon on your dock or desktop, its own window, works offline." }),

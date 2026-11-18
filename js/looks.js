@@ -4,6 +4,7 @@
 // out again. No graphics card: the plain photo is used.
 import { runChain, available } from './effects/gl.js';
 import { getEffect } from './effects/registry.js';
+import { getLut, onLutsChange } from './effects/lutStore.js';
 import { freshChain } from './filters.js';
 import { getPicture, loadPicture, stillAt } from './media.js';
 import { changed } from './state.js';
@@ -26,7 +27,12 @@ function find(kind, key) {
   return value;
 }
 
+onLutsChange(() => changed("view")); // (your .cube files are read in at start: a slide using one is drawn again)
+
 const isZero = (obj) => Object.values(obj).every((v) => !v);
+// The Colour card's tabs as they come (no change): a missing one counts as that too
+const isPlain = (look, k) => !look[k] || JSON.stringify({ ...getEffect(k).defaults(), ...look[k] }) === JSON.stringify(getEffect(k).defaults()) || (k === "lut" && look.lut.look === "none") ||
+  (k === "curves" && ["rgb", "red", "green", "blue"].every((c) => JSON.stringify(look.curves[c] || [[0, 0], [100, 100]]) === "[[0,0],[100,100]]"));
 
 // The steps of a look: { adjust: [...], filter: [...] }, each step { effect, settings, seed }
 function stepsOf(look, seed) {
@@ -36,14 +42,18 @@ function stepsOf(look, seed) {
   };
   const adjust = [];
   if (!isZero(look.light)) adjust.push(step("tone", look.light));
+  if (!isPlain(look, "curves")) adjust.push(step("curves", look.curves));
   if (!isZero(look.colour)) adjust.push(step("colour", look.colour));
+  if (!isPlain(look, "hsl")) adjust.push(step("hsl", look.hsl));
+  if (!isPlain(look, "lut")) adjust.push(step("lut", look.lut));
+  if (!isPlain(look, "grade")) adjust.push(step("grade", look.grade));
   const chain = look.preset ? (look.chain || freshChain(look.preset)) : [];
   const filter = look.strength > 0 ? chain.filter((fx) => fx.on !== false).map(({ type, ...settings }) => step(type, settings)).filter(Boolean) : [];
   return { adjust: adjust.filter(Boolean), filter };
 }
 
 // Whether a look changes the photo at all
-export const hasLook = (look) => !!look.preset || !isZero(look.light) || !isZero(look.colour);
+export const hasLook = (look) => !!look.preset || !isZero(look.light) || !isZero(look.colour) || ["curves", "grade", "hsl", "lut"].some((k) => !isPlain(look, k));
 
 // The picture a slide starts from: the photo, or for a video the still at its cover moment
 // (the first still while that one's being made)
@@ -119,7 +129,7 @@ function lookedOnly(item, quality = "preview", seed = 0) {
   if (!source) return null;
   if (!hasLook(item.look) || !available()) return source;
   const look = item.look;
-  const key = JSON.stringify([item.mediaId, retouchKey(item), item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.colour]);
+  const key = JSON.stringify([item.mediaId, retouchKey(item), item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.colour, look.curves, look.grade, look.hsl, look.lut, look.lut && getLut(look.lut.look) ? 1 : 0]);
   const found = find(quality, key);
   if (found) return found;
   let result;

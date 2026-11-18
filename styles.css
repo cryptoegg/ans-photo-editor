@@ -786,3 +786,31 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 .tool-icons .ti.busy { position: relative; }
 .tool-icons .ti .ti-note { position: absolute; bottom: -2px; right: 2px; font-size: 9px; color: var(--accent-ink); }
 .panel .tools-box .tool-icons { margin-top: 8px; }
+
+/* The Colour card (Tom, 2026-11-18, as the Lyric Visualiser's; colourCard in js/ui/panel.js): Presets, the tabs
+   Basic · Curves · Wheels · Per colour · LUT, then that tab's settings. Curves and the wheels: js/ui/colourControls.js */
+.panel .colour-tabs, .panel .curve-tabs { display: flex; gap: 2px; padding: 0; background: none; width: 100%; }
+.panel .colour-tabs button, .panel .curve-tabs button { flex: 1 1 0; min-width: 0; height: 22px; padding: 0 4px; border: 1px solid var(--btn-line); border-radius: 4px;
+  background: transparent; color: var(--muted); font: 500 var(--t-label, 11px) var(--font, inherit); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: none; }
+.panel .colour-tabs button:hover, .panel .curve-tabs button:hover { color: var(--text); background: transparent; }
+.panel .colour-tabs button.on, .panel .curve-tabs button.active { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-soft); font-weight: 500; }
+.curve-control { display: flex; flex-direction: column; gap: 6px; }
+.curve-square { width: 100%; display: block; cursor: crosshair; touch-action: none; }
+.wheels-control { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.wheel { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.wheel-disc { width: 100%; max-width: 96px; display: block; cursor: crosshair; touch-action: none; }
+.wheel-name { font-size: var(--t-label, 11px); color: var(--muted); white-space: nowrap; }
+.wheel-lum { width: 100%; max-width: 96px; }
+.per-colour { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; row-gap: 8px; align-items: end; }
+.per-colour > .hsl-dots { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 4px; }
+.hsl-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; background: var(--dot) content-box; padding: 2px; cursor: pointer; position: relative; }
+.hsl-dot:hover { border-color: var(--line); }
+.hsl-dot.on { border-color: var(--accent); }
+.hsl-dot.moved::after { content: ""; position: absolute; left: 50%; bottom: -6px; width: 3px; height: 3px; margin-left: -1.5px; border-radius: 50%; background: var(--text); }
+
+/* Instagram | TikTok | YouTube (Tom, 2026-11-18: one set, the icons only change the Phone view): faded = that app
+   doesn't take the set's shape; a dot = something to know (too many slides, videos left out), said in its hover box */
+#platform-switch button.fit-no { opacity: .35; }
+#platform-switch button.fit-no.on { opacity: .6; }
+#platform-switch button { position: relative; }
+#platform-switch button.fit-note::after { content: ""; position: absolute; top: 3px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: #e0912a; }

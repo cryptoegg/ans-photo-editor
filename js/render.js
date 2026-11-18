@@ -297,49 +297,15 @@ export function drawSlides(set, pw, ph, options = {}) {
   return out;
 }
 
-// A TikTok slide: the slide (1:1 or 4:5) across the middle of a 9:16 frame W x H, the fill
-// around it, and the project's title above (if it has one)
-export function composeTikTok(square, project, W, H) {
+// A TikTok slide in the Phone view: TikTok shows a photo that isn't 9:16 across the middle of its tall screen, on black
+export function composeTikTok(square, W, H) {
   const c = document.createElement("canvas");
   c.width = W;
   c.height = H;
   const ctx = c.getContext("2d");
-  const fill = project.tiktok;
-  if (fill.fill === "blur") {
-    const s = Math.max(W / square.width, H / square.height) * 1.1;
-    ctx.save();
-    ctx.filter = `blur(${Math.round(W * 0.045)}px)`;
-    ctx.drawImage(square, (W - square.width * s) / 2, (H - square.height * s) / 2, square.width * s, square.height * s);
-    ctx.restore();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
-    ctx.fillRect(0, 0, W, H);
-  } else {
-    ctx.fillStyle = fill.colour;
-    ctx.fillRect(0, 0, W, H);
-  }
-  const h = Math.round((W * square.height) / square.width);
-  const top = Math.round((H - h) / 2);
-  ctx.drawImage(square, 0, top, W, h);
-  if (fill.title && fill.title.trim()) {
-    const t = { content: wrap(ctx, fill.title.trim(), `700 ${W * 0.068}px ${fontCss("Inter Tight")}`, W * 0.84), font: "Inter Tight", weight: 700, size: 0.068 * W / H, colour: fill.titleColour, align: "center", bubble: "none", stroke: 0, rotation: 0, x: 0.5, y: (top / 2) / H };
-    drawText(ctx, t, W, H);
-  }
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, W, H);
+  const k = Math.min(W / square.width, H / square.height), w = square.width * k, h = square.height * k;
+  ctx.drawImage(square, (W - w) / 2, (H - h) / 2, w, h);
   return c;
-}
-
-// Text broken into lines that fit `width`
-function wrap(ctx, text, font, width) {
-  ctx.save();
-  ctx.font = font;
-  const lines = [];
-  text.split("\n").forEach((para) => {
-    let line = "";
-    para.split(/\s+/).forEach((word) => {
-      const next = line ? `${line} ${word}` : word;
-      if (ctx.measureText(next).width > width && line) { lines.push(line); line = word; } else line = next;
-    });
-    lines.push(line);
-  });
-  ctx.restore();
-  return lines.slice(0, 3).join("\n");
 }

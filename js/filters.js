@@ -3,7 +3,8 @@
 // picking one gives the slide its own copy of the chain (look.chain), so editing it changes
 // only that slide (and the slides selected with it).
 import { PRESETS, getPreset } from './effects/presets.js';
-import { getEffect } from './effects/registry.js';
+import { getEffect, effectOrder } from './effects/registry.js';
+import { tintIntoGrade } from './effects/oldTint.js';
 import { dbGet, dbPut } from './store.js';
 
 let mine = []; // [{ id, name, note, chain }]
@@ -13,9 +14,10 @@ export async function loadMyFilters() {
 }
 export const myFilters = () => mine;
 
-// (light / colour: the slide's own Adjust → Light and Colour, kept with it and put back on with it)
-export async function saveMyFilter(name, chain, light = null, colour = null) {
-  const filter = { id: `my-${Date.now().toString(36)}`, name: name.trim() || "My filter", note: "Your filter", chain: chain.map(({ id, ...rest }) => ({ ...rest })), light, colour };
+// (light / colour / curves / grade / hsl / lut: the slide's own Adjust → Light and Colour card, kept with it and put
+// back on with it)
+export async function saveMyFilter(name, chain, light = null, colour = null, more = {}) {
+  const filter = { id: `my-${Date.now().toString(36)}`, name: name.trim() || "My filter", note: "Your filter", chain: chain.map(({ id, ...rest }) => ({ ...rest })), light, colour, ...more };
   mine = [...mine, filter];
   await dbPut("meta", mine, "myFilters");
   return filter;
@@ -36,8 +38,9 @@ export const newEffectId = () => `fx-${Date.now().toString(36)}-${++counter}`;
 export function freshChain(filterId) {
   const filter = getFilter(filterId);
   if (!filter) return [];
-  return filter.chain
+  return tintIntoGrade(filter.chain.map((fx) => ({ ...fx }))) // (an old Colour tint: the wheels now)
     .filter((fx) => getEffect(fx.type))
+    .sort((a, b) => effectOrder(a.type) - effectOrder(b.type))
     .map(({ type, on, ...settings }) => ({ id: newEffectId(), type, on: on !== false, ...getEffect(type).defaults(), ...settings }));
 }
 

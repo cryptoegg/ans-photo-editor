@@ -4,8 +4,8 @@
 //   Saturation   less ↔ more colour
 //   Vibrance     more colour where there's little (skin and bright colours spared)
 // B&W turns the result to greys (Temperature and Tint still shape which colours go lighter or
-// darker, like a colour filter on black-and-white film). The Colour tint wash sits in here too
-// (js/effects/tint.js).
+// darker, like a colour filter on black-and-white film). The Colour card also holds Curves, Colour Grading and
+// LUT, each under its own tab, with Presets above (js/ui/effectsPanel.js, js/effects/colourPresets.js).
 
 const RECIPE = `
 uniform sampler2D picture;

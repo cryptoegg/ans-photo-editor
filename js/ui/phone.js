@@ -5,16 +5,21 @@
 // Feed | Profile: Profile shows the post on your page: Instagram's and TikTok's 3-across grids of
 // 3:4 tiles (the first slide, cropped to 3:4 from the middle) and YouTube's Posts tab.
 import { state, changed, onChange, select } from '../state.js';
-import { slides, setFor, aspectOf, isVideo, tiktokFilled as filledShape } from '../project.js';
+import { slides, activeSet, aspectOf, isVideo, STAGES } from '../project.js';
 import { drawSlides, composeTikTok, drawItem } from '../render.js';
 import { getPicture, loadPicture } from '../media.js';
 
 const SIDE = 720;
-// The slides the phone shows: the set that platform posts
-const phoneSet = () => setFor(state.project, state.phonePlatform);
+// The slides the phone shows: the one set as that app would take it (TikTok and YouTube: no videos; YouTube: the
+// first 10)
+function phoneSet() {
+  const set = activeSet(state.project), st = STAGES[state.phonePlatform];
+  let n = 0;
+  const items = set.items.filter((i) => st.video || !isVideo(i)).filter((i) => (n += i.span) <= st.max);
+  return { ...set, items };
+}
 const slideList = (p) => slides(p, phoneSet());
-// TikTok shows a 1:1 or 4:5 set with the fill around it; a 9:16 set fills the screen
-const tiktokFilled = () => filledShape(phoneSet().ratio);
+// TikTok shows a set that isn't 9:16 across the middle of its tall screen
 let phone = null;
 let rendered = { key: null, squares: [], tiktok: [] };
 let renderTimer = null;
@@ -121,12 +126,12 @@ function renderSlides() {
   const set = phoneSet();
   const missing = set.items.flatMap((i) => [i.mediaId, ...((i.layers || []).map((l) => l.mediaId))]).filter((id) => !getPicture(id));
   if (missing.length) Promise.all(missing.map((id) => loadPicture(id))).then(() => { rendered.key = null; build(); });
-  const key = JSON.stringify([set.items, set.ratio, p.tiktok, missing.length, state.before]);
+  const key = JSON.stringify([set.items, set.ratio, missing.length, state.before]);
   if (rendered.key === key) return;
   const squares = drawSlides(set, SIDE, SIDE / aspectOf(set.ratio), { before: state.before, seed: p.seed }).map((s) => s.canvas);
   rendered = { key, squares, tiktok: [] };
 }
-const tiktokSlide = (i) => (!tiktokFilled() ? rendered.squares[i] : rendered.tiktok[i] || (rendered.tiktok[i] = composeTikTok(rendered.squares[i], state.project, 720, 1280)));
+const tiktokSlide = (i) => (phoneSet().ratio === "9:16" ? rendered.squares[i] : rendered.tiktok[i] || (rendered.tiktok[i] = composeTikTok(rendered.squares[i], 720, 1280)));
 
 function build() {
   document.querySelectorAll("#phone-screens button").forEach((b) => b.classList.toggle("on", b.dataset.screen === state.phoneScreen));
@@ -140,7 +145,7 @@ function build() {
   const name = (p.name || "yourname").toLowerCase().replace(/[^a-z0-9._]+/g, "").slice(0, 24) || "yourname";
   if (profile) { buildProfile(name, count); return; }
   const platform = state.phonePlatform;
-  const caption = escape(p.captions[platform] || "");
+  const caption = ""; // (the post's words are written in Post)
   const firstLine = (text, fallback) => text ? text.split("<br>")[0] : `<span class="ph-faint">${fallback}</span>`;
   const dots = `<div class="ph-dots">${Array.from({ length: count }, (_, i) => `<i class="${i === state.phoneSlide ? "on" : ""}"></i>`).join("")}</div>`;
   const track = `<div class="ph-track" id="ph-track"></div>`;
@@ -253,7 +258,7 @@ function buildProfile(name, count) {
     mine(tile(tiktokSlide(0)));
   } else {
     phone.className = "phone ph-yt ph-profile";
-    const caption = escape(p.captions.youtube || "");
+    const caption = "";
     phone.innerHTML = `${STATUS}
       <div class="ph-prof-top">${icon("back", 24)}<span class="ph-grow"></span>${icon("search", 24)}${icon("more", 22)}</div>
       <div class="ph-scroll">
