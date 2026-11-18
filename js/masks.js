@@ -18,9 +18,31 @@ export const MASK_KINDS = [
   ["radial", "Round", "A round fix (a face, a spotlight)"],
   ["subject", "Subject", "The person or main thing, found for you"]
 ];
+// The Effect brush's effects (Tom, 2026-11-18, from his references): [id, label, effect type, its settings]. A mask with
+// `effect: { id, type, settings }` paints that effect on (a Brush mask: the Effect brush, js/ui/brush.js).
+export const BRUSH_EFFECTS = [
+  ["pixelate", "Pixelate", "pixelate", {}],
+  ["blur", "Blur", "blur", { amount: 45, style: "soft" }],
+  ["blocks", "Blocks", "datamosh", { speed: 0 }],
+  ["shards", "Shards", "shards", {}],
+  ["pull", "Pull", "stretch", { direction: "columns", size: 25, speed: 0 }],
+  ["smear", "Smear", "liquify", { speed: 0, patches: 0, size: 60 }],
+  ["crumple", "Crumple", "crumple", {}],
+  ["stripes", "RGB stripes", "stripes", {}],
+  ["halftone", "Halftone", "halftone", {}],
+  ["mono", "Black & white", "colour", { mono: true }]
+];
+// Taken off the list (Tom, 2026-11-18) but still drawn where they were painted: not offered for new strokes
+export const RETIRED_EFFECTS = [["glow", "Glow", "bloom", { strength: 60 }]];
+const known = (id) => BRUSH_EFFECTS.find(([k]) => k === id) || RETIRED_EFFECTS.find(([k]) => k === id);
+export const brushEffect = (id) => known(id) || BRUSH_EFFECTS[0];
+// (an effect whose recipe is gone (Tiles, Low poly): shown and drawn as Pixelate)
+export const tidyEffect = (e) => (e && known(e.id) ? e : e ? effectOf("pixelate") : null);
+export const effectOf = (id) => { const [k, , type, settings] = brushEffect(id); return { id: k, type, settings: { ...settings } }; };
+
 export const maskName = (layer, m) => {
-  const [, label] = MASK_KINDS.find(([k]) => k === m.kind) || [, "Mask"];
-  const same = (layer.masks || []).filter((x) => x.kind === m.kind);
+  const label = m.effect ? brushEffect(m.effect.id)[1] : (MASK_KINDS.find(([k]) => k === m.kind) || [, "Mask"])[1];
+  const same = (layer.masks || []).filter((x) => (m.effect ? x.effect && x.effect.id === m.effect.id : x.kind === m.kind && !x.effect));
   return same.length > 1 ? `${label} ${same.indexOf(m) + 1}` : label;
 };
 
@@ -41,7 +63,7 @@ export function tidyMask(m) {
 
 const isZero = (obj) => Object.values(obj || {}).every((v) => !v);
 // The masks that change the photo: switched on, something set, and something to show (a brush / subject with a picture)
-export const activeMasks = (layer) => ((layer && layer.masks) || []).filter((m) => m.on && (!isZero(m.light) || !isZero(m.colour)) && (m.kind === "linear" || m.kind === "radial" || m.maskId));
+export const activeMasks = (layer) => ((layer && layer.masks) || []).filter((m) => m.on && (!isZero(m.light) || !isZero(m.colour) || m.effect) && (m.kind === "linear" || m.kind === "radial" || m.maskId));
 
 // For the looks' memory: what the masks are now (their pictures by id and change)
 export function masksKey(layer) {

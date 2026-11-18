@@ -5,7 +5,7 @@
 import { runChain, available } from './effects/gl.js';
 import { getEffect } from './effects/registry.js';
 import { getLut, onLutsChange } from './effects/lutStore.js';
-import { activeMasks, masksKey, maskCanvas, layThrough } from './masks.js';
+import { activeMasks, masksKey, maskCanvas, layThrough, tidyEffect } from './masks.js';
 import { freshChain } from './filters.js';
 import { getPicture, loadPicture, stillAt } from './media.js';
 import { changed } from './state.js';
@@ -121,7 +121,8 @@ function applyLook(item, source, keyBase, seed, into = null) {
       const mask = maskCanvas(m, base.width, base.height);
       if (!mask) return;
       const steps = [isZero(m.light) ? null : { effect: getEffect("tone"), settings: { ...getEffect("tone").defaults(), ...m.light }, seed: 0 },
-        isZero(m.colour) ? null : { effect: getEffect("colour"), settings: { ...getEffect("colour").defaults(), ...m.colour }, seed: 0 }].filter(Boolean);
+        isZero(m.colour) ? null : { effect: getEffect("colour"), settings: { ...getEffect("colour").defaults(), ...m.colour }, seed: 0 },
+        (() => { const e = tidyEffect(m.effect), fx = e && getEffect(e.type); return fx ? { effect: fx, settings: { ...fx.defaults(), ...e.settings }, seed: 11 } : null; })()].filter(Boolean);
       const out = steps.length && runChain(`${keyBase}@mask@${m.id}`, base, base.width, base.height, steps, { fresh: true });
       if (out) layThrough(base, out, mask);
     });

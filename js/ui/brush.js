@@ -16,6 +16,7 @@ import { state, changed, commit, currentItem, currentLayer } from '../state.js';
 import { getPicture, loadPicture, putPicture } from '../media.js';
 import { dbPut } from '../store.js';
 import { newId } from '../project.js';
+import { newMask, effectOf } from '../masks.js';
 import { photoBox, turn, layerFrame } from '../render.js';
 
 const PREFS_KEY = "ans_photo_brush";
@@ -70,6 +71,7 @@ export const TOOLS_LIST = [
   ["remove", "Remove: paint over anything to take it away"],
   ["clone", "Clone: Alt-click where to copy from, then paint"],
   ["erase", "Eraser: wipe part of the photo away"],
+  ["fx", "Effect brush: paint an effect onto part of the photo"],
   ["edge", "Edge brush: tidy a cut-out's edge"],
 ];
 // The tool buttons (each class `cls`), kept up to date in `into` when given (rebuilt only the first time, so a hover
@@ -81,13 +83,13 @@ export function toolIcons(cls, into = null, after = null) {
       const b = Object.assign(document.createElement("button"), { type: "button", className: cls });
       b.dataset.tool = tool;
       b.setAttribute("aria-label", tip.split(":")[0]);
-      b.onclick = () => { setTool(tool); if (after) after(tool); };
+      b.onclick = () => { if (tool === "fx") effectBrush(); else setTool(tool); if (after) after(tool); };
       return b;
     }));
   }
   [...box.children].forEach((b, i) => {
     const [tool, tip] = TOOLS_LIST[i], ok = toolAllowed(tool);
-    b.classList.toggle("on", (state.tool || "") === tool);
+    b.classList.toggle("on", tool === "fx" ? fxInHand() : (state.tool || "") === tool);
     b.disabled = !ok;
     let text = tool === "edge" && !ok ? "Edge brush: remove the background first" : tip;
     if (tool === "remove" && brushStatus.progress != null) text = `Downloading the AI fill ${Math.round(brushStatus.progress * 100)}%`;
@@ -97,6 +99,26 @@ export function toolIcons(cls, into = null, after = null) {
   });
   return box;
 }
+// The Effect brush (Tom, 2026-11-18): a Brush mask carrying an effect (js/masks.js BRUSH_EFFECTS), painted with the mask
+// brush. Picking it: the picked effect mask, else a new one with the last effect used.
+const pickedFx = () => { const l = currentLayer(); return l && (l.masks || []).find((m) => m.id === state.maskId && m.effect); };
+export const fxInHand = () => state.tool === "mask" && !!pickedFx();
+let lastFx = (() => { try { return localStorage.getItem("ans_photo_fx") || "pixelate"; } catch (err) { return "pixelate"; } })();
+export function rememberFx(id) { lastFx = id; try { localStorage.setItem("ans_photo_fx", id); } catch (err) { /* this time only */ } }
+export function effectBrush(id = null) {
+  const layer = currentLayer();
+  if (!layer || !toolAllowed("fx")) return;
+  if (fxInHand() && !id) { setTool(null); return; }
+  if (!pickedFx() || id) {
+    const m = { ...newMask("brush"), effect: effectOf(id || lastFx) };
+    layer.masks = [...(layer.masks || []), m];
+    state.maskId = m.id;
+    changed("project");
+    commit();
+  }
+  setTool("mask");
+}
+
 export function toolAllowed(tool) {
   if (!tool) return true;
   const item = currentItem(), layer = currentLayer();

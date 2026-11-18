@@ -58,6 +58,10 @@ import datamosh from './datamosh.js';
 import melt from './melt.js';
 import scan from './scan.js';
 import disintegrate from './disintegrate.js';
+import pixelate from './pixelate.js';
+import shards from './shards.js';
+import crumple from './crumple.js';
+import stripes from './stripes.js';
 
 // The one order effects are applied in (and listed in, on the Effects tab): colour first, then
 // warps, light and blur, textures, and damage / the frame last (so the border sits on top).
@@ -66,6 +70,7 @@ export const EFFECTS = [
   tone, skin, curves, colour, hsl, lut, grade,  // Adjust: Light, Skin, then Colour (its Curves, Per colour, LUT and Wheels tabs)
   duotone, negative, solarise,                  // colour effects
   fisheye, liquify, stretch, slice, datamosh, melt, scan, // warp
+  crumple, shards, pixelate, stripes, // break up (Tom, 2026-11-18: the Effect brush's own, from his references)
   blur, bloom, halation, leak,                  // light & blur
   halftone, ascii, screen, lines, paper, grain, dust, // texture
   burn, vhs, frame,                             // damage & frames

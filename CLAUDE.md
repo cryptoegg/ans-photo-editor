@@ -91,6 +91,14 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 - **Skin** (Tom, 2026-11-18): Adjust → Skin (`js/effects/skin.js`, the slide's own `look.skin` { smooth, even, texture },
   run right after Light, before the filter): skin found by its colour (any skin tone), then an edge-keeping blur (Smooth),
   its finest detail laid back (Keep texture) and its colour evened from a wide blur (Even tone). Not in the Effects list.
+- **Effect brush** (Tom, 2026-11-18, from his reference pictures): the `fx` tool icon paints an effect onto part of the
+  photo. It's a Brush mask carrying `effect: { id, type, settings }` (`BRUSH_EFFECTS` in js/masks.js: Pixelate, Blur,
+  Blocks (datamosh), Shards, Pull (stretch), Smear (liquify), Crumple, RGB stripes, Halftone, Black & white; Tom took
+  out Tiles, Low poly and Glow), worked out on the whole photo and laid on through the painted mask (looks.js). Picking
+  another effect in the Tools fold starts a new brush once this one is painted (one part pixelated, another crumpled);
+  in Adjust → Masks the menu changes the picked one's effect. New effects for it in js/effects/ ("Break up"): pixelate,
+  shards, crumple, stripes. Settings (`effectBrushControls` in panel.js) in the Tools fold while in hand and in Adjust → Masks.
+  No red overlay for it: the effect shows as it's painted.
 - **Masks** (Tom, 2026-11-18, like Lightroom's): fixes on part of a photo. Adjust → Masks: Brush · Fade · Round · Subject,
   then a row per mask (Invert, On / Off, ✕) and the picked one's Light and Colour sliders (Round: Feather too). The record
   is the layer's `masks` (`js/masks.js`: brush / subject keep a PNG `maskId`, Fade a `line`, Round a `round`); `state.maskId`

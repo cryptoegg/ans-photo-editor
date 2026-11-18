@@ -3,7 +3,7 @@
 // outlined in the filmstrip; Crop and Text always change the one on the canvas. Changing
 // several slides at once says so in a note with Undo.
 import { removeBackground, restoreBackground, cutoutStatus } from '../cutout.js';
-import { brush, setBrush, setTool, clearTouchUps, brushStatus, cloneHasSource, sizeToSlider, sliderToSize, toolIcons } from './brush.js';
+import { brush, setBrush, setTool, clearTouchUps, brushStatus, cloneHasSource, sizeToSlider, sliderToSize, toolIcons, fxInHand, rememberFx, effectBrush } from './brush.js';
 import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, select, selectAll, onChange, items } from '../state.js';
 import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, partDefaults, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
 import { PRESETS } from '../effects/presets.js';
@@ -13,7 +13,7 @@ import { COLOUR_PRESETS } from '../effects/colourPresets.js';
 import { HSL_COLOURS } from '../effects/hsl.js';
 import { addLutFile } from '../effects/lutStore.js';
 import { curveControl, wheelsControl } from './colourControls.js';
-import { MASK_KINDS, maskName } from '../masks.js';
+import { MASK_KINDS, maskName, BRUSH_EFFECTS, RETIRED_EFFECTS, effectOf, tidyEffect } from '../masks.js';
 import { addMask, pickMask, removeMask, pickedMask } from './masks.js';
 import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, deleteMyFilter, isMine } from '../filters.js';
 import { presetSwatch } from '../looks.js';
@@ -170,14 +170,14 @@ function buildLayersBox() {
 }
 
 // The brush's Size (gradual: sizeToSlider) and Hardness, side by side (the Tools fold, Masks)
-function brushSliders() {
+function brushSliders(sizeLabel = "Size") {
   const slider = (label, key, min, max, title = "", toV = (x) => x, fromV = (x) => x) => {
     const value = el("span", { className: "value", textContent: String(brush[key]) });
     const input = el("input", { type: "range", min, max, value: toV(brush[key]), title, oninput: (e) => { brush[key] = fromV(Number(e.target.value)); value.textContent = String(brush[key]); fillTrack(e.target); changed("look"); }, onchange: () => setBrush(key, brush[key]) });
     fillTrack(input);
     return el("label", { className: "field" }, el("span", { className: "field-head" }, el("span", { textContent: label }), value), input);
   };
-  return el("div", { className: "pair" }, slider("Size", "size", 0, 1000, "[ ]", sizeToSlider, sliderToSize), slider("Hardness", "hardness", 0, 100, "Shift [ ]"));
+  return el("div", { className: "pair" }, slider(sizeLabel, "size", 0, 1000, "[ ]", sizeToSlider, sliderToSize), slider("Hardness", "hardness", 0, 100, "Shift [ ]"));
 }
 
 // ---- Tools (Tom, 2026-11-18): everything that works on the picked photo itself, in one fold under Layers:
@@ -205,7 +205,8 @@ function buildToolsBox() {
   const icons = toolIcons("ti");
   icons.className = "tool-icons";
   box.append(icons);
-  if (state.tool && state.tool !== "mask") { // (the Mask brush's settings are in Adjust → Masks)
+  if (fxInHand()) box.append(...effectBrushControls(pickedMask(), true)); // (the Effect brush: its effect, Add / Erase, size)
+  else if (state.tool && state.tool !== "mask") { // (the Mask brush's settings are in Adjust → Masks)
     box.append(brushSliders());
     if (state.tool === "edge" || state.tool === "clone") {
       const seg = el("div", { className: "segmented wide" });
@@ -689,6 +690,33 @@ function buildAdjust() {
   saveFilterSection(chosen);
 }
 
+// The Effect brush's settings (a mask carrying an effect, js/masks.js BRUSH_EFFECTS): which effect, its sliders,
+// Add / Erase, Size and Hardness. In the Tools fold while it's in hand, and in Adjust → Masks when its row is picked.
+const HIDDEN_FX_KEYS = ["speed", "wander", "phone", "movement", "start", "end", "drift"];
+// (fresh: the Tools fold's menu: a different effect starts a new brush when this one has been painted, so what's painted
+// keeps its effect; in Masks the menu changes the picked one's)
+function effectBrushControls(m, fresh = false) {
+  const out = [];
+  if (tidyEffect(m.effect) !== m.effect) m.effect = tidyEffect(m.effect); // (an effect since taken off the list)
+  const pick = el("select", { className: "select", title: "The effect this brush paints" });
+  [...BRUSH_EFFECTS, ...RETIRED_EFFECTS.filter(([id]) => id === m.effect.id)].forEach(([id, label]) => pick.append(el("option", { value: id, textContent: label, selected: m.effect.id === id })));
+  pick.onchange = () => {
+    rememberFx(pick.value);
+    if (fresh && m.maskId) { effectBrush(pick.value); return; }
+    m.effect = effectOf(pick.value); changed("project"); commit();
+  };
+  out.push(el("div", { className: "row" }, el("span", { textContent: "Effect" }), pick));
+  const fx = getEffect(m.effect.type);
+  const now = (x) => ({ ...fx.defaults(), ...x.effect.settings });
+  const sliders = (fx.controls || []).filter((c) => !c.kind && !HIDDEN_FX_KEYS.includes(c.key)).map((c) => slider({
+    label: c.label.replace(/\s*\(.*\)$/, ""), min: c.min, max: c.max, step: c.step || 1, targets: [m], get: (x) => Number(now(x)[c.key]) || 0, set: (x, v) => { x.effect.settings[c.key] = v; }
+  }));
+  out.push(...sliders);
+  out.push(el("div", { className: "row" }, segmented([{ value: "paint", label: "Add" }, { value: "erase", label: "Erase" }], brush.mask, (v) => { setBrush("mask", v); if (state.tool !== "mask") setTool("mask"); })));
+  out.push(brushSliders("Brush size"));
+  return out;
+}
+
 // ---- Masks (Tom, 2026-11-18, like Lightroom's; js/masks.js, js/ui/masks.js): fixes on part of the photo picked.
 // Brush · Fade · Round · Subject add one; each row picks it (its handles on the canvas), with Invert, its eye and ✕;
 // the picked one's settings under the list: the brush's Paint | Erase, Size and Hardness (a Brush mask), Feather
@@ -711,6 +739,12 @@ function masksCard() {
     });
     const m = pickedMask();
     if (!m) return;
+    if (m.effect) {
+      const paint = state.tool === "mask";
+      inner.append(el("div", { className: "row" }, el("button", { type: "button", className: "mask-btn" + (paint ? " lit" : ""), textContent: paint ? "Painting" : "Paint", title: "Paint on the photo (Esc puts the brush down)", onclick: () => { setTool(paint ? null : "mask"); } })));
+      inner.append(...effectBrushControls(m));
+      return;
+    }
     if (m.kind === "brush") {
       const paint = state.tool === "mask";
       inner.append(el("div", { className: "row" },

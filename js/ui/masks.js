@@ -115,7 +115,7 @@ export function drawMasks(ctx, f) {
   const m = pickedMask(), r = ready();
   if (!m || !r || state.tab !== "adjust") return;
   // Red where the mask is, while it's dragged or painted
-  if (drag || (state.tool === "mask" && brushStroking())) {
+  if (drag || (state.tool === "mask" && brushStroking() && !m.effect)) { // (an effect shows itself as it's painted)
     const side = 600, k = side / Math.max(r.pic.width, r.pic.height);
     const mask = maskCanvas(m, Math.max(1, Math.round(r.pic.width * k)), Math.max(1, Math.round(r.pic.height * k)));
     if (mask) {
