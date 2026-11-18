@@ -189,12 +189,8 @@ function buildToolsBox() {
   const picked = slide && currentLayer();
   if (!slide || !picked || (isVideo(slide) && picked === slide)) { box.hidden = true; return; }
   box.hidden = false;
-  const open = !openCards.has("tools:shut");
-  const name = el("button", { className: "fold-name layers-fold", title: "Show / hide the tools" }, el("span", { className: "fold-arrow" }), el("span", { textContent: "Tools" }));
-  name.onclick = () => { if (open) openCards.add("tools:shut"); else openCards.delete("tools:shut"); changed("view"); };
-  box.classList.toggle("open", open);
-  box.append(el("div", { className: "layers-head" }, name));
-  if (!open) return;
+  // (Tom, 2026-11-18: its own tab, between Adjust and Crop, so no fold of its own)
+  box.classList.add("open");
   // Remove background (js/cutout.js): the picked photo's cut-out, on / off; the model downloads the first time
   box.append(cutoutRow(picked));
   // The brushes (js/ui/brush.js): picked here, painted on the canvas; Esc or a second click puts one down.
@@ -293,7 +289,7 @@ function build() {
   buildLayersBox();
   buildToolsBox();
   if (state.tab === "text") document.getElementById("layers-box").hidden = document.getElementById("tools-box").hidden = true;
-  if (state.tab === "filters" || state.tab === "crop") document.getElementById("tools-box").hidden = true; // (Tom, 2026-11-18: not needed with the filters or Crop)
+  if (state.tab !== "tools") document.getElementById("tools-box").hidden = true; // (Tom, 2026-11-18: the tools have their own tab)
   const scroll = state.tab === shownTab ? body.scrollTop : 0; // (a different tab starts at its top)
   shownTab = state.tab;
   body.innerHTML = "";
@@ -301,7 +297,7 @@ function build() {
     body.append(note("Add photos to start. Everything you set here shows on the canvas straight away."));
     return;
   }
-  ({ filters: buildFilters, adjust: buildAdjust, crop: buildCrop, text: buildText })[state.tab]();
+  ({ filters: buildFilters, adjust: buildAdjust, tools: buildTools, crop: buildCrop, text: buildText })[state.tab]();
   document.querySelectorAll('#panel input[type="range"]').forEach(fillTrack);
   pairSliders(body);
   body.scrollTop = scroll;
@@ -865,6 +861,13 @@ function drawnControl(c, targets, get, own) {
     file.click();
   };
   return el("div", { className: "row" }, el("span", { textContent: c.label }), input);
+}
+
+// ---- Tools (Tom, 2026-11-18): Remove background and the brushes, in the box above (buildToolsBox); just a word when
+// there's no photo to work on
+function buildTools() {
+  const slide = currentItem(), picked = slide && currentLayer();
+  if (!picked || (isVideo(slide) && picked === slide)) body.append(note("Pick a photo"));
 }
 
 // ---- Crop (the slide on the canvas only)

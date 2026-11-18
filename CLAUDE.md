@@ -64,7 +64,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   exported. Not for videos. Checked in Nov 2026: the smaller models (BiRefNet lite, BEN2) hit graphics-card limits, MODNet
   isn't good enough, and imgly / ISNet (AGPL) and BRIA RMBG (non-commercial) aren't allowed on a paid site. Later: an
   edge brush, and the desktop app shipping the model inside.
-- **Tools** (Tom, 2026-11-18): a fold under Layers (`buildToolsBox` in panel.js) for the picked photo: Remove
+- **Tools** (Tom, 2026-11-18): its own Editor tab between Adjust and Crop (`state.tab` "tools"; `buildToolsBox` in panel.js, shown under Layers on that tab only; picking a brush anywhere opens it) for the picked photo: Remove
   background, then three brushes (`js/ui/brush.js`, painted on the canvas through stage.js; `state.tool`), covering
   Photoshop's healing tools with no mode pickers:
   - **Remove**: paint over anything; on letting go it's rebuilt. Small strokes: Content-Aware (PatchMatch, onion-peel
@@ -87,7 +87,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   Circle squares the part that shows). A picked photo has side handles on the canvas that trim it (`crop.trim` { l, t, r, b },
   shares of its box; `shownBox`): the part left is what's drawn in its shape, picked, moved, sized and turned; the
   trimmed-off part shows faintly while it's picked. Fit / Fill / Reset clear the trim. Not in a grid; on a panorama the shape runs across the slides (a star cut in half by the seam).
-  Crop and Filters have no Tools fold.
+  
 - **Skin** (Tom, 2026-11-18): Adjust → Skin (`js/effects/skin.js`, the slide's own `look.skin` { smooth, even, texture },
   run right after Light, before the filter): skin found by its colour (any skin tone), then an edge-keeping blur (Smooth),
   its finest detail laid back (Keep texture) and its colour evened from a wide blur (Even tone). Not in the Effects list.
@@ -120,7 +120,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   card (`js/effects/gl.js`) and keeps the result, so moving / zooming never re-runs it.
 - **Filters**: `js/filters.js`: the presets plus "Your filters" (saved in IndexedDB meta, every
   project). Picking one gives the slide its own copy (`look.chain`). Tiles: Filters · Adjust ·
-  Crop · Captions (words on the slide; `state.tab` "text"). Filter tiles show their names, grouped in folds; Strength floats at the top of Filters
+  Tools · Crop · Captions (words on the slide; `state.tab` "text"). Filter tiles show their names, grouped in folds; Strength floats at the top of Filters
   and Adjust (only with a filter on). The presets row (Presets… menu, Save Preset, the dice) puts on
   any filter, saves the slide's look to Your filters (`saveThisFilter`), or a random one. Every setting is in **Adjust**
   (the picked tile's Edit badge goes there): Light ▸, Colour ▸, the filter's own Filter light ▸ /
@@ -156,7 +156,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   `pairSliders`); on / off settings small boxes lit when on; labels drop any "(…)" (full name on hover).
 - **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Edit | Phone,
   Instagram | TikTok | YouTube, Feed | Profile as icons (faint while editing), centred over the canvas | at the right the
-  Editor's four tabs, spread over the Editor (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
+  Editor's five tabs, spread over the Editor (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
   columns, Media 320 | canvas | Editor 320 (each folds to a 44px strip with its blue arrow, remembered in
   localStorage), then the slides strip.
 - **UI**: `js/ui/mediaColumn.js` (Media: Photos, Videos (3 across), Your filters with their dates;
@@ -171,7 +171,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   (the slides strip: toolbar with fold, Add (blue), trays of actions (Panorama, Tom 2026-11-18: makes the slide a
   panorama of 2, then a number with ▴ ▾ beside it takes it up to 10 slides or back to 1; Join as panorama with several
   picked; Split apart), "7 of 20"; slides numbered above,
-  the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow (its four tabs are in the top bar);
+  the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow (its five tabs are in the top bar);
   presets row; This slide | All 7 slides; Layers (count, +, Bottom / Top); then the tile's settings:
   sliders with a blue fill (`fillTrack`), switches, blue fold names after a chevron; "mixed"
   sliders; a note with Undo when a change hits several slides),
