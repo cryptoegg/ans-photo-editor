@@ -3,7 +3,7 @@
 import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, items, setItems, tidySelection } from './state.js';
 import { newItem, slideCount, cropDefaults, lookDefaults, clone, newId, activeSet, aspectOf, SHAPES, STAGES, isVideo, newLayer, layersOf, LAYOUTS, isGrid } from './project.js';
 import { addMediaFile, isMediaFile, getPicture } from './media.js';
-import { photoSize, fillCrop, fitCrop, cellRects } from './render.js';
+import { photoSize, shownBox, fillCrop, fitCrop, cellRects } from './render.js';
 import { toast } from './ui/toast.js';
 
 const set = () => activeSet(state.project);
@@ -20,7 +20,6 @@ export async function addFiles(fileList) {
   const free = room();
   if (free <= 0) { toast(`The set is full: ${fullNote()}`); return; }
   const taking = usable.slice(0, free);
-  toast(taking.length === 1 ? "Adding 1 file…" : `Adding ${taking.length} files…`);
   const list = items();
   const at = state.current ? list.findIndex((i) => i.id === state.current) + 1 : list.length;
   const added = [];
@@ -40,9 +39,8 @@ export async function addFiles(fileList) {
   state.current = added[0].id;
   changed("project");
   commit();
-  const what = added.length === 1 ? (isVideo(added[0]) ? "1 video" : "1 photo") : `${added.length} files`;
   const left = files.length - taking.length;
-  toast(`Added ${what}${left > 0 ? `. ${left} didn't fit (the set is full at ${MAX()})` : ""}`);
+  if (left > 0) toast(`${left} didn't fit: the set is full at ${MAX()}`);
 }
 
 export function duplicateSelected() {
@@ -132,13 +130,30 @@ export function makePanorama() {
 
 // A panorama's number of slides (texts keep their place from the left; the photo fills the new
 // width, Fill)
+// The most slides a panorama can take: 10, or fewer when the set is nearly full
+export const panoMost = (item) => Math.min(10, item.span + room());
+
+// A layer's crop for a frame of another width (frame heights 1): the photo the same size and in the same place, the new
+// frame's left edge `from` along the old one (changing a panorama's slides, splitting it)
+function reframe(layer, oldW, newW, from = 0) {
+  const pic = getPicture(layer.mediaId);
+  if (!pic) return;
+  const c = layer.crop;
+  const before = photoSize(c, pic.width, pic.height, oldW, 1), after = photoSize(c, pic.width, pic.height, newW, 1);
+  c.zoom *= before.dh / after.dh;
+  c.x = (oldW / 2 + c.x * oldW - from - newW / 2) / newW;
+}
+
 export function setSpan(item, span) {
   span = Math.max(1, Math.min(span, item.span + room()));
   if (span === item.span) return;
+  const a = aspectOf(set().ratio), oldW = item.span * a, newW = span * a;
   item.texts.forEach((t) => { t.x = (t.x * item.span) / span; });
+  // (the extra photos stay where they are: slides come and go at the right)
+  (item.layers || []).forEach((l) => reframe(l, oldW, newW));
   item.span = span;
   const pic = getPicture(item.mediaId);
-  if (pic) fillCrop(item.crop, pic.width, pic.height, span * aspectOf(set().ratio), 1);
+  if (pic) fillCrop(item.crop, pic.width, pic.height, newW, 1);
   changed("project");
 }
 
@@ -153,13 +168,17 @@ export function splitPanorama() {
     const piece = clone(item);
     piece.id = newId("s");
     piece.span = 1;
-    if (pic) {
-      // (the same photo, the same size and place: each square just shows its own part)
-      const whole = photoSize(item.crop, pic.width, pic.height, N * a, 1);
-      const plain = photoSize({ zoom: 1, stretch: 1 }, pic.width, pic.height, a, 1);
-      piece.crop.zoom = whole.dh / plain.dh;
-      piece.crop.x = (N * a / 2 + item.crop.x * N * a - (k + 0.5) * a) / a;
-    }
+    // (the same photos, the same size and place: each square just shows its own part; an extra photo goes with each
+    // slide it shows on, as its own copy)
+    if (pic) reframe(piece, N * a, a, k * a);
+    piece.layers = (piece.layers || []).filter((l) => {
+      const lp = getPicture(l.mediaId);
+      if (!lp) return false;
+      const b = shownBox(l.crop, lp.width, lp.height, N * a, 1);
+      const r = (b.rotation * Math.PI) / 180, half = (Math.abs(Math.cos(r)) * b.w + Math.abs(Math.sin(r)) * b.h) / 2;
+      return b.cx + half > k * a && b.cx - half < (k + 1) * a;
+    });
+    piece.layers.forEach((l, i) => { if (k > 0) l.id = newId("l"); reframe(l, N * a, a, k * a); });
     piece.texts = item.texts
       .filter((t) => Math.min(N - 1, Math.floor(t.x * N)) === k)
       .map((t) => ({ ...t, id: newId("t"), x: t.x * N - k }));
@@ -217,7 +236,7 @@ export function setRatio(ratio) {
 
 // ---- Layers: several photos on one slide
 
-const LAYER_KEYS = ["mediaId", "crop", "look", "style"];
+const LAYER_KEYS = ["mediaId", "crop", "look", "style", "masks", "cutout", "retouch"]; // (what a photo takes with it)
 const frameOf = (item) => ({ W: item.span * aspectOf(set().ratio), H: 1 });
 
 // Photos onto the slide on the canvas, as layers (a video slide too: the video stays at the bottom): in a grid they fill the next empty cells; free,
@@ -225,7 +244,6 @@ const frameOf = (item) => ({ W: item.span * aspectOf(set().ratio), H: 1 });
 export async function addLayerFiles(fileList) {
   const item = currentItem();
   if (!item) return;
-  if (item.span > 1) { toast("A panorama holds one photo."); return; }
   const files = [...fileList].filter((f) => isMediaFile(f) && !/^video\//.test(f.type) && !/\.(mp4|mov|m4v|webm)$/i.test(f.name));
   if (!files.length) { toast("Layers take photos."); return; }
   if (!isGrid(item)) item.layout.kind = "free";
@@ -282,8 +300,7 @@ export function setLayout(kind) {
   commit();
   const cells = LAYOUTS[kind] ? LAYOUTS[kind].cells.length : 0;
   const count = layersOf(item).length;
-  if (cells && count < cells) toast(`Click an empty cell (or ＋ Add photo) to fill it: ${cells - count} to go`);
-  else if (cells && count > cells) toast(`${count - cells} photo${count - cells === 1 ? " doesn't" : "s don't"} fit this layout: they wait in Layers`);
+  if (cells && count > cells) toast(`${count - cells} photo${count - cells === 1 ? " doesn't" : "s don't"} fit this layout: they wait in Layers`);
 }
 
 // Up (+1, towards the top / a later cell) or down (-1)
@@ -312,8 +329,8 @@ export function placeLayer(layer, to) {
 // (false: nothing to copy, e.g. a video slide's video)
 export function duplicateLayer(layer = currentLayer()) {
   const item = currentItem();
-  if (!item || !layer || item.span > 1 || (layer === item && isVideo(item))) return false;
-  const copy = { id: newId("l"), kind: "photo", ...Object.fromEntries(LAYER_KEYS.map((k) => [k, clone(layer[k])])) };
+  if (!item || !layer || (layer === item && isVideo(item))) return false;
+  const copy = { id: newId("l"), kind: "photo", ...Object.fromEntries(LAYER_KEYS.filter((k) => layer[k] !== undefined).map((k) => [k, clone(layer[k])])) };
   if (!isGrid(item)) {
     item.layout.kind = "free";
     copy.crop.x += 0.04;

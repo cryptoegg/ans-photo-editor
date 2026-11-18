@@ -135,7 +135,6 @@ export async function openFromComputer() {
     await saveProject(state.project);
     await saveProject(p);
     openProject(p);
-    toast(`Opened ${p.name}`);
   } catch (err) { toast(err.message || String(err)); }
 }
 
@@ -157,7 +156,7 @@ export async function openFileMenu(anchor) {
   menu.append(el("label", { className: "menu-name" }, el("span", { className: "note", textContent: "This project's name" }), name));
   menu.append(el("div", { className: "menu-sep" }));
   const item = (label, keys, run) => el("div", { className: "menu-item", onclick: () => { close(); run(); } }, el("span", { textContent: label }), el("span", { className: "meta", textContent: keys }));
-  menu.append(item("＋ New project", "", async () => { await saveProject(state.project); openProject(newProject()); toast("New project"); }));
+  menu.append(item("＋ New project", "", async () => { await saveProject(state.project); openProject(newProject()); }));
   menu.append(item("Save project", "⌘S", saveNow));
   menu.append(item("Save as…", "⇧⌘S", saveAs));
   menu.append(item("Open project folder…", "", openFromComputer));

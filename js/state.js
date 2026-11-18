@@ -21,6 +21,7 @@ export const state = {
   phoneScreen: "feed",    // "feed" (the post in the feed) | "profile" (on your profile page)
   tab: "filters",         // the panel's tab
   before: false,          // \ held: the photos without their look
+  maskId: null,           // the mask picked in Adjust → Masks (js/masks.js): its settings show, its handles on the canvas
   tool: null              // a brush in hand (js/ui/brush.js): "edge" (the cut-out's edge) | "heal" (spot heal) | null
 };
 

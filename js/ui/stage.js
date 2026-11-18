@@ -14,9 +14,10 @@
 // ⌘ held = no snapping. Guides are never exported.
 import { state, changed, commit, currentItem, currentLayer, onChange, items } from '../state.js';
 import { activeSet, aspectOf, isVideo, layersOf, isGrid } from '../project.js';
-import { drawItem, drawPlaced, layoutText, textAt, photoBox, onBox, textBox, turn, layerFrame, cellRects } from '../render.js';
+import { drawItem, drawPlaced, layoutText, textAt, photoBox, shownBox, trimOf, isTrimmed, onBox, textBox, turn, layerFrame, cellRects } from '../render.js';
 import { lookedPicture, lookedFrame, lookedWhole } from '../looks.js';
 import { brushReady, brushDown, brushMove, brushUp, brushLeave, drawBrush, showBrushPanel } from './brush.js';
+import { maskDown, maskMove, maskUp, drawMasks } from './masks.js';
 import { initVideoBar, videoFrame } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
 import { uiColour, onSkinChange } from './skin.js';
@@ -115,8 +116,9 @@ function layerBox(item, layer, f) {
   const pic = getPicture(layer.mediaId);
   const rect = layerFrame(item, layer, f.w, f.h);
   if (!pic || !rect) return null;
-  const b = photoBox(layer.crop, pic.width, pic.height, rect.w, rect.h);
-  return { rect, box: { ...b, cx: b.cx + rect.x, cy: b.cy + rect.y } };
+  const b = shownBox(layer.crop, pic.width, pic.height, rect.w, rect.h); // (the part that shows: trimmed edges left out)
+  const whole = photoBox(layer.crop, pic.width, pic.height, rect.w, rect.h);
+  return { rect, pic, whole, box: { ...b, cx: b.cx + rect.x, cy: b.cy + rect.y } };
 }
 
 // The layer under a point (frame pixels): in a grid, the cell's layer ({ cell } for an empty one);
@@ -148,7 +150,7 @@ function pickedBox(item, f) {
   if (state.photoPicked) {
     const layer = currentLayer();
     const lb = layer && layerBox(item, layer, f);
-    return lb ? { kind: "photo", layer, rect: lb.rect, box: lb.box } : null;
+    return lb ? { kind: "photo", layer, rect: lb.rect, box: lb.box, whole: lb.whole, pic: lb.pic, edges: !isGrid(item) } : null;
   }
   return null;
 }
@@ -168,10 +170,20 @@ function corners(box) {
 const CORNER_NAMES = ["tl", "tr", "bl", "br"];
 function knobAt(box) { const [u, v] = turn(0, box.h / 2 + KNOB, box.rotation); return [box.cx + u, box.cy + v]; }
 
-// What part of the picked box a point is on: a corner name, "rotate", "inside" or null
-function zoneAt(box, p) {
+// The middles of a box's sides (a photo's trim handles): [[name, x, y] ×4]
+function sideMiddles(box) {
+  return [["l", -1, 0], ["r", 1, 0], ["t", 0, -1], ["b", 0, 1]].map(([n, sx, sy]) => {
+    const [u, v] = turn((sx * box.w) / 2, (sy * box.h) / 2, box.rotation);
+    return [n, box.cx + u, box.cy + v];
+  });
+}
+
+// What part of the picked box a point is on: a corner name, a side ("l", "r", "t", "b": a photo's trim handles, with
+// edges true), "rotate", "inside" or null
+function zoneAt(box, p, edges = false) {
   const cs = corners(box);
   for (let i = 0; i < 4; i++) if (Math.hypot(p.x - cs[i][0], p.y - cs[i][1]) <= HANDLE) return CORNER_NAMES[i];
+  if (edges) for (const [n, x, y] of sideMiddles(box)) if (Math.hypot(p.x - x, p.y - y) <= HANDLE + 2) return n;
   const [kx, ky] = knobAt(box);
   if (Math.hypot(p.x - kx, p.y - ky) <= 11) return "rotate";
   if (onBox(box, p.x, p.y)) return "inside";
@@ -228,6 +240,12 @@ function snapBox(box, item, f, free) {
 
 // ---- Pointer
 
+// The resize cursor for a side, turned with the photo (to the nearest of the four)
+function sideCursor(zone, rotation) {
+  const a = ((((zone === "l" || zone === "r" ? 0 : 90) + rotation) % 180) + 180) % 180;
+  return ["ew-resize", "nwse-resize", "ns-resize", "nesw-resize"][Math.round(a / 45) % 4];
+}
+
 const local = (e, f) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left - f.x, y: e.clientY - r.top - f.y }; };
 
 function down(e) {
@@ -236,9 +254,10 @@ function down(e) {
   const f = frameRect(item);
   const p = local(e, f);
   canvas.setPointerCapture(e.pointerId);
+  if (maskDown(e, f, p)) return; // (a mask's handle: it moves, js/ui/masks.js)
   if (brushDown(e, f, p)) return; // (a touch-up brush in hand: it paints, js/ui/brush.js)
   const picked = pickedBox(item, f);
-  const zone = picked ? zoneAt(picked.box, p) : null;
+  const zone = picked ? zoneAt(picked.box, p, picked.edges) : null;
   if (e.button === 2) return; // (right-click: the menu picks what's under it)
   if (picked && zone && zone !== "inside") { startDrag(picked, zone, p, f); return; }
 
@@ -266,7 +285,7 @@ function photoMenu(e) {
   e.preventDefault();
   if (e.ctrlKey && e.altKey) return; // (Control + Option drag sizes the brush)
   const item = currentItem();
-  if (!item || !getPicture(item.mediaId) || item.span > 1) return;
+  if (!item || !getPicture(item.mediaId)) return;
   const f = frameRect(item);
   const hit = brushReady() ? { layer: currentLayer() } : layerAt(item, f, local(e, f));
   if (!hit || !hit.layer) return;
@@ -281,12 +300,13 @@ function startDrag(picked, zone, p, f) {
   const item = currentItem();
   hovering = true;
   const layer = picked.layer || item;
-  drag = { kind: picked.kind, text: picked.text, layer, rect: picked.rect || { x: 0, y: 0, w: f.w, h: f.h }, zone, f, start: p, box: { ...picked.box }, crop: { ...layer.crop }, textStart: picked.text ? { ...picked.text } : null, moved: false };
+  drag = { kind: picked.kind, text: picked.text, layer, rect: picked.rect || { x: 0, y: 0, w: f.w, h: f.h }, zone, f, start: p, box: { ...picked.box }, whole: picked.whole, pic: picked.pic, crop: { ...layer.crop, trim: { ...trimOf(layer.crop) } }, textStart: picked.text ? { ...picked.text } : null, moved: false };
   if (zone === "rotate") drag.from = Math.atan2(p.y - picked.box.cy, p.x - picked.box.cx);
   canvas.style.cursor = zone === "inside" ? "grabbing" : zone === "rotate" ? ROTATE_CURSOR : canvas.style.cursor;
 }
 
 function move(e) {
+  if (!drag) { const item = currentItem(); if (item) { const f = frameRect(item), over = maskMove(e, f, local(e, f)); if (over) { canvas.style.cursor = over; return; } } }
   if (!drag && brushReady()) { const item = currentItem(), f = frameRect(item); canvas.style.cursor = "none"; brushMove(e, f, local(e, f)); return; }
   if (!drag) { hover(e); return; }
   const { f, box, zone } = drag;
@@ -304,13 +324,29 @@ function move(e) {
     else if (!e.metaKey) { const q = Math.round(a / 90) * 90; if (Math.abs(a - q) < 3) a = q; } // (settles on upright / quarter turns)
     setAngle(drag, a);
     drag.angle = drag.kind === "text" ? t.rotation : crop.rotation;
+    if (drag.kind === "photo" && drag.pic) {
+      // (a trimmed photo turns about the middle of the part that shows)
+      const nb = shownBox({ ...crop, x: drag.crop.x, y: drag.crop.y }, drag.pic.width, drag.pic.height, rect.w, rect.h);
+      crop.x = drag.crop.x + (box.cx - rect.x - nb.cx) / rect.w;
+      crop.y = drag.crop.y + (box.cy - rect.y - nb.cy) / rect.h;
+    }
   } else if (zone === "inside") {
     // Move: the middle follows the pointer, snapping its edges or middle to the lines
     const moved = { ...box, cx: box.cx + dx, cy: box.cy + dy };
     const snap = snapBox(moved, item, f, e.metaKey || (drag.kind === "photo" && isGrid(item))); // (in a grid cell: free)
     const cx = moved.cx + snap.dx, cy = moved.cy + snap.dy;
     if (drag.kind === "text") { t.x = cx / f.w; t.y = cy / f.h; }
-    else { crop.x = (cx - rect.x - rect.w / 2) / rect.w; crop.y = (cy - rect.y - rect.h / 2) / rect.h; }
+    else { crop.x = drag.crop.x + (cx - box.cx) / rect.w; crop.y = drag.crop.y + (cy - box.cy) / rect.h; } // (the part that shows follows)
+  } else if (["l", "r", "t", "b"].includes(zone)) {
+    // A side: trim the photo there (Canva's side handles), dragged in or back out to the photo's own edge
+    const [du, dv] = turn(dx, dy, -box.rotation);
+    const t0 = drag.crop.trim, W = drag.whole.w, H = drag.whole.h, least = 0.03;
+    const tr = { ...t0 };
+    if (zone === "l") tr.l = Math.min(1 - t0.r - least, Math.max(0, t0.l + du / W));
+    if (zone === "r") tr.r = Math.min(1 - t0.l - least, Math.max(0, t0.r - du / W));
+    if (zone === "t") tr.t = Math.min(1 - t0.b - least, Math.max(0, t0.t + dv / H));
+    if (zone === "b") tr.b = Math.min(1 - t0.t - least, Math.max(0, t0.b - dv / H));
+    crop.trim = tr;
   } else {
     // A corner: size around the middle (the pointer's move along the box's own sides)
     [dx, dy] = turn(dx, dy, -box.rotation);
@@ -323,11 +359,18 @@ function move(e) {
       crop.zoom = Math.min(12, Math.max(0.03, drag.crop.zoom * fy));
       crop.stretch = Math.min(8, Math.max(0.1, ((drag.crop.stretch || 1) * fx) / fy));
     }
+    if (drag.kind === "photo" && drag.pic) {
+      // (a trimmed photo sizes around the middle of the part that shows)
+      const nb = shownBox({ ...crop, x: drag.crop.x, y: drag.crop.y }, drag.pic.width, drag.pic.height, rect.w, rect.h);
+      crop.x = drag.crop.x + (box.cx - rect.x - nb.cx) / rect.w;
+      crop.y = drag.crop.y + (box.cy - rect.y - nb.cy) / rect.h;
+    }
   }
   changed("look");
 }
 
 function up() {
+  if (maskUp()) return;
   if (!drag) { brushUp(); return; }
   const moved = drag.moved;
   drag = null;
@@ -343,12 +386,13 @@ function hover(e) {
   const f = frameRect(item);
   const p = local(e, f);
   const picked = pickedBox(item, f);
-  const zone = picked ? zoneAt(picked.box, p) : null;
+  const zone = picked ? zoneAt(picked.box, p, picked.edges) : null;
   const over = !!zone;
   if (over !== hovering) { hovering = over; draw(); }
   if (zone === "rotate") canvas.style.cursor = ROTATE_CURSOR;
   else if (zone === "tl" || zone === "br") canvas.style.cursor = "nwse-resize";
   else if (zone === "tr" || zone === "bl") canvas.style.cursor = "nesw-resize";
+  else if (zone === "l" || zone === "r" || zone === "t" || zone === "b") canvas.style.cursor = sideCursor(zone, picked.box.rotation);
   else if (zone === "inside" || textAt(ctx, item, f.w, f.h, p.x, p.y)) canvas.style.cursor = "move";
   else {
     const hit = layerAt(item, f, p);
@@ -443,6 +487,24 @@ function paint() {
   }
 
   drawItem(ctx, item, f.w, f.h, { before: state.before, seed: state.project.seed, frame, frameLooked: true });
+  // A picked photo's trimmed-off sides, faint over the slide (as past its edges), to see what the side handles took off
+  if (state.photoPicked && layerPic && rect && !isGrid(item) && isTrimmed(layer.crop)) {
+    const looked = (layer === item && frame) || (state.before ? layerPic.preview : lookedPicture(layer, "preview", state.project.seed));
+    const b = photoBox(layer.crop, layerPic.width, layerPic.height, rect.w, rect.h), t = trimOf(layer.crop);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, f.w, f.h); ctx.clip();
+    ctx.translate(rect.x + b.cx, rect.y + b.cy);
+    ctx.rotate((b.rotation * Math.PI) / 180);
+    ctx.beginPath();
+    ctx.rect(-b.w / 2, -b.h / 2, b.w, b.h);
+    ctx.rect(-b.w / 2 + t.l * b.w, -b.h / 2 + t.t * b.h, b.w * (1 - t.l - t.r), b.h * (1 - t.t - t.b));
+    ctx.clip("evenodd");
+    ctx.rotate((-b.rotation * Math.PI) / 180);
+    ctx.translate(-b.cx, -b.cy);
+    ctx.globalAlpha = 0.3;
+    drawPlaced(ctx, looked, layer.crop, rect.w, rect.h);
+    ctx.restore();
+  }
   // The edge brush in hand: the whole photo faintly over the slide (to see what Restore brings back; over the kept part
   // it's the same picture, so only the cut-away part shows it)
   if (state.tool === "edge" && brushReady() && layerPic && rect) {
@@ -529,6 +591,14 @@ function paint() {
       ctx.fillRect((sx * box.w) / 2 - 5, (sy * box.h) / 2 - 5, 10, 10);
       ctx.strokeRect((sx * box.w) / 2 - 5, (sy * box.h) / 2 - 5, 10, 10);
     });
+    // a photo's side handles (trim): short bars at the middles of its sides
+    if (picked.edges) {
+      [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(([sx, sy]) => {
+        const long = 18, short = 6, w = sx ? short : long, h = sx ? long : short;
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.roundRect((sx * box.w) / 2 - w / 2, (sy * box.h) / 2 - h / 2, w, h, 3); ctx.fill(); ctx.stroke();
+      });
+    }
     // the ↻ knob under the middle
     ctx.beginPath();
     ctx.moveTo(0, box.h / 2);
@@ -560,5 +630,6 @@ function paint() {
     }
     ctx.restore();
   }
+  drawMasks(ctx, f); // (the picked mask: its handles, and red where it is while shaped or painted)
   drawBrush(ctx, f, ratio); // (a touch-up brush in hand: its circle)
 }

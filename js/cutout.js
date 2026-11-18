@@ -94,6 +94,31 @@ function findLayer(id) {
   return null;
 }
 
+// The subject of a photo as a mask picture's id, for a Subject mask (js/masks.js): the layer's cut-out when it has
+// one from the model, else the model is run (the cut-out itself isn't switched on). null if it couldn't be found.
+export async function subjectMask(layer) {
+  if (layer.cutout && layer.cutout.maskId && !layer.cutout.hand) return layer.cutout.maskId;
+  if (cutoutStatus.busy) return null;
+  const picture = getPicture(layer.mediaId) || await loadPicture(layer.mediaId);
+  if (!picture || picture.kind === "video") return null;
+  Object.assign(cutoutStatus, { busy: true, layer: layer.id, progress: null, error: "" });
+  changed("view");
+  try {
+    const blob = await findMask(picture);
+    const maskId = newId("m");
+    await dbPut("media", { id: maskId, projectId: state.project.id, kind: "mask", name: `Subject of ${picture.name || "photo"}.png`, type: "image/png", blob, width: picture.width, height: picture.height, added: Date.now() });
+    await loadPicture(maskId);
+    return maskId;
+  } catch (err) {
+    console.error("Subject:", err);
+    cutoutStatus.error = "The subject couldn't be found on this computer.";
+    return null;
+  } finally {
+    Object.assign(cutoutStatus, { busy: false, layer: null, progress: null });
+    changed("view");
+  }
+}
+
 // Switch a layer's cut-out off (the photo whole again; switching it on needs no new cut-out)
 export function restoreBackground(layer) {
   if (!layer || !layer.cutout) return;
@@ -103,5 +128,5 @@ export function restoreBackground(layer) {
 }
 
 // Every mask a project uses (to load with its photos, save in its folder, export)
-// (and the touch-ups' picture, js/ui/brush.js)
-export const maskIdsOf = (layers) => layers.flatMap((l) => [l && l.cutout && l.cutout.maskId, l && l.retouch && l.retouch.patchId, ...((l && l.retouch && l.retouch.tiles) || []).map((t) => t.id)]).filter(Boolean);
+// (and the touch-ups' pictures, js/ui/brush.js, and the masks' pictures, js/masks.js)
+export const maskIdsOf = (layers) => layers.flatMap((l) => [...((l && l.masks) || []).map((m) => m.maskId), l && l.cutout && l.cutout.maskId, l && l.retouch && l.retouch.patchId, ...((l && l.retouch && l.retouch.tiles) || []).map((t) => t.id)]).filter(Boolean);

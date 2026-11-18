@@ -45,7 +45,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   grid keeps it). Duplicate a photo: ⌘D with it picked, or right-click it (canvas or Layers row) →
   Duplicate (`duplicateLayer`; right-click menus: `js/ui/menu.js`). The Layers box (top of the panel, `buildLayersBox` in panel.js; drag a row or ↑ ↓ to reorder, `placeLayer`) picks a layer
   (`state.layerId`, `currentLayer()`), and Filters / Adjust / Crop then change just that one.
-  Actions: `addLayerFiles`, `setLayout`, `moveLayer`, `removeLayer`. Not for panoramas. A video slide takes
+  Actions: `addLayerFiles`, `setLayout`, `moveLayer`, `removeLayer`. On a panorama (Tom, 2026-11-18) the photos sit anywhere across its slides: changing its slides keeps them the same size and place (`reframe` in actions.js), and Split apart gives each slide its own copy of the ones it shows. A video slide takes
   photo layers too: the video is the bottom layer and stays there (can't move, be removed or duplicated).
 - **Adding**: new photos / videos go into the set after the current slide.
 - **Video** (Instagram carousels only; the TikTok and YouTube icons warn, and their Phone view leaves them out): an
@@ -82,6 +82,24 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   Clone (stamp) · Eraser · Edge brush), the same in the canvas bar (first thing on it), the Tools fold (the settings of
   the one picked under them) and the right-click panel on a photo (`showBrushPanel`: the tools, then the brush's
   settings, or with no brush Duplicate / Remove from slide).
+- **Shapes and trimmed sides** (Tom, 2026-11-18, like Canva): Crop has the photo's shape (`style.shape`, `PHOTO_SHAPES` /
+  `shapePath` in render.js: Rectangle, Circle, Triangle, Diamond, Hexagon, Star, Heart, Arch; Corners only for Rectangle;
+  Circle squares the part that shows). A picked photo has side handles on the canvas that trim it (`crop.trim` { l, t, r, b },
+  shares of its box; `shownBox`): the part left is what's drawn in its shape, picked, moved, sized and turned; the
+  trimmed-off part shows faintly while it's picked. Fit / Fill / Reset clear the trim. Not in a grid; on a panorama the shape runs across the slides (a star cut in half by the seam).
+  Crop and Filters have no Tools fold.
+- **Skin** (Tom, 2026-11-18): Adjust → Skin (`js/effects/skin.js`, the slide's own `look.skin` { smooth, even, texture },
+  run right after Light, before the filter): skin found by its colour (any skin tone), then an edge-keeping blur (Smooth),
+  its finest detail laid back (Keep texture) and its colour evened from a wide blur (Even tone). Not in the Effects list.
+- **Masks** (Tom, 2026-11-18, like Lightroom's): fixes on part of a photo. Adjust → Masks: Brush · Fade · Round · Subject,
+  then a row per mask (Invert, On / Off, ✕) and the picked one's Light and Colour sliders (Round: Feather too). The record
+  is the layer's `masks` (`js/masks.js`: brush / subject keep a PNG `maskId`, Fade a `line`, Round a `round`); `state.maskId`
+  is the picked one. Each mask's fix is worked out on the whole photo after its own Light / Colour card and laid on
+  through the mask before the filter (looks.js). Subject reuses the Remove background model (`subjectMask` in cutout.js).
+  Brush: the Mask brush (`state.tool` "mask", Add / Erase, Size / Hardness in the Masks fold), red shown only while
+  painting. Fade and Round have handles on the canvas (`js/ui/masks.js`).
+- **Notes** (`js/ui/toast.js`, Tom, 2026-11-18): a small dark bar at the top of the canvas, only for what can't be seen
+  (a file that won't open, a full set, where an export went). No "done · Undo" notes: `toast(text, undoAction)` shows nothing.
 - **Hover boxes** (Tom, 2026-11-18): `js/ui/tips.js` shows any `title` as a small dark box after a short wait (the
   title moves to `data-tip`, so the browser's own doesn't show too). Give every icon a title.
   Settings: Size (a gradual scale, 4 to 500 px, `sizeToSlider`) and Hardness (localStorage; pen pressure sizes the
@@ -141,8 +159,10 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   guides and Canva-style soft snapping, ⌘ = free; the faint photo past the edges shows only
   while the photo is picked; pinch / ⌘-scroll over the desk zooms the view; the slide on a dotted desk
   with a soft shadow; under it the floating canvas bar: ‹ Slide 3 of 7 ›, the shape menu, − Fit +,
-  guides, snapping, background colour, Before (hold), `showCanvasBar` in main.js), `filmstrip.js`
-  (the slides strip: toolbar with fold, Add (blue), trays of actions, "7 of 20"; slides numbered above,
+  guides, snapping, background colour, Before (hold), `showCanvasBar` in main.js; it scrolls sideways in a narrow window, the mouse wheel too), `filmstrip.js`
+  (the slides strip: toolbar with fold, Add (blue), trays of actions (Panorama, Tom 2026-11-18: makes the slide a
+  panorama of 2, then a number with ▴ ▾ beside it takes it up to 10 slides or back to 1; Join as panorama with several
+  picked; Split apart), "7 of 20"; slides numbered above,
   the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow (its four tabs are in the top bar);
   presets row; This slide | All 7 slides; Layers (count, +, Bottom / Top); then the tile's settings:
   sliders with a blue fill (`fillTrack`), switches, blue fold names after a chevron; "mixed"

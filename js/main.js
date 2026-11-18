@@ -15,7 +15,7 @@ import { newProject, slides as slideList, firstSlideOf, allLists, slideCount } f
 import { saveProject, loadProject } from './store.js';
 import { loadPicture, warmHeicReader } from './media.js';
 import { FONTS } from './render.js';
-import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, copyLook, pasteLook, setStage, setRatio, addLayerFiles, duplicateLayer } from './actions.js';
+import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, setSpan, panoMost, copyLook, pasteLook, setStage, setRatio, addLayerFiles, duplicateLayer } from './actions.js';
 import { loadMyFilters } from './filters.js';
 import { initInstall } from './install.js';
 import { STAGES, SHAPES, PLATFORMS, fitFor } from './project.js';
@@ -88,7 +88,16 @@ function refresh(what) {
   const has = items().length > 0;
   ["btn-duplicate", "btn-reset", "btn-delete", "btn-pano"].forEach((id) => { $(id).disabled = !has; });
   $("btn-split").disabled = !item || item.span < 2;
-  $("btn-pano").textContent = state.selected.size > 1 ? "Join as panorama" : item && item.span > 1 ? "Add a slide to it" : "Make panorama";
+  // Panorama (Tom, 2026-11-18): the button makes the slide a panorama of 2; then the number beside it, with its arrows,
+  // takes it up to 10 slides or back down to 1
+  const joining = state.selected.size > 1, pano = !joining && item && item.span > 1;
+  $("btn-pano").textContent = joining ? "Join as panorama" : "Panorama";
+  $("btn-pano").classList.toggle("on", !!pano);
+  $("pano-step").hidden = !pano;
+  if (pano) {
+    $("pano-n").textContent = String(item.span);
+    $("pano-up").disabled = item.span >= panoMost(item);
+  }
   document.querySelectorAll("#view-switch button").forEach((b) => b.classList.toggle("on", b.dataset.view === state.view));
   // The app the set is shown as, and how well the set suits each (faded: it doesn't take this shape; a dot: something
   // to know, in its hover box: too many slides, videos left out, or TikTok's tall frame)
@@ -230,7 +239,16 @@ function wireStrip() {
   $("btn-duplicate").onclick = duplicateSelected;
   $("btn-delete").onclick = removeSelected;
   $("btn-reset").onclick = resetSelected;
-  $("btn-pano").onclick = makePanorama;
+  $("btn-pano").onclick = () => { const item = currentItem(); if (item && item.span > 1 && state.selected.size <= 1) return; makePanorama(); };
+  const step = (by) => { const item = currentItem(); if (!item) return; setSpan(item, Math.min(panoMost(item), item.span + by)); commit(); };
+  $("pano-up").onclick = () => step(1);
+  $("pano-down").onclick = () => step(-1);
+  // The canvas bars scroll sideways in a narrow window: an up / down mouse wheel scrolls them too
+  document.querySelectorAll(".canvas-bar").forEach((bar) => bar.addEventListener("wheel", (e) => {
+    if (bar.scrollWidth <= bar.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    bar.scrollLeft += e.deltaY;
+  }, { passive: false }));
   $("btn-split").onclick = splitPanorama;
   // Photos onto the slide as layers (＋ Add photo in Layers, or an empty grid cell)
   const layerInput = $("layer-input");

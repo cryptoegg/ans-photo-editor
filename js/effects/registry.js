@@ -27,6 +27,7 @@
 //                   recipe can use)
 // To add an effect: create its file and add it here.
 import tone from './tone.js';
+import skin from './skin.js';
 import colour from './colour.js';
 import curves from './curves.js';
 import hsl from './hsl.js';
@@ -62,7 +63,7 @@ import disintegrate from './disintegrate.js';
 // warps, light and blur, textures, and damage / the frame last (so the border sits on top).
 // A layer's chain is always kept in this order, with at most one of each effect.
 export const EFFECTS = [
-  tone, curves, colour, hsl, lut, grade,        // Adjust: Light, then Colour (its Curves, Per colour, LUT and Wheels tabs)
+  tone, skin, curves, colour, hsl, lut, grade,  // Adjust: Light, Skin, then Colour (its Curves, Per colour, LUT and Wheels tabs)
   duotone, negative, solarise,                  // colour effects
   fisheye, liquify, stretch, slice, datamosh, melt, scan, // warp
   blur, bloom, halation, leak,                  // light & blur

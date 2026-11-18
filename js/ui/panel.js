@@ -3,7 +3,7 @@
 // outlined in the filmstrip; Crop and Text always change the one on the canvas. Changing
 // several slides at once says so in a note with Undo.
 import { removeBackground, restoreBackground, cutoutStatus } from '../cutout.js';
-import { brush, setBrush, clearTouchUps, brushStatus, cloneHasSource, sizeToSlider, sliderToSize, toolIcons } from './brush.js';
+import { brush, setBrush, setTool, clearTouchUps, brushStatus, cloneHasSource, sizeToSlider, sliderToSize, toolIcons } from './brush.js';
 import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, select, selectAll, onChange, items } from '../state.js';
 import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, partDefaults, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
 import { PRESETS } from '../effects/presets.js';
@@ -13,11 +13,13 @@ import { COLOUR_PRESETS } from '../effects/colourPresets.js';
 import { HSL_COLOURS } from '../effects/hsl.js';
 import { addLutFile } from '../effects/lutStore.js';
 import { curveControl, wheelsControl } from './colourControls.js';
+import { MASK_KINDS, maskName } from '../masks.js';
+import { addMask, pickMask, removeMask, pickedMask } from './masks.js';
 import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, deleteMyFilter, isMine } from '../filters.js';
 import { presetSwatch } from '../looks.js';
 import { getPicture } from '../media.js';
-import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS } from '../render.js';
-import { setSpan, splitPanorama, makePanorama, moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
+import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS, PHOTO_SHAPES, photoBox, trimOf } from '../render.js';
+import { moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
 import { showMenu } from './menu.js';
 import { toast } from './toast.js';
 import { ask } from './dialogs.js';
@@ -92,10 +94,6 @@ function buildLayersBox() {
   box.innerHTML = "";
   if (!slide) { box.hidden = true; return; }
   box.hidden = false;
-  if (slide.span > 1) {
-    box.append(el("div", { className: "layers-head" }, el("span", { textContent: "Layers" }), el("span", { className: "mc-n", textContent: "1" })));
-    return;
-  }
   // (a video slide: the video is the bottom layer and stays there; photos go over it)
   const vid = isVideo(slide);
   const nameOf = (i) => layerLabel(slide, i);
@@ -171,6 +169,17 @@ function buildLayersBox() {
   }
 }
 
+// The brush's Size (gradual: sizeToSlider) and Hardness, side by side (the Tools fold, Masks)
+function brushSliders() {
+  const slider = (label, key, min, max, title = "", toV = (x) => x, fromV = (x) => x) => {
+    const value = el("span", { className: "value", textContent: String(brush[key]) });
+    const input = el("input", { type: "range", min, max, value: toV(brush[key]), title, oninput: (e) => { brush[key] = fromV(Number(e.target.value)); value.textContent = String(brush[key]); fillTrack(e.target); changed("look"); }, onchange: () => setBrush(key, brush[key]) });
+    fillTrack(input);
+    return el("label", { className: "field" }, el("span", { className: "field-head" }, el("span", { textContent: label }), value), input);
+  };
+  return el("div", { className: "pair" }, slider("Size", "size", 0, 1000, "[ ]", sizeToSlider, sliderToSize), slider("Hardness", "hardness", 0, 100, "Shift [ ]"));
+}
+
 // ---- Tools (Tom, 2026-11-18): everything that works on the picked photo itself, in one fold under Layers:
 // Remove background, then the brushes: Remove, Clone, Edge brush
 function buildToolsBox() {
@@ -178,7 +187,7 @@ function buildToolsBox() {
   const slide = currentItem();
   box.innerHTML = "";
   const picked = slide && currentLayer();
-  if (!slide || !picked || slide.span > 1 || (isVideo(slide) && picked === slide)) { box.hidden = true; return; }
+  if (!slide || !picked || (isVideo(slide) && picked === slide)) { box.hidden = true; return; }
   box.hidden = false;
   const open = !openCards.has("tools:shut");
   const name = el("button", { className: "fold-name layers-fold", title: "Show / hide the tools" }, el("span", { className: "fold-arrow" }), el("span", { textContent: "Tools" }));
@@ -196,14 +205,8 @@ function buildToolsBox() {
   const icons = toolIcons("ti");
   icons.className = "tool-icons";
   box.append(icons);
-  if (state.tool) {
-    const slider = (label, key, min, max, title = "", toV = (x) => x, fromV = (x) => x) => {
-      const value = el("span", { className: "value", textContent: String(brush[key]) });
-      const input = el("input", { type: "range", min, max, value: toV(brush[key]), title, oninput: (e) => { brush[key] = fromV(Number(e.target.value)); value.textContent = String(brush[key]); fillTrack(e.target); changed("look"); }, onchange: () => setBrush(key, brush[key]) });
-      fillTrack(input);
-      return el("label", { className: "field" }, el("span", { className: "field-head" }, el("span", { textContent: label }), value), input);
-    };
-    box.append(el("div", { className: "pair" }, slider("Size", "size", 0, 1000, "[ ]", sizeToSlider, sliderToSize), slider("Hardness", "hardness", 0, 100, "Shift [ ]")));
+  if (state.tool && state.tool !== "mask") { // (the Mask brush's settings are in Adjust → Masks)
+    box.append(brushSliders());
     if (state.tool === "edge" || state.tool === "clone") {
       const seg = el("div", { className: "segmented wide" });
       const opts = state.tool === "edge" ? [["edge", "erase", "Erase"], ["edge", "restore", "Restore"]] : [["blend", true, "Blend"], ["blend", false, "Exact copy"]];
@@ -289,7 +292,7 @@ function build() {
   buildLayersBox();
   buildToolsBox();
   if (state.tab === "text") document.getElementById("layers-box").hidden = document.getElementById("tools-box").hidden = true;
-  if (state.tab === "filters") document.getElementById("tools-box").hidden = true; // (Tom, 2026-11-18: not needed with the filters)
+  if (state.tab === "filters" || state.tab === "crop") document.getElementById("tools-box").hidden = true; // (Tom, 2026-11-18: not needed with the filters or Crop)
   const scroll = state.tab === shownTab ? body.scrollTop : 0; // (a different tab starts at its top)
   shownTab = state.tab;
   body.innerHTML = "";
@@ -511,7 +514,7 @@ function foldCard({ key, name, tick = null, quick = null, onReset = null, build,
 // box, its one slider and its settings folded under its name. Moving a setting of an effect
 // that's off switches it on. A slide with no filter can switch effects on too (its own "Custom").
 
-const ADJUST_TYPES = ["tone", "curves", "colour", "hsl", "lut", "grade"];
+const ADJUST_TYPES = ["tone", "skin", "curves", "colour", "hsl", "lut", "grade"];
 const FILTER_NAMES = { tone: "Filter light", colour: "Filter colour", curves: "Filter curves", hsl: "Filter per colour", lut: "Filter LUT", grade: "Filter wheels" };
 function effectsSection(chosen) {
   const item = lookItem();
@@ -658,7 +661,17 @@ function buildAdjust() {
       get: (i) => i.look.light[c.key], set: (i, v) => { i.look.light[c.key] = v; }
     })))
   }));
+  // Skin (js/effects/skin.js): smooth it, even its tone, keep its texture
+  const skin = getEffect("skin");
+  body.append(foldCard({
+    key: "adjust:skin", name: "Skin", onReset: resetPart("skin", skin.defaults, "Skin"),
+    build: (inner) => skin.controls.forEach((c) => inner.append(slider({
+      label: c.label, min: c.min, max: c.max, step: c.step, targets: chosen,
+      get: (i) => (i.look.skin || skin.defaults())[c.key], set: (i, v) => { i.look.skin = { ...skin.defaults(), ...(i.look.skin || {}), [c.key]: v }; }
+    })))
+  }));
   body.append(colourCard(chosen));
+  body.append(masksCard());
   effectsSection(chosen);
   body.append(foldCard({
     key: "adjust:background", name: "Background",
@@ -674,6 +687,43 @@ function buildAdjust() {
     }
   }));
   saveFilterSection(chosen);
+}
+
+// ---- Masks (Tom, 2026-11-18, like Lightroom's; js/masks.js, js/ui/masks.js): fixes on part of the photo picked.
+// Brush · Fade · Round · Subject add one; each row picks it (its handles on the canvas), with Invert, its eye and ✕;
+// the picked one's settings under the list: the brush's Paint | Erase, Size and Hardness (a Brush mask), Feather
+// (Round), then its own Light and Colour sliders.
+function masksCard() {
+  const layer = currentLayer();
+  const list = (layer && layer.masks) || [];
+  const card = foldCard({ key: "adjust:masks", name: "Masks", build: (inner) => {
+    if (!layer || !getPicture(layer.mediaId) || false) { inner.append(note("Pick a photo")); return; }
+    const kinds = el("div", { className: "mask-kinds" });
+    MASK_KINDS.forEach(([kind, label, tip]) => kinds.append(el("button", { type: "button", className: "mask-kind", textContent: kind === "subject" && cutoutStatus.busy ? "Finding…" : label, title: tip, disabled: kind === "subject" && cutoutStatus.busy, onclick: () => addMask(kind) })));
+    inner.append(kinds);
+    list.forEach((m) => {
+      const row = el("div", { className: "mask-row" + (m.id === state.maskId ? " on" : "") + (m.on ? "" : " off"), onclick: () => pickMask(m.id) });
+      const flip = el("button", { type: "button", className: "mask-btn" + (m.invert ? " lit" : ""), textContent: "Invert", title: "Everything but this part", onclick: (e) => { e.stopPropagation(); m.invert = !m.invert; changed("project"); commit(); } });
+      const eye = el("button", { type: "button", className: "mask-btn", textContent: m.on ? "On" : "Off", title: "Switch this mask on / off", onclick: (e) => { e.stopPropagation(); m.on = !m.on; changed("project"); commit(); } });
+      const del = el("button", { type: "button", className: "mask-btn", textContent: "✕", title: "Delete this mask", onclick: (e) => { e.stopPropagation(); removeMask(layer, m.id); } });
+      row.append(el("span", { className: "mask-name", textContent: maskName(layer, m) }), flip, eye, del);
+      inner.append(row);
+    });
+    const m = pickedMask();
+    if (!m) return;
+    if (m.kind === "brush") {
+      const paint = state.tool === "mask";
+      inner.append(el("div", { className: "row" },
+        el("button", { type: "button", className: "mask-btn" + (paint ? " lit" : ""), textContent: paint ? "Painting" : "Paint", title: "Paint on the photo (Esc puts the brush down)", onclick: () => { setTool(paint ? null : "mask"); } }),
+        segmented([{ value: "paint", label: "Add" }, { value: "erase", label: "Erase" }], brush.mask, (v) => { setBrush("mask", v); if (state.tool !== "mask") setTool("mask"); })));
+      inner.append(brushSliders());
+    }
+    if (m.kind === "radial") inner.append(slider({ label: "Feather", min: 0, max: 100, targets: [m], get: (x) => x.round.feather, set: (x, v) => { x.round.feather = v; } }));
+    [["tone", "light"], ["colour", "colour"]].forEach(([type, part]) => (getEffect(type).controls || []).filter((c) => !c.kind).forEach((c) => inner.append(slider({
+      label: c.label, min: c.min, max: c.max, step: c.step, targets: [m], get: (x) => x[part][c.key], set: (x, v) => { x[part][c.key] = v; }
+    }))));
+  } });
+  return card;
 }
 
 // ---- Colour (Tom, 2026-11-18, as the Lyric Visualiser's one Colour card): Presets… on top (js/effects/colourPresets.js:
@@ -785,6 +835,26 @@ function drawnControl(c, targets, get, own) {
 
 // ---- Crop (the slide on the canvas only)
 
+const svgIcon = (inner) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.8" stroke-linejoin="round">${inner}</svg>`;
+const starPts = Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, k = i % 2 ? 4 : 9.5; return `${(12 + Math.cos(a) * k).toFixed(1)},${(12.6 + Math.sin(a) * k).toFixed(1)}`; }).join(" ");
+const SHAPE_ICONS = {
+  rect: svgIcon('<rect x="3.5" y="5.5" width="17" height="13" rx="1"/>'),
+  circle: svgIcon('<circle cx="12" cy="12" r="8.5"/>'),
+  triangle: svgIcon('<path d="M12 3.5 21 20H3z"/>'),
+  diamond: svgIcon('<path d="M12 2.5 21.5 12 12 21.5 2.5 12z"/>'),
+  hexagon: svgIcon('<path d="M7.5 3.5h9L21 12l-4.5 8.5h-9L3 12z"/>'),
+  star: svgIcon(`<polygon points="${starPts}"/>`),
+  heart: svgIcon('<path d="M12 20.5C4.5 15 2.5 10.5 4.2 7 5.8 3.8 10 3.6 12 7c2-3.4 6.2-3.2 7.8 0 1.7 3.5-.3 8-7.8 13.5z"/>'),
+  arch: svgIcon('<path d="M4.5 21V11a7.5 7.5 0 0 1 15 0v10z"/>')
+};
+// Picking Circle: the part that shows made square (the longer sides trimmed evenly), so it's round, not an oval
+function squareUp(item, pic, frame) {
+  const b = photoBox(item.crop, pic.width, pic.height, frame.w, frame.h), t = trimOf(item.crop);
+  const sw = b.w * (1 - t.l - t.r), sh = b.h * (1 - t.t - t.b);
+  if (sw > sh) { const k = (sw - sh) / b.w / 2; t.l += k; t.r += k; } else { const k = (sh - sw) / b.h / 2; t.t += k; t.b += k; }
+  item.crop.trim = t;
+}
+
 function buildCrop() {
   const slide = currentItem();
   if (!slide) return;
@@ -795,9 +865,18 @@ function buildCrop() {
   const frame = () => layerFrame(slide, item, slide.span * aspectOf(activeSet(state.project).ratio), 1) || { w: 1, h: 1 };
   const inGrid = isGrid(slide);
   const fitFill = el("div", { className: "segmented wide" },
-    el("button", { textContent: "Fit", title: "The whole photo, on the background", onclick: act(() => { if (pic) fitCrop(item.crop, pic.width, pic.height, frame().w, frame().h); }) }),
-    el("button", { textContent: "Fill", title: "The photo covers the slide", onclick: act(() => { if (pic) fillCrop(item.crop, pic.width, pic.height, frame().w, frame().h); }) }));
+    el("button", { textContent: "Fit", title: "The whole photo, on the background", onclick: act(() => { if (pic) { delete item.crop.trim; fitCrop(item.crop, pic.width, pic.height, frame().w, frame().h); } }) }),
+    el("button", { textContent: "Fill", title: "The photo covers the slide", onclick: act(() => { if (pic) { delete item.crop.trim; fillCrop(item.crop, pic.width, pic.height, frame().w, frame().h); } }) }));
   body.append(fitFill);
+  // The photo's shape (Tom, 2026-11-18): it fills the part that shows (the side handles on the canvas trim it)
+  if (!inGrid && item.style) {
+    const now = item.style.shape || "rect";
+    body.append(el("div", { className: "tool-icons shape-icons" }, ...PHOTO_SHAPES.map(([shape, label]) => el("button", {
+      type: "button", className: `ti${now === shape ? " on" : ""}`, title: label, ariaLabel: label,
+      style: `--i: url("data:image/svg+xml,${encodeURIComponent(SHAPE_ICONS[shape])}")`,
+      onclick: act(() => { item.style.shape = shape; if (shape === "circle" && pic) squareUp(item, pic, frame()); })
+    }))));
+  }
   body.append(slider({
     label: "Zoom", min: 5, max: 400, unit: "%", reset: 100, targets: [item],
     get: (i) => i.crop.zoom * 100, set: (i, v) => { i.crop.zoom = v / 100; }, onCommit: () => {}
@@ -822,7 +901,7 @@ function buildCrop() {
   if (!inGrid && (many || slide.layout.kind === "free")) {
     const st = item.style;
     body.append(title("Photo style"));
-    body.append(slider({ label: "Corners", min: 0, max: 50, unit: "%", targets: [item], get: (i) => (i.style.radius || 0) * 100, set: (i, v) => { i.style.radius = v / 100; }, onCommit: () => {} }));
+    if ((st.shape || "rect") === "rect") body.append(slider({ label: "Corners", min: 0, max: 50, unit: "%", targets: [item], get: (i) => (i.style.radius || 0) * 100, set: (i, v) => { i.style.radius = v / 100; }, onCommit: () => {} }));
     body.append(slider({ label: "Border", min: 0, max: 5, step: 0.25, targets: [item], get: (i) => i.style.border || 0, set: (i, v) => { i.style.border = v; }, onCommit: () => {} }));
     const bc = el("input", { type: "color", value: st.borderColour || "#ffffff" });
     bc.oninput = () => { st.borderColour = bc.value; changed("look"); };
@@ -832,23 +911,6 @@ function buildCrop() {
     body.append(el("div", { className: "row" }, el("span", { textContent: "Border colour" }), bc, el("span", { className: "spacer" }), el("label", { className: "check-row" }, sh, el("span", { textContent: "Shadow" }))));
   }
 
-  if (many || inGrid) return; // (panoramas are for a slide with one photo)
-  const pano = slide;
-  body.append(title("Panorama"));
-  if (isVideo(item)) {
-    body.append(note("Videos can't be panoramas: Instagram plays each slide's video by itself. Trim it and pick its cover in the bar under the canvas."));
-  } else if (item.span > 1) {
-    body.append(note("One photo across several slides. The dashed lines are where each swipe cuts: keep faces and words off them."));
-    body.append(el("div", { className: "row" },
-      el("span", { textContent: "Slides" }),
-      button("−", () => { setSpan(item, item.span - 1); commit(); }),
-      el("strong", { textContent: String(item.span) }),
-      button("＋", () => { setSpan(item, item.span + 1); commit(); }),
-      button("Split apart", () => splitPanorama(), "btn ghost small")));
-  } else {
-    body.append(note("Spread this photo across 2 or more slides, so swiping feels like one wide picture."));
-    body.append(el("div", { className: "row" }, button("Make panorama", () => makePanorama())));
-  }
 }
 
 // ---- Text (the slide on the canvas only)

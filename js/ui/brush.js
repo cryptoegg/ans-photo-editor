@@ -19,7 +19,7 @@ import { newId } from '../project.js';
 import { photoBox, turn, layerFrame } from '../render.js';
 
 const PREFS_KEY = "ans_photo_brush";
-export const brush = { size: 40, hardness: 50, edge: "erase", blend: true };
+export const brush = { size: 40, hardness: 50, edge: "erase", blend: true, mask: "paint" };
 try {
   const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
   if (saved.softness !== undefined && saved.hardness === undefined) saved.hardness = 100 - saved.softness; // (it was Softness)
@@ -42,13 +42,14 @@ let pointer = null;   // where the pointer is over the canvas (frame pixels), fo
 let stroke = null;    // the stroke being painted (or the brush being sized)
 const clone = { layer: null, src: null, offset: null }; // Clone's source: a point on the photo, then the offset kept while painting
 
-const TOOLS = ["remove", "clone", "erase", "edge"];
+const TOOLS = ["remove", "clone", "erase", "edge", "mask"]; // (mask: painting a Brush mask, js/masks.js; not among the icons)
 export function brushReady() {
   if (state.tool === "heal") state.tool = "remove"; // (it was Spot heal)
   if (!TOOLS.includes(state.tool)) return null;
   const item = currentItem(), layer = currentLayer();
-  if (!item || !layer || !state.photoPicked || item.span > 1 || (item.kind === "video" && layer === item)) return null;
+  if (!item || !layer || !state.photoPicked || (item.kind === "video" && layer === item)) return null;
   if (state.tool === "edge" && !(layer.cutout && layer.cutout.on && layer.cutout.maskId)) return null;
+  if (state.tool === "mask" && !((layer.masks || []).some((m) => m.id === state.maskId && m.kind === "brush"))) return null;
   const pic = getPicture(layer.mediaId);
   return pic ? { item, layer, pic } : null;
 }
@@ -99,7 +100,7 @@ export function toolIcons(cls, into = null, after = null) {
 export function toolAllowed(tool) {
   if (!tool) return true;
   const item = currentItem(), layer = currentLayer();
-  if (!item || !layer || item.span > 1 || (item.kind === "video" && layer === item) || !getPicture(layer.mediaId)) return false;
+  if (!item || !layer || (item.kind === "video" && layer === item) || !getPicture(layer.mediaId)) return false;
   return tool !== "edge" || !!(layer.cutout && layer.cutout.on && layer.cutout.maskId);
 }
 
@@ -113,21 +114,21 @@ document.addEventListener("keydown", (e) => {
   else setBrush("size", Math.max(SIZE_MIN, Math.min(SIZE_MAX, Math.round(brush.size * (bigger ? 1.2 : 1 / 1.2)))));
 });
 
-// ---- Where things are: the frame (screen) and the photo's own pixels
+// ---- Where things are: the frame (screen) and the photo's own pixels (also for the masks' handles, js/ui/masks.js)
 
-function placement(ready, f) {
+export function placement(ready, f) {
   const { item, layer, pic } = ready;
   const rect = layerFrame(item, layer, f.w, f.h);
   return { rect, box: photoBox(layer.crop, pic.width, pic.height, rect.w, rect.h) };
 }
-function toPhoto(ready, f, p) {
+export function toPhoto(ready, f, p) {
   const { layer, pic } = ready, { rect, box } = placement(ready, f);
   let [x, y] = turn(p.x - rect.x - box.cx, p.y - rect.y - box.cy, -box.rotation);
   if (layer.crop.flipH) x = -x;
   if (layer.crop.flipV) y = -y;
   return { x: (x / box.w + 0.5) * pic.width, y: (y / box.h + 0.5) * pic.height, r: (brush.size / 2) * (pic.width / box.w) };
 }
-function toFrame(ready, f, q) {
+export function toFrame(ready, f, q) {
   const { layer, pic } = ready, { rect, box } = placement(ready, f);
   let x = (q.x / pic.width - 0.5) * box.w, y = (q.y / pic.height - 0.5) * box.h;
   if (layer.crop.flipH) x = -x;
@@ -196,7 +197,23 @@ export function brushDown(e, f, p) {
     changed("view");
     return true;
   }
-  if (state.tool === "edge" || state.tool === "erase") {
+  if (state.tool === "mask") {
+    // A Brush mask (js/masks.js): painted on a copy of its picture (so undo points back), white = the fix
+    const m = ready.layer.masks.find((x) => x.id === state.maskId);
+    const was = m.maskId && getPicture(m.maskId);
+    if (m.maskId && !was) { loadPicture(m.maskId).then(() => changed("view")); return true; }
+    const canvas = document.createElement("canvas");
+    const k = Math.min(1, 2048 / Math.max(ready.pic.width, ready.pic.height));
+    canvas.width = was ? was.full.width : Math.round(ready.pic.width * k);
+    canvas.height = was ? was.full.height : Math.round(ready.pic.height * k);
+    if (was) canvas.getContext("2d").drawImage(was.full, 0, 0);
+    const id = newId("m");
+    const picture = { full: canvas, preview: canvas, width: ready.pic.width, height: ready.pic.height, name: "Mask.png", rev: 0 };
+    putPicture(id, picture);
+    m.maskId = id;
+    stroke = { tool: "edge", mode: brush.mask === "erase" ? "erase" : "restore", ready, f, last: at, canvas, picture, id, sx: canvas.width / ready.pic.width };
+    edgeDab(at);
+  } else if (state.tool === "edge" || state.tool === "erase") {
     // Both paint on the photo's mask (a copy, so undo points back): the Edge brush on its cut-out, the Eraser on its
     // cut-out if it has one switched on, else on a new mask that keeps the whole photo (`hand`: made by hand, so
     // Remove background still runs the model, js/cutout.js)
@@ -284,6 +301,9 @@ export async function brushUp() {
   else await finishRemove(s);
   return true;
 }
+
+// (a stroke being painted: the masks' red shows only then, js/ui/masks.js)
+export const brushStroking = () => !!stroke && stroke.tool !== "size";
 
 export function brushLeave() { if (!stroke && pointer) { pointer = null; changed("look"); } }
 

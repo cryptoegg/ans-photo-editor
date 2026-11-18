@@ -27,6 +27,45 @@ export function photoBox(crop, iw, ih, W, H) {
   return { cx: W / 2 + crop.x * W, cy: H / 2 + crop.y * H, w: dw, h: dh, rotation: crop.rotation || 0 };
 }
 
+// Trimmed edges (Tom, 2026-11-18, like Canva's side handles): crop.trim = { l, t, r, b }, shares of the photo's box
+// cut off each side. The part left is what shows (in its shape) and what's picked, moved and sized.
+export const trimOf = (crop) => ({ l: 0, t: 0, r: 0, b: 0, ...(crop.trim || {}) });
+export const isTrimmed = (crop) => { const t = trimOf(crop); return !!(t.l || t.t || t.r || t.b); };
+// The part of the photo that shows: its box on the frame (middle, size, angle), like photoBox
+export function shownBox(crop, iw, ih, W, H) {
+  const b = photoBox(crop, iw, ih, W, H), t = trimOf(crop);
+  const [u, v] = turn(((t.l - t.r) * b.w) / 2, ((t.t - t.b) * b.h) / 2, b.rotation);
+  return { cx: b.cx + u, cy: b.cy + v, w: Math.max(1, b.w * (1 - t.l - t.r)), h: Math.max(1, b.h * (1 - t.t - t.b)), rotation: b.rotation };
+}
+
+// ---- A photo's shape (Tom, 2026-11-18): style.shape, drawn to fill the part that shows
+export const PHOTO_SHAPES = [
+  ["rect", "Rectangle"], ["circle", "Circle"], ["triangle", "Triangle"], ["diamond", "Diamond"],
+  ["hexagon", "Hexagon"], ["star", "Star"], ["heart", "Heart"], ["arch", "Arch"]
+];
+// The shape's path in the box (x, y, w, h); r: the rectangle's rounded corners (px)
+export function shapePath(ctx, shape, x, y, w, h, r = 0) {
+  const cx = x + w / 2, cy = y + h / 2;
+  const poly = (pts) => { pts.forEach(([u, v], i) => (i ? ctx.lineTo(x + u * w, y + v * h) : ctx.moveTo(x + u * w, y + v * h))); ctx.closePath(); };
+  ctx.beginPath();
+  if (shape === "circle") ctx.ellipse(cx, cy, w / 2, h / 2, 0, 0, Math.PI * 2);
+  else if (shape === "triangle") poly([[0.5, 0], [1, 1], [0, 1]]);
+  else if (shape === "diamond") poly([[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]]);
+  else if (shape === "hexagon") poly([[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]]);
+  else if (shape === "star") poly(Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, k = i % 2 ? 0.4 : 1; return [0.5 + Math.cos(a) * 0.5 * k, 0.53 + Math.sin(a) * 0.5 * k / 0.95]; }));
+  else if (shape === "heart") {
+    ctx.moveTo(cx, y + h);
+    ctx.bezierCurveTo(x - w * 0.05, y + h * 0.6, x - w * 0.02, y + h * 0.02, x + w * 0.27, y);
+    ctx.bezierCurveTo(x + w * 0.42, y - h * 0.01, cx, y + h * 0.12, cx, y + h * 0.22);
+    ctx.bezierCurveTo(cx, y + h * 0.12, x + w * 0.58, y - h * 0.01, x + w * 0.73, y);
+    ctx.bezierCurveTo(x + w * 1.02, y + h * 0.02, x + w * 1.05, y + h * 0.6, cx, y + h);
+    ctx.closePath();
+  } else if (shape === "arch") {
+    const rr = Math.min(w / 2, h);
+    ctx.moveTo(x, y + h); ctx.lineTo(x, y + rr); ctx.ellipse(cx, y + rr, w / 2, rr, 0, Math.PI, 0); ctx.lineTo(x + w, y + h); ctx.closePath();
+  } else ctx.roundRect(x, y, w, h, Math.min(r, w / 2, h / 2));
+}
+
 // Fill: in the middle, upright-or-turned, just covering the frame. Fit: the whole photo showing.
 export function fillCrop(crop, iw, ih, W, H) {
   const a = (crop.rotation * Math.PI) / 180, c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
@@ -98,10 +137,13 @@ function drawLayer(ctx, item, layer, picture, rect, grid) {
     return;
   }
   const st = layer.style || {};
-  if (!st.radius && !st.border && !st.shadow) { drawPlaced(ctx, picture, layer.crop, rect.w, rect.h); ctx.restore(); return; }
+  const shape = st.shape && st.shape !== "rect" ? st.shape : null;
+  if (!st.radius && !st.border && !st.shadow && !shape && !isTrimmed(layer.crop)) { drawPlaced(ctx, picture, layer.crop, rect.w, rect.h); ctx.restore(); return; }
   const box = photoBox(layer.crop, picture.width, picture.height, rect.w, rect.h);
-  const r = Math.min(box.w, box.h) * (st.radius || 0);
-  const shape = () => { ctx.beginPath(); ctx.roundRect(-box.w / 2, -box.h / 2, box.w, box.h, r); };
+  const t = trimOf(layer.crop);
+  const sx = -box.w / 2 + t.l * box.w, sy = -box.h / 2 + t.t * box.h, sw = box.w * (1 - t.l - t.r), sh = box.h * (1 - t.t - t.b);
+  const r = Math.min(sw, sh) * (st.radius || 0);
+  const outline = () => shapePath(ctx, shape || "rect", sx, sy, sw, sh, r);
   ctx.translate(box.cx, box.cy);
   ctx.rotate((box.rotation * Math.PI) / 180);
   if (st.shadow) {
@@ -109,20 +151,20 @@ function drawLayer(ctx, item, layer, picture, rect, grid) {
     ctx.shadowColor = "rgba(0,0,0,0.35)";
     ctx.shadowBlur = Math.min(rect.w, rect.h) * 0.04;
     ctx.shadowOffsetY = Math.min(rect.w, rect.h) * 0.015;
-    shape();
+    outline();
     ctx.fillStyle = "#000";
     ctx.fill();
     ctx.restore();
   }
   ctx.save();
-  shape();
+  outline();
   ctx.clip();
   ctx.scale(layer.crop.flipH ? -1 : 1, layer.crop.flipV ? -1 : 1);
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(picture, -box.w / 2, -box.h / 2, box.w, box.h);
   ctx.restore();
   if (st.border) {
-    shape();
+    outline();
     ctx.lineWidth = st.border * Math.min(rect.w, rect.h) * 0.01;
     ctx.strokeStyle = st.borderColour || "#ffffff";
     ctx.stroke();

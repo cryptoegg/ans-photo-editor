@@ -84,11 +84,16 @@ export const COLOUR_DEFAULTS = () => ({ mono: false, temperature: 0, tint: 0, sa
 export const COLOUR_PARTS = { curves, grade, hsl, lut };
 export const partDefaults = (part) => COLOUR_PARTS[part].defaults();
 export const lookDefaults = () => ({ preset: null, chain: null, strength: 100, light: LIGHT_DEFAULTS(), colour: COLOUR_DEFAULTS(),
-  curves: partDefaults("curves"), grade: partDefaults("grade"), hsl: partDefaults("hsl"), lut: partDefaults("lut") });
+  curves: partDefaults("curves"), grade: partDefaults("grade"), hsl: partDefaults("hsl"), lut: partDefaults("lut"), skin: SKIN_DEFAULTS() });
+export const SKIN_DEFAULTS = () => ({ smooth: 0, texture: 40, even: 0 });
+export const skinOn = (look) => !!(look && look.skin && (look.skin.smooth > 0 || look.skin.even > 0));
+// A photo's masks (js/masks.js), every setting filled in
+const tidyMasks = (list) => (Array.isArray(list) ? list : []).filter((m) => m && m.kind).map((m) => ({ on: true, invert: false, ...m, light: { ...LIGHT_DEFAULTS(), ...(m.light || {}) }, colour: { ...COLOUR_DEFAULTS(), ...(m.colour || {}) } }));
 // A saved look brought up to date: every setting filled in, an old Colour tint turned into the wheels
 export function tidyLook(look = {}) {
   const out = { ...lookDefaults(), ...look, light: { ...LIGHT_DEFAULTS(), ...(look.light || {}) }, colour: { ...COLOUR_DEFAULTS(), ...(look.colour || {}) } };
   Object.keys(COLOUR_PARTS).forEach((k) => { out[k] = { ...partDefaults(k), ...(look[k] || {}) }; });
+  out.skin = { ...SKIN_DEFAULTS(), ...(look.skin || {}) };
   if (out.chain !== undefined && !Array.isArray(out.chain)) out.chain = null;
   if (out.chain) out.chain = tintIntoGrade(out.chain);
   return out;
@@ -136,7 +141,7 @@ export const LAYOUTS = {
 };
 export const layoutDefaults = () => ({ kind: "single", gap: 0.02, radius: 0 });
 // opacity 0 - 1; blend: how it mixes with what's under it (BLENDS in js/render.js)
-export const styleDefaults = () => ({ radius: 0, border: 0, borderColour: "#ffffff", shadow: false, opacity: 1, blend: "normal" });
+export const styleDefaults = () => ({ shape: "rect", radius: 0, border: 0, borderColour: "#ffffff", shadow: false, opacity: 1, blend: "normal" });
 export const isGrid = (item) => !!LAYOUTS[item.layout && item.layout.kind];
 export function newLayer(mediaId) {
   return { id: newId("l"), mediaId, kind: "photo", crop: cropDefaults(), look: lookDefaults(), style: styleDefaults() };
@@ -168,6 +173,7 @@ export function tidyProject(p) {
     item.span = Math.max(1, Math.round(item.span || 1));
     item.crop = { ...cropDefaults(), ...(item.crop || {}) };
     item.look = tidyLook(item.look || {});
+    item.masks = tidyMasks(item.masks);
     delete item.lookGroup; delete item.ownLook;
     item.kind = item.kind === "video" ? "video" : "photo";
     if (item.kind === "video") {
@@ -181,7 +187,7 @@ export function tidyProject(p) {
     item.style = { ...styleDefaults(), ...(item.style || {}) };
     item.layers = (Array.isArray(item.layers) ? item.layers : []).map((l) => ({
       ...l, kind: "photo", crop: { ...cropDefaults(), ...(l.crop || {}) },
-      look: tidyLook(l.look || {}),
+      look: tidyLook(l.look || {}), masks: tidyMasks(l.masks),
       style: { ...styleDefaults(), ...(l.style || {}) }
     }));
     item.background = item.background || BACKGROUND;
@@ -215,10 +221,10 @@ export function slides(p, set = activeSet(p)) {
 // Whether a slide has anything changed from how it came in (the dot in the filmstrip)
 export function isEdited(item) {
   const plain = lookDefaults(), crop = cropDefaults();
-  return item.texts.length > 0 || (item.layers && item.layers.length > 0) || (item.layout && item.layout.kind !== "single") || item.look.preset !== null || item.background !== BACKGROUND ||
+  return item.texts.length > 0 || (item.masks && item.masks.length > 0) || (item.layers && item.layers.length > 0) || (item.layout && item.layout.kind !== "single") || item.look.preset !== null || item.background !== BACKGROUND ||
     Object.keys(plain.light).some((k) => item.look.light[k] !== plain.light[k]) ||
     Object.keys(plain.colour).some((k) => item.look.colour[k] !== plain.colour[k]) ||
-    Object.keys(COLOUR_PARTS).some((k) => JSON.stringify(item.look[k] || plain[k]) !== JSON.stringify(plain[k])) ||
+    Object.keys(COLOUR_PARTS).some((k) => JSON.stringify(item.look[k] || plain[k]) !== JSON.stringify(plain[k])) || skinOn(item.look) ||
     Object.keys(crop).some((k) => item.crop[k] !== crop[k]);
 }
 

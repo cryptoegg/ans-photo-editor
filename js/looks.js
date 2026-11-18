@@ -5,9 +5,11 @@
 import { runChain, available } from './effects/gl.js';
 import { getEffect } from './effects/registry.js';
 import { getLut, onLutsChange } from './effects/lutStore.js';
+import { activeMasks, masksKey, maskCanvas, layThrough } from './masks.js';
 import { freshChain } from './filters.js';
 import { getPicture, loadPicture, stillAt } from './media.js';
 import { changed } from './state.js';
+import { skinOn } from './project.js';
 
 // Finished looks by key, most recently used last: on-screen ones (a few per slide, so undo and
 // switching back are instant), export ones (one or two: they're big) and filter swatches
@@ -42,6 +44,7 @@ function stepsOf(look, seed) {
   };
   const adjust = [];
   if (!isZero(look.light)) adjust.push(step("tone", look.light));
+  if (skinOn(look)) adjust.push(step("skin", look.skin));
   if (!isPlain(look, "curves")) adjust.push(step("curves", look.curves));
   if (!isZero(look.colour)) adjust.push(step("colour", look.colour));
   if (!isPlain(look, "hsl")) adjust.push(step("hsl", look.hsl));
@@ -53,7 +56,7 @@ function stepsOf(look, seed) {
 }
 
 // Whether a look changes the photo at all
-export const hasLook = (look) => !!look.preset || !isZero(look.light) || !isZero(look.colour) || ["curves", "grade", "hsl", "lut"].some((k) => !isPlain(look, k));
+export const hasLook = (look, layer = null) => activeMasks(layer).length > 0 || !!look.preset || skinOn(look) || !isZero(look.light) || !isZero(look.colour) || ["curves", "grade", "hsl", "lut"].some((k) => !isPlain(look, k));
 
 // The picture a slide starts from: the photo, or for a video the still at its cover moment
 // (the first still while that one's being made)
@@ -109,7 +112,21 @@ function applyLook(item, source, keyBase, seed, into = null) {
     const out = runChain(`${keyBase}@${name}`, input, input.width, input.height, steps, { fresh });
     return out ? copyOf(out, out.width, out.height, name === "filter" && look.strength >= 100 ? into : null) : input;
   };
-  const adjusted = run(source, adjust, "adjust", !!into);
+  let adjusted = run(source, adjust, "adjust", !!into);
+  // Masks (js/masks.js): each fix worked out on the whole picture, then laid on through its mask
+  const masks = activeMasks(item);
+  if (masks.length) {
+    const base = adjusted === source ? copyOf(adjusted) : adjusted; // (never the photo itself)
+    masks.forEach((m) => {
+      const mask = maskCanvas(m, base.width, base.height);
+      if (!mask) return;
+      const steps = [isZero(m.light) ? null : { effect: getEffect("tone"), settings: { ...getEffect("tone").defaults(), ...m.light }, seed: 0 },
+        isZero(m.colour) ? null : { effect: getEffect("colour"), settings: { ...getEffect("colour").defaults(), ...m.colour }, seed: 0 }].filter(Boolean);
+      const out = steps.length && runChain(`${keyBase}@mask@${m.id}`, base, base.width, base.height, steps, { fresh: true });
+      if (out) layThrough(base, out, mask);
+    });
+    adjusted = base;
+  }
   if (!filter.length) return adjusted === source || !into ? adjusted : copyOf(adjusted, adjusted.width, adjusted.height, into);
   const filtered = run(adjusted, filter, "filter", true);
   if (look.strength >= 100 || filtered === adjusted) return filtered;
@@ -127,9 +144,9 @@ function applyLook(item, source, keyBase, seed, into = null) {
 function lookedOnly(item, quality = "preview", seed = 0) {
   const source = sourceOf(item, quality);
   if (!source) return null;
-  if (!hasLook(item.look) || !available()) return source;
+  if (!hasLook(item.look, item) || !available()) return source;
   const look = item.look;
-  const key = JSON.stringify([item.mediaId, retouchKey(item), item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.colour, look.curves, look.grade, look.hsl, look.lut, look.lut && getLut(look.lut.look) ? 1 : 0]);
+  const key = JSON.stringify([masksKey(item), item.mediaId, retouchKey(item), item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.skin, look.colour, look.curves, look.grade, look.hsl, look.lut, look.lut && getLut(look.lut.look) ? 1 : 0]);
   const found = find(quality, key);
   if (found) return found;
   let result;
@@ -174,7 +191,7 @@ function cutOut(item, picture) {
 // exporting); the result goes into one canvas kept per slide and quality
 const frameCanvases = new Map();
 export function lookedFrame(item, frame, quality = "preview", seed = 0) {
-  if (!hasLook(item.look) || !available()) return frame;
+  if (!hasLook(item.look, item) || !available()) return frame;
   const k = `${item.id}@${quality}`;
   if (!frameCanvases.has(k)) frameCanvases.set(k, document.createElement("canvas"));
   try { return applyLook(item, frame, `${item.mediaId}@frame@${quality}`, seed, frameCanvases.get(k)); }

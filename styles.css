@@ -176,7 +176,7 @@ body:not(.phone-on) #phone-screens { opacity: .38; pointer-events: none; }
 
 /* ---- Toast, menus, dialogs */
 .toast {
-  position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); background: var(--solid); color: var(--solid-text);
+  position: fixed; left: 50%; top: 64px; transform: translateX(-50%); background: var(--solid); color: var(--solid-text);
   padding: 8px 14px; border-radius: 7px; display: flex; gap: 12px; align-items: center; z-index: 50; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 .toast button { background: none; border: 0; color: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
@@ -595,6 +595,10 @@ body:not(.phone-on) #phone-screens { opacity: .38; pointer-events: none; }
 .stage-area { background-color: var(--stage); background-image: radial-gradient(#cfcdc6 1px, transparent 1px); background-size: 16px 16px; }
 .stage-tools.canvas-bar { left: 50%; right: auto; bottom: 14px; transform: translateX(-50%); max-width: calc(100% - 24px); gap: 4px; padding: 6px; border: 0; border-radius: 14px;
   background: rgba(253, 252, 250, .94); box-shadow: 0 6px 24px rgba(59, 58, 55, .16), 0 0 0 .5px rgba(59, 58, 55, .12); z-index: 5; white-space: nowrap; }
+/* (narrow windows: the bar scrolls sideways instead of running off; a trackpad / Shift-wheel or a drag scrolls it) */
+.stage-tools.canvas-bar { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; }
+.stage-tools.canvas-bar::-webkit-scrollbar { display: none; }
+.stage-tools.canvas-bar > * { flex: none; }
 .canvas-bar .cb-sep { flex: none; width: 1px; height: 20px; margin: 0 2px; background: var(--line); }
 .canvas-bar .cb-slide { padding: 0 4px; font: 500 14px var(--font); font-variant-numeric: tabular-nums; color: var(--text); }
 .canvas-bar :is(.cb-btn, .cb-icon, .cb-ratio) { height: 30px; border: 0; border-radius: 8px; background-color: transparent; color: var(--text); font: 500 14px var(--font); cursor: pointer; }
@@ -639,6 +643,16 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 .strip-tools .tray button { height: 26px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text); font: 500 13px var(--font); cursor: pointer; white-space: nowrap; }
 .strip-tools .tray button:hover:not(:disabled) { background: rgba(255, 255, 255, .5); }
 .strip-tools .tray button:disabled { color: var(--disabled); cursor: default; }
+.strip-tools .tray button.on { background: var(--raised); color: var(--accent-ink); }
+/* the panorama's slide count, with little up / down arrows */
+.pano-step { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 2px 0 8px; border-radius: 8px; background: var(--raised); font: 600 13px var(--font); color: var(--text); }
+.pano-step[hidden] { display: none; }
+.pano-arrows { display: inline-flex; flex-direction: column; }
+.strip-tools .tray .pano-arrows button { height: 12px; width: 18px; padding: 0; border-radius: 3px; position: relative; }
+.strip-tools .tray .pano-arrows button::before { content: ""; position: absolute; left: 5px; top: 3px; border: 4px solid transparent; }
+#pano-up::before { border-bottom: 5px solid currentColor !important; border-top-width: 0 !important; }
+#pano-down::before { border-top: 5px solid currentColor !important; border-bottom-width: 0 !important; top: 4px !important; }
+.strip-tools .tray .pano-arrows button:disabled { color: var(--disabled); }
 .strip-tools .count { font: 500 13px var(--font); color: var(--muted); }
 .strip-tools .count.full { color: var(--warn); }
 .filmstrip { gap: 10px; padding: 26px 16px 14px; min-height: 0; align-items: flex-end; }
@@ -780,6 +794,8 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 .tool-icons { display: flex; gap: 4px; }
 .tool-icons .ti { flex: 1 1 0; height: 30px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted-strong); cursor: pointer; }
 .tool-icons .ti::before { content: ""; width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat; }
+.shape-icons { flex-wrap: wrap; }
+.shape-icons .ti { flex: 1 1 calc(25% - 4px); }
 .tool-icons .ti:hover:not(:disabled) { color: var(--text); background: var(--tray); }
 .tool-icons .ti.on { color: var(--accent-ink); border-color: var(--accent); background: var(--raised); }
 .tool-icons .ti:disabled { color: var(--disabled); cursor: default; opacity: .6; }
@@ -820,3 +836,18 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 .canvas-bar .cb-ratio { display: inline-flex; align-items: center; gap: 8px; }
 .canvas-bar .cb-ratio .app-icons { margin-left: 0; }
 .menu-item .app-icons { padding-left: 16px; }
+
+/* Masks (Tom, 2026-11-18; masksCard in js/ui/panel.js): Brush · Fade · Round · Subject, then a row per mask (picked = lit)
+   with Invert, On / Off and ✕ at the right, all thin boxes */
+.mask-kinds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.mask-kind, .mask-btn { height: 22px; padding: 0 6px; border: 1px solid var(--btn-line); border-radius: 4px; background: transparent; color: var(--muted);
+  font: 500 var(--t-label, 11px) var(--font, inherit); cursor: pointer; white-space: nowrap; }
+.mask-kind:hover, .mask-btn:hover { color: var(--text); }
+.mask-kind:disabled { opacity: .6; cursor: default; }
+.mask-btn.lit { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-soft); }
+.mask-row { display: grid; grid-template-columns: minmax(0, 1fr) 52px 36px 26px; gap: 4px; align-items: center; padding: 3px 6px; border-radius: 4px; cursor: pointer;
+  box-shadow: inset 0 -1px 0 rgba(128, 128, 128, .2); }
+.mask-row:hover { background: var(--accent-soft); }
+.mask-row.on { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.mask-row.off .mask-name { color: var(--muted); }
+.mask-name { font-size: var(--t-text, 13px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

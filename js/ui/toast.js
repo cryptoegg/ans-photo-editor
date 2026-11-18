@@ -1,7 +1,9 @@
-// A short note at the bottom, e.g. "Warmth applied to 7 slides · Undo"
+// A short note at the top of the canvas, only for what can't be seen (Tom, 2026-11-18: no "done · Undo" notes over the
+// buttons; the change shows, and Undo is in the Editor and on ⌘Z): a file that wouldn't open, where an export went…
 let timer = null;
 
 export function toast(text, action = null) {
+  if (action && action.label === "Undo") return; // (a note that just says what was done)
   const el = document.getElementById("toast");
   el.innerHTML = "";
   el.append(document.createTextNode(text));
