@@ -1,14 +1,16 @@
-// A right-click menu at the pointer: showMenu(e, [{ label, keys, action }]). One at a time; a
-// click anywhere else, Escape or scrolling closes it.
+// A right-click menu at the pointer: showMenu(e, [{ label, keys, extra, on, action }]). One at a time; a
+// click anywhere else, Escape or scrolling closes it. extra: an element after the label (e.g. app icons); on: lit.
+// opts.above: an element the menu opens above (a button in a bar at the bottom).
 let open = null;
 
-export function showMenu(e, entries) {
+export function showMenu(e, entries, opts = {}) {
   e.preventDefault();
   closeMenu();
   const menu = Object.assign(document.createElement("div"), { className: "popover context-menu" });
-  entries.forEach(({ label, keys, action }) => {
-    const row = Object.assign(document.createElement("div"), { className: "menu-item" });
+  entries.forEach(({ label, keys, extra, on, action }) => {
+    const row = Object.assign(document.createElement("div"), { className: "menu-item" + (on ? " on" : "") });
     row.append(Object.assign(document.createElement("span"), { textContent: label }));
+    if (extra) row.append(extra);
     if (keys) row.append(Object.assign(document.createElement("span"), { className: "meta", textContent: keys }));
     row.onclick = () => { closeMenu(); action(); };
     menu.append(row);
@@ -16,8 +18,9 @@ export function showMenu(e, entries) {
   document.body.append(menu);
   // (kept inside the window)
   const r = menu.getBoundingClientRect();
-  menu.style.left = `${Math.min(e.clientX, window.innerWidth - r.width - 6)}px`;
-  menu.style.top = `${Math.min(e.clientY, window.innerHeight - r.height - 6)}px`;
+  const b = opts.above && opts.above.getBoundingClientRect();
+  menu.style.left = `${Math.max(6, Math.min(b ? b.left : e.clientX, window.innerWidth - r.width - 6))}px`;
+  menu.style.top = `${b ? Math.max(6, b.top - r.height - 6) : Math.min(e.clientY, window.innerHeight - r.height - 6)}px`;
   const away = (ev) => { if (ev.type === "keydown" && ev.key !== "Escape") return; if (!menu.contains(ev.target) || ev.type !== "pointerdown") closeMenu(); };
   open = { menu, away };
   setTimeout(() => { if (open && open.menu === menu) { document.addEventListener("pointerdown", away, true); document.addEventListener("keydown", away, true); window.addEventListener("wheel", away, true); } }, 0);

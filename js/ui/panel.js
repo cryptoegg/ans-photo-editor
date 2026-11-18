@@ -289,6 +289,7 @@ function build() {
   buildLayersBox();
   buildToolsBox();
   if (state.tab === "text") document.getElementById("layers-box").hidden = document.getElementById("tools-box").hidden = true;
+  if (state.tab === "filters") document.getElementById("tools-box").hidden = true; // (Tom, 2026-11-18: not needed with the filters)
   const scroll = state.tab === shownTab ? body.scrollTop : 0; // (a different tab starts at its top)
   shownTab = state.tab;
   body.innerHTML = "";

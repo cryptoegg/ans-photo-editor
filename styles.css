@@ -814,3 +814,9 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 #platform-switch button.fit-no.on { opacity: .6; }
 #platform-switch button { position: relative; }
 #platform-switch button.fit-note::after { content: ""; position: absolute; top: 3px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: #e0912a; }
+
+/* The shape menu (Tom, 2026-11-18): each shape with the icons of the apps that take it, as on its button */
+.app-icons { display: inline-flex; gap: 3px; align-items: center; color: var(--muted); margin-left: auto; }
+.canvas-bar .cb-ratio { display: inline-flex; align-items: center; gap: 8px; }
+.canvas-bar .cb-ratio .app-icons { margin-left: 0; }
+.menu-item .app-icons { padding-left: 16px; }

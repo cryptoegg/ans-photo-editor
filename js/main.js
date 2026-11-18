@@ -19,8 +19,17 @@ import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanoram
 import { loadMyFilters } from './filters.js';
 import { initInstall } from './install.js';
 import { STAGES, SHAPES, PLATFORMS, fitFor } from './project.js';
-// The apps a shape suits, for the shape menu: "all three", else their names
-const appsFor = (r) => { const ok = PLATFORMS.filter((x) => STAGES[x.id].ratios.includes(r)).map((x) => x.label); return ok.length === PLATFORMS.length ? "all three" : ok.join(", "); };
+import { showMenu } from './ui/menu.js';
+// The apps a shape suits, as their icons (the top bar's), for the shape menu and its button
+function appIcons(r) {
+  const box = Object.assign(document.createElement("span"), { className: "app-icons" });
+  PLATFORMS.filter((x) => STAGES[x.id].ratios.includes(r)).forEach((x) => {
+    const svg = document.querySelector(`#platform-switch [data-mode="${x.id}"] svg`);
+    if (svg) { const i = svg.cloneNode(true); i.setAttribute("width", "14"); i.setAttribute("height", "14"); box.append(i); }
+  });
+  box.title = PLATFORMS.filter((x) => STAGES[x.id].ratios.includes(r)).map((x) => x.label).join(", ");
+  return box;
+}
 import { initFilmstrip } from './ui/filmstrip.js';
 import { initStage } from './ui/stage.js';
 import { initPanel } from './ui/panel.js';
@@ -91,9 +100,8 @@ function refresh(what) {
     b.classList.toggle("fit-note", fit.shapeOk && fit.notes.length > 0);
     b.title = [`${label}${fit.ok ? (fit.framed ? `: takes ${p.set.ratio}, shown inside its tall screen` : `: takes ${p.set.ratio}`) : ""}`, ...fit.notes].join(" · ");
   });
-  const select = $("ratio-select");
-  if (!select.options.length) select.innerHTML = SHAPES.map((r) => `<option value="${r}">${r} · ${appsFor(r)}</option>`).join("");
-  select.value = p.set.ratio;
+  const shape = $("ratio-select");
+  if (shape.dataset.ratio !== p.set.ratio) { shape.dataset.ratio = p.set.ratio; shape.replaceChildren(p.set.ratio, appIcons(p.set.ratio)); }
   if (state.phonePlatform !== p.stage) state.phonePlatform = p.stage;
   // Feed | Profile in the top bar is faint while editing (as in the Lyric Visualiser)
   document.body.classList.toggle("phone-on", state.view === "phone");
@@ -191,7 +199,8 @@ function wireTopBar() {
   window.addEventListener("resize", () => alignBar());
   // (the iPhone photo reader loaded once the app has settled, so the first iPhone photo doesn't wait for it)
   setTimeout(() => (window.requestIdleCallback || setTimeout)(() => warmHeicReader()), 3000);
-  $("ratio-select").addEventListener("change", (e) => setRatio(e.target.value));
+  // The shape menu: each shape with the icons of the apps that take it
+  $("ratio-select").addEventListener("click", (e) => showMenu(e, SHAPES.map((r) => ({ label: r, extra: appIcons(r), on: r === state.project.set.ratio, action: () => setRatio(r) })), { above: e.currentTarget }));
   // The canvas bar's ‹ ›, the background colour (the slides chosen), Before (held)
   $("btn-slide-prev").onclick = () => stepSlide(-1);
   $("btn-slide-next").onclick = () => stepSlide(1);
