@@ -1,7 +1,7 @@
 // Remove background (Tom, 2026-11-18): a photo layer's cut-out. The model runs in js/cutout-worker.js; what it
 // finds is kept as a mask (a PNG, white with the subject in its alpha) in the media store, and the layer gets
 // `cutout: { maskId, on }`. The photo itself is never changed: switching the cut-out off brings the background
-// back, and undo works as for anything else. The mask goes on after the look (js/looks.js `cutOut`).
+// back, and undo works as for anything else. A mask with `hand: true` was made with the Eraser (js/ui/brush.js), not here. The mask goes on after the look (js/looks.js `cutOut`).
 import { dbPut } from './store.js';
 import { getPicture, loadPicture } from './media.js';
 import { newId, activeSet } from './project.js';
@@ -33,7 +33,7 @@ function getWorker() {
   return worker;
 }
 
-async function findMask(picture) {
+async function findMask(picture, hand = null) {
   const bitmap = await createImageBitmap(picture.full);
   const id = ++asked;
   const done = new Promise((resolve, reject) => waiting.set(id, { resolve, reject }));
@@ -49,6 +49,8 @@ async function findMask(picture) {
   const ctx = big.getContext("2d");
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(small, 0, 0, big.width, big.height);
+  // (a photo already erased by hand: what was erased stays erased)
+  if (hand) { ctx.globalCompositeOperation = "destination-in"; ctx.drawImage(hand.full, 0, 0, big.width, big.height); }
   return big.convertToBlob({ type: "image/png" });
 }
 
@@ -56,13 +58,15 @@ async function findMask(picture) {
 // just switches its cut-out back on.
 export async function removeBackground(layer) {
   if (!layer || cutoutStatus.busy) return;
-  if (layer.cutout && layer.cutout.maskId) { layer.cutout.on = true; changed("project"); commit(); return; }
+  if (layer.cutout && layer.cutout.maskId && !layer.cutout.hand) { layer.cutout.on = true; changed("project"); commit(); return; }
+  // (a mask made with the Eraser, js/ui/brush.js, is kept: the cut-out is laid on it)
+  const hand = layer.cutout && layer.cutout.hand && layer.cutout.on ? (getPicture(layer.cutout.maskId) || await loadPicture(layer.cutout.maskId)) : null;
   const picture = getPicture(layer.mediaId) || await loadPicture(layer.mediaId);
   if (!picture || picture.kind === "video") return;
   Object.assign(cutoutStatus, { busy: true, layer: layer.id, progress: null, error: "" });
   changed("view");
   try {
-    const blob = await findMask(picture);
+    const blob = await findMask(picture, hand);
     const maskId = newId("m");
     await dbPut("media", { id: maskId, projectId: state.project.id, kind: "mask", name: `Cut-out of ${picture.name || "photo"}.png`, type: "image/png", blob, width: picture.width, height: picture.height, added: Date.now() });
     await loadPicture(maskId);
@@ -100,4 +104,4 @@ export function restoreBackground(layer) {
 
 // Every mask a project uses (to load with its photos, save in its folder, export)
 // (and the touch-ups' picture, js/ui/brush.js)
-export const maskIdsOf = (layers) => layers.flatMap((l) => [l && l.cutout && l.cutout.maskId, l && l.retouch && l.retouch.patchId]).filter(Boolean);
+export const maskIdsOf = (layers) => layers.flatMap((l) => [l && l.cutout && l.cutout.maskId, l && l.retouch && l.retouch.patchId, ...((l && l.retouch && l.retouch.tiles) || []).map((t) => t.id)]).filter(Boolean);

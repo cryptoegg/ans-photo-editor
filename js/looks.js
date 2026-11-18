@@ -57,15 +57,23 @@ function sourceOf(item, quality) {
   return touchedUp(item, quality === "full" ? picture.full : picture.preview);
 }
 
-// The photo with its touch-ups (spot heal, js/ui/brush.js) laid over it: a picture the photo's full size, see-through
-// except where it was healed. Kept per picture, patch and change, so it's laid on once.
+// The photo with its touch-ups (the Remove and Clone brushes, js/ui/brush.js) laid over it: item.retouch.tiles, each a
+// small picture of the part one stroke changed ({ id, x, y, w, h } in the photo's own pixels), oldest first. Kept per
+// picture and set of pieces, so it's laid on once. (An early version kept one photo-size picture: patchId.)
+export function retouchKey(item) {
+  const r = item.retouch;
+  if (!r) return "";
+  const ids = [...(r.patchId ? [r.patchId] : []), ...(r.tiles || []).map((t) => t.id)];
+  return ids.map((id) => { const p = getPicture(id); return p ? `${id}@${p.rev || 0}` : `${id}?`; }).join(",");
+}
 const touched = new WeakMap(); // picture -> { key, canvas }
 function touchedUp(item, picture) {
   const r = item.retouch;
-  if (!r || !r.patchId) return picture;
-  const patch = getPicture(r.patchId);
-  if (!patch) { loadPicture(r.patchId).then((m) => { if (m) changed("view"); }); return picture; }
-  const key = `${r.patchId}@${patch.rev || 0}`;
+  if (!r || (!r.patchId && !(r.tiles && r.tiles.length))) return picture;
+  const photo = getPicture(item.mediaId);
+  const missing = [...(r.patchId ? [r.patchId] : []), ...(r.tiles || []).map((t) => t.id)].filter((id) => !getPicture(id));
+  if (missing.length) { Promise.all(missing.map((id) => loadPicture(id))).then(() => changed("view")); return picture; }
+  const key = retouchKey(item);
   const was = touched.get(picture);
   if (was && was.key === key) return was.canvas;
   const canvas = document.createElement("canvas"); // (a new one each change: the cut-out keeps its own per picture)
@@ -74,7 +82,9 @@ function touchedUp(item, picture) {
   const ctx = canvas.getContext("2d");
   ctx.drawImage(picture, 0, 0);
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(patch.full, 0, 0, canvas.width, canvas.height);
+  if (r.patchId) ctx.drawImage(getPicture(r.patchId).full, 0, 0, canvas.width, canvas.height);
+  const k = canvas.width / ((photo && photo.width) || canvas.width);
+  (r.tiles || []).forEach((t) => ctx.drawImage(getPicture(t.id).full, t.x * k, t.y * k, t.w * k, t.h * k));
   touched.set(picture, { key, canvas });
   return canvas;
 }
@@ -109,8 +119,7 @@ function lookedOnly(item, quality = "preview", seed = 0) {
   if (!source) return null;
   if (!hasLook(item.look) || !available()) return source;
   const look = item.look;
-  const r = item.retouch, patch = r && r.patchId && getPicture(r.patchId);
-  const key = JSON.stringify([item.mediaId, patch ? `${r.patchId}@${patch.rev || 0}` : 0, item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.colour]);
+  const key = JSON.stringify([item.mediaId, retouchKey(item), item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.colour]);
   const found = find(quality, key);
   if (found) return found;
   let result;
@@ -163,16 +172,19 @@ export function lookedFrame(item, frame, quality = "preview", seed = 0) {
 }
 
 // A small filter swatch: a little square of the photo with a preset on it (no adjustments)
-export function presetSwatch(mediaId, presetId, seed, side = 120) {
-  const key = JSON.stringify(["swatch", mediaId, presetId, side]);
+// (the photo with its touch-ups: a word taken off shouldn't come back in the tiles)
+export function presetSwatch(item, presetId, seed, side = 120) {
+  const mediaId = item.mediaId;
+  const key = JSON.stringify(["swatch", mediaId, retouchKey(item), presetId, side]);
   const found = find("swatch", key);
   if (found) return found;
   const picture = getPicture(mediaId);
   if (!picture) return null;
+  const source = picture.kind === "video" ? picture.preview : touchedUp(item, picture.preview);
   const square = document.createElement("canvas");
   square.width = square.height = side;
-  const s = Math.min(picture.preview.width, picture.preview.height);
-  square.getContext("2d").drawImage(picture.preview, (picture.preview.width - s) / 2, (picture.preview.height - s) / 2, s, s, 0, 0, side, side);
+  const s = Math.min(source.width, source.height);
+  square.getContext("2d").drawImage(source, (source.width - s) / 2, (source.height - s) / 2, s, s, 0, 0, side, side);
   let result = square;
   if (presetId && available()) {
     const { filter } = stepsOf({ preset: presetId, strength: 100, light: {}, colour: {} }, mix(seed, mediaId));

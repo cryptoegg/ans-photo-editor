@@ -744,10 +744,45 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 .panel .layers-fold .mc-n { font-weight: 400; color: var(--muted); }
 .panel .layers-box.open .layers-fold .fold-arrow::before { transform: translateY(-2px) rotate(45deg); }
 /* (Tools: the same fold, straight under Layers) */
-.panel .tools-box { margin-top: 0; }
+.panel .tools-box { margin-top: 0; max-height: none; overflow: visible; flex: none; }
 .panel .tools-box .cut-row { margin-top: 0; }
 /* (the brushes: two buttons side by side, then Size and Softness, then Erase | Restore) */
 .panel .tool-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
 .panel .tool-row:has(> :only-child) { grid-template-columns: 1fr; }
 .panel .tools-box .pair, .panel .tools-box .segmented { margin-top: 8px; }
 .panel .tools-box .segmented.wide { display: flex; }
+
+/* The brush's right-click panel (js/ui/brush.js showBrushPanel): Size, Hardness, the brush's own switch, at the pointer */
+.brush-pop { position: fixed; z-index: 45; width: 290px; display: flex; flex-direction: column; gap: 10px; padding: 12px; background: var(--raised); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); font: 400 14px var(--font); }
+.brush-pop .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; }
+.brush-pop input[type="range"] { -webkit-appearance: none; appearance: none; height: 18px; margin: 0; background: transparent; cursor: pointer; }
+.brush-pop input[type="range"]::-webkit-slider-runnable-track { height: 5px; border-radius: 3px; background: linear-gradient(var(--accent), var(--accent)) 0 0 / var(--p, 0%) 100% no-repeat, var(--tray); }
+.brush-pop input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6.5px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
+.panel .tools-box .tool-hint { margin-top: 6px; font-size: 12px; color: var(--muted-strong); }
+
+/* The tools in the canvas bar (Tom, 2026-11-18): Move (the usual pointer) · Remove · Clone · Edge brush */
+.canvas-bar .cb-tools { display: inline-flex; gap: 2px; }
+.canvas-bar .cb-tools .cb-icon.on { color: var(--accent-ink); background: var(--raised); box-shadow: 0 0 0 1px var(--accent); }
+[data-tool=""] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M6 3l12 7.5-5.5 1.5-2.5 5.5z'/><path d='M13 12l4.5 6'/></svg>"); }
+[data-tool="remove"] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 20l10-10'/><path d='M12.5 8.5l3 3'/><path d='M18 3v4M16 5h4'/><path d='M19.5 11v3M18 12.5h3'/><path d='M10 3.5v3M8.5 5h3'/></svg>"); }
+[data-tool="clone"] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M10 3h4v5.5l4 2.5v3H6v-3l4-2.5z'/><path d='M5 18h14v3H5z'/></svg>"); }
+[data-tool="erase"] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M15 4l5 5-9.5 9.5H6l-3-3z'/><path d='M9.5 9.5l5 5'/><path d='M13 20h8'/></svg>"); }
+[data-tool="edge"] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M19.5 3.5l1 1L12 13l-1.5-1.5z'/><path d='M10 12.5c-2.5 0-4 1.5-4 4 0 1.5-1 2.5-2.5 3 3.5 1.5 8 .5 8.5-3 .2-1.5-.5-3-2-4z'/></svg>"); }
+.brush-pop .segmented.small button { height: 26px; padding: 0 6px; font-size: 12px; white-space: nowrap; flex: 1 1 auto; }
+.brush-pop .segmented button:disabled { color: var(--disabled); cursor: default; background: none; }
+.brush-pop-menu { display: flex; flex-direction: column; margin: -2px -4px -4px; }
+
+/* Hover boxes (js/ui/tips.js): what a thing is, when the pointer rests on it */
+.tip-box { position: fixed; z-index: 60; max-width: 240px; padding: 5px 8px; border-radius: 4px; background: #2b2a28; color: #f5f3ee; font: 400 12px/1.35 var(--font); pointer-events: none; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }
+.tip-box[hidden] { display: none; }
+
+/* Tool icons in the Tools fold and the right-click panel: a thin box, 4px corners, the icon faint until picked or hovered */
+.tool-icons { display: flex; gap: 4px; }
+.tool-icons .ti { flex: 1 1 0; height: 30px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted-strong); cursor: pointer; }
+.tool-icons .ti::before { content: ""; width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat; }
+.tool-icons .ti:hover:not(:disabled) { color: var(--text); background: var(--tray); }
+.tool-icons .ti.on { color: var(--accent-ink); border-color: var(--accent); background: var(--raised); }
+.tool-icons .ti:disabled { color: var(--disabled); cursor: default; opacity: .6; }
+.tool-icons .ti.busy { position: relative; }
+.tool-icons .ti .ti-note { position: absolute; bottom: -2px; right: 2px; font-size: 9px; color: var(--accent-ink); }
+.panel .tools-box .tool-icons { margin-top: 8px; }

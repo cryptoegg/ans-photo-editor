@@ -3,7 +3,7 @@
 // outlined in the filmstrip; Crop and Text always change the one on the canvas. Changing
 // several slides at once says so in a note with Undo.
 import { removeBackground, restoreBackground, cutoutStatus } from '../cutout.js';
-import { brush, setBrush, pickTool, clearTouchUps } from './brush.js';
+import { brush, setBrush, clearTouchUps, brushStatus, cloneHasSource, sizeToSlider, sliderToSize, toolIcons } from './brush.js';
 import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, select, selectAll, onChange, items } from '../state.js';
 import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, PLATFORMS, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
 import { PRESETS } from '../effects/presets.js';
@@ -133,7 +133,7 @@ function buildLayersBox() {
       if (vid && i === 0) return;
       state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view");
       const entries = [{ label: "Duplicate", keys: "⌘D", action: () => duplicateLayer(layer) }];
-      if (!(vid && i === 0)) entries.push(layer.cutout && layer.cutout.on
+      if (!(vid && i === 0)) entries.push(layer.cutout && layer.cutout.on && !layer.cutout.hand
         ? { label: "Bring background back", action: () => restoreBackground(layer) }
         : { label: "Remove background", action: () => removeBackground(layer) });
       if (all.length > 1) entries.push({ label: "Remove from slide", action: () => removeLayer(layer) });
@@ -168,7 +168,7 @@ function buildLayersBox() {
 }
 
 // ---- Tools (Tom, 2026-11-18): everything that works on the picked photo itself, in one fold under Layers:
-// Remove background now; the touch-up brushes (edge, spot heal, remove object) and skin smoothing next
+// Remove background, then the brushes: Remove, Clone, Edge brush
 function buildToolsBox() {
   const box = document.getElementById("tools-box");
   const slide = currentItem();
@@ -184,35 +184,37 @@ function buildToolsBox() {
   if (!open) return;
   // Remove background (js/cutout.js): the picked photo's cut-out, on / off; the model downloads the first time
   box.append(cutoutRow(picked));
-  // The brushes (js/ui/brush.js): picked here, painted on the canvas; Esc or a second click puts one down
+  // The brushes (js/ui/brush.js): picked here, painted on the canvas; Esc or a second click puts one down.
+  // Right-click the photo with one in hand for the same settings at the pointer.
   const cutOn = !!(picked.cutout && picked.cutout.on);
   if (state.tool === "edge" && !cutOn) state.tool = null;
-  const toolBtn = (tool, label, title, disabled = false) => {
-    const b = button(label, () => pickTool(tool), "btn small cut-btn" + (state.tool === tool ? " on" : ""));
-    b.title = title;
-    b.disabled = disabled;
-    return b;
-  };
-  box.append(el("div", { className: "tool-row" },
-    toolBtn("edge", "Edge brush", cutOn ? "Tidy the cut-out's edge: Erase takes more away, Restore brings the photo back" : "Remove the background first", !cutOn),
-    toolBtn("heal", "Spot heal", "Brush over a spot, a mark or dust: it's filled from the photo around it")));
+  if (state.tool === "heal") state.tool = "remove";
+  const icons = toolIcons("ti");
+  icons.className = "tool-icons";
+  box.append(icons);
   if (state.tool) {
-    const size = el("label", { className: "field" }, el("span", { className: "field-head" }, el("span", { textContent: "Size" }), el("span", { className: "value", textContent: String(brush.size) })),
-      el("input", { type: "range", min: 4, max: 300, value: brush.size, title: "[ and ] change it too", oninput: (e) => { brush.size = Number(e.target.value); e.target.previousSibling.lastChild.textContent = e.target.value; fillTrack(e.target); }, onchange: (e) => setBrush("size", Number(e.target.value)) }));
-    const soft = el("label", { className: "field" }, el("span", { className: "field-head" }, el("span", { textContent: "Softness" }), el("span", { className: "value", textContent: String(brush.softness) })),
-      el("input", { type: "range", min: 0, max: 100, value: brush.softness, oninput: (e) => { brush.softness = Number(e.target.value); e.target.previousSibling.lastChild.textContent = e.target.value; fillTrack(e.target); }, onchange: (e) => setBrush("softness", Number(e.target.value)) }));
-    box.append(el("div", { className: "pair" }, size, soft));
-    if (state.tool === "edge") {
+    const slider = (label, key, min, max, title = "", toV = (x) => x, fromV = (x) => x) => {
+      const value = el("span", { className: "value", textContent: String(brush[key]) });
+      const input = el("input", { type: "range", min, max, value: toV(brush[key]), title, oninput: (e) => { brush[key] = fromV(Number(e.target.value)); value.textContent = String(brush[key]); fillTrack(e.target); changed("look"); }, onchange: () => setBrush(key, brush[key]) });
+      fillTrack(input);
+      return el("label", { className: "field" }, el("span", { className: "field-head" }, el("span", { textContent: label }), value), input);
+    };
+    box.append(el("div", { className: "pair" }, slider("Size", "size", 0, 1000, "[ ]", sizeToSlider, sliderToSize), slider("Hardness", "hardness", 0, 100, "Shift [ ]")));
+    if (state.tool === "edge" || state.tool === "clone") {
       const seg = el("div", { className: "segmented wide" });
-      [["erase", "Erase"], ["restore", "Restore"]].forEach(([v, l]) => seg.append(el("button", { textContent: l, className: brush.edge === v ? "on" : "", onclick: () => setBrush("edge", v) })));
+      const opts = state.tool === "edge" ? [["edge", "erase", "Erase"], ["edge", "restore", "Restore"]] : [["blend", true, "Blend"], ["blend", false, "Exact copy"]];
+      opts.forEach(([key, v, l]) => seg.append(el("button", { textContent: l, className: brush[key] === v ? "on" : "", onclick: () => setBrush(key, v) })));
       box.append(seg);
     }
+    const hint = brushStatus.hint || (state.tool === "clone" && !cloneHasSource(picked) ? "Alt-click the photo where to copy from" : "");
+    if (hint) box.append(el("div", { className: "tool-hint", textContent: hint }));
   }
-  if (picked.retouch) box.append(el("div", { className: "tool-row" }, button("Clear spot heals", () => clearTouchUps(picked), "btn small cut-btn")));
+  const touched = picked.retouch && (picked.retouch.patchId || (picked.retouch.tiles || []).length);
+  if (touched) box.append(el("div", { className: "tool-row" }, button("Clear touch-ups", () => clearTouchUps(picked), "btn small cut-btn")));
 }
 
 function cutoutRow(layer) {
-  const on = !!(layer.cutout && layer.cutout.on);
+  const on = !!(layer.cutout && layer.cutout.on && !layer.cutout.hand); // (a mask made with the Eraser isn't a cut-out)
   const busy = cutoutStatus.busy;
   const label = busy && cutoutStatus.layer === layer.id
     ? (cutoutStatus.progress !== null && cutoutStatus.progress < 1 ? `Downloading the cut-out model ${Math.round(cutoutStatus.progress * 100)}%` : "Removing background…")
@@ -466,7 +468,7 @@ function buildFilters() {
     b.append(holder, el("span", { textContent: filter ? filter.name : "Original" }));
     if (on && filter) b.append(el("span", { className: "swatch-edit", textContent: "Edit" }));
     queue.push(() => {
-      const c = presetSwatch(item.mediaId, id, state.project.seed, 132);
+      const c = presetSwatch(item, id, state.project.seed, 132);
       if (c) { const shown = el("canvas", { width: c.width, height: c.height }); shown.getContext("2d").drawImage(c, 0, 0); holder.replaceWith(shown); }
     });
     b.onclick = () => {

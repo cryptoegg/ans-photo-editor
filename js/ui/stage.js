@@ -16,11 +16,10 @@ import { state, changed, commit, currentItem, currentLayer, onChange, items } fr
 import { activeSet, aspectOf, isVideo, layersOf, isGrid } from '../project.js';
 import { drawItem, drawPlaced, layoutText, textAt, photoBox, onBox, textBox, turn, layerFrame, cellRects } from '../render.js';
 import { lookedPicture, lookedFrame, lookedWhole } from '../looks.js';
-import { brushReady, brushDown, brushMove, brushUp, brushLeave, drawBrush } from './brush.js';
+import { brushReady, brushDown, brushMove, brushUp, brushLeave, drawBrush, showBrushPanel } from './brush.js';
 import { initVideoBar, videoFrame } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
 import { uiColour, onSkinChange } from './skin.js';
-import { showMenu } from './menu.js';
 import { duplicateLayer, removeLayer } from '../actions.js';
 
 const PREFS_KEY = "ans_photo_guides";
@@ -261,18 +260,21 @@ function down(e) {
   startDrag(pickedBox(item, f), "inside", p, f);
 }
 
-// Right-click a photo: it's picked, with Duplicate / Remove
+// Right-click a photo: it's picked, and a panel at the pointer has the tools (Move · Remove · Clone · Edge brush) and
+// under them the brush's settings, or with no brush in hand Duplicate / Remove (js/ui/brush.js showBrushPanel)
 function photoMenu(e) {
+  e.preventDefault();
+  if (e.ctrlKey && e.altKey) return; // (Control + Option drag sizes the brush)
   const item = currentItem();
   if (!item || !getPicture(item.mediaId) || item.span > 1) return;
   const f = frameRect(item);
-  const hit = layerAt(item, f, local(e, f));
-  if (!hit || !hit.layer || (hit.layer === item && isVideo(item))) return; // (a video slide's video: nothing to copy)
-  pick("photo", null, hit.layer);
-  changed("view");
-  const entries = [{ label: "Duplicate", keys: "⌘D", action: () => duplicateLayer(hit.layer) }];
-  if (layersOf(item).length > 1) entries.push({ label: "Remove from slide", action: () => removeLayer(hit.layer) });
-  showMenu(e, entries);
+  const hit = brushReady() ? { layer: currentLayer() } : layerAt(item, f, local(e, f));
+  if (!hit || !hit.layer) return;
+  if (!brushReady()) { pick("photo", null, hit.layer); changed("view"); }
+  const entries = [];
+  if (!(hit.layer === item && isVideo(item))) entries.push({ label: "Duplicate", keys: "⌘D", action: () => duplicateLayer(hit.layer) }); // (a video slide's video: nothing to copy)
+  if (layersOf(item).length > 1 && !(hit.layer === item && isVideo(item))) entries.push({ label: "Remove from slide", action: () => removeLayer(hit.layer) });
+  showBrushPanel(e, entries);
 }
 
 function startDrag(picked, zone, p, f) {

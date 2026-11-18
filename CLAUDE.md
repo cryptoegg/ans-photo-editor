@@ -69,12 +69,31 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   isn't good enough, and imgly / ISNet (AGPL) and BRIA RMBG (non-commercial) aren't allowed on a paid site. Later: an
   edge brush, and the desktop app shipping the model inside.
 - **Tools** (Tom, 2026-11-18): a fold under Layers (`buildToolsBox` in panel.js) for the picked photo: Remove
-  background, then the brushes (`js/ui/brush.js`, painted on the canvas through stage.js; `state.tool`; Size and
-  Softness in localStorage; [ ] size, Esc puts it down): **Edge brush** (Erase / Restore the cut-out's mask; the whole
-  photo shows faintly meanwhile) and **Spot heal** (on letting go: the best-matching patch nearby copied in, its colour
-  blended into the edge, like a healing brush; good on skin and plain surfaces, not on lettering: that's Remove object,
-  still to come). Touch-ups are a picture the photo's size laid over it before the look (`item.retouch = { patchId }`,
-  `touchedUp` in looks.js); every stroke saves a new mask / patch picture, so undo just points back.
+  background, then three brushes (`js/ui/brush.js`, painted on the canvas through stage.js; `state.tool`), covering
+  Photoshop's healing tools with no mode pickers:
+  - **Remove**: paint over anything; on letting go it's rebuilt. Small strokes: Content-Aware (PatchMatch, onion-peel
+    start, `js/fill-worker.js`, no AI). Strokes over a tenth of the photo across: the AI fill, LaMa (Carve/LaMa-ONNX,
+    Apache-2.0, 208 MB, downloaded the first time with progress on the button, kept in Cache "ans-models";
+    `js/lama-worker.js`, onnxruntime-web 1.31.1 on WebGPU (about 0.3 s; 1.22 and older fail on its Add layer), else
+    the processor (about 12 s)); if it can't run, the quick fill instead.
+  - **Clone**: Alt-click the source, then paint (Aligned). Blend (default, like the Healing Brush: the edge's colour
+    difference spread over the piece) or Exact copy (Clone Stamp).
+  - **Eraser**: wipes the photo away (to the slide's background or the layers under it). It paints on the layer's
+    mask: the cut-out's if one is on, else a new mask marked `cutout.hand` (Remove background then still runs the
+    model and keeps what was erased; the Remove background button doesn't count a hand mask as a cut-out).
+  - **Edge brush**: Erase / Restore the mask (a cut-out's or the Eraser's); the whole photo shows faintly meanwhile.
+  The tools are icons (`TOOLS_LIST` / `toolIcons` in brush.js: Move (the usual pointer: no brush) · Remove (wand) ·
+  Clone (stamp) · Eraser · Edge brush), the same in the canvas bar (first thing on it), the Tools fold (the settings of
+  the one picked under them) and the right-click panel on a photo (`showBrushPanel`: the tools, then the brush's
+  settings, or with no brush Duplicate / Remove from slide).
+- **Hover boxes** (Tom, 2026-11-18): `js/ui/tips.js` shows any `title` as a small dark box after a short wait (the
+  title moves to `data-tip`, so the browser's own doesn't show too). Give every icon a title.
+  Settings: Size (a gradual scale, 4 to 500 px, `sizeToSlider`) and Hardness (localStorage; pen pressure sizes the
+  dab). As in Photoshop: [ ] size, Shift [ ] hardness, Control + Option drag
+  = size (left / right) and hardness (up / down), Esc puts it down. Remove and Clone strokes are small pictures of just
+  the part changed (`item.retouch = { tiles: [{ id, x, y, w, h }] }` in photo pixels, media kind "touch-up"; old
+  `patchId` still drawn), laid over the photo before the look (`touchedUp` in looks.js); each stroke adds a tile, so
+  undo just points back. "Clear touch-ups" takes them all off.
 - **Looks**: `js/looks.js` runs Light / Colour then the filter's effect chain on the graphics
   card (`js/effects/gl.js`) and keeps the result, so moving / zooming never re-runs it.
 - **Filters**: `js/filters.js`: the presets plus "Your filters" (saved in IndexedDB meta, every
@@ -153,5 +172,5 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 ## Keys
 
 ← → slides (or the phone) · ⇧-click / ⌘-click select · ⌘A all · ⌘C / ⌘V copy / paste a look ·
-⌘D duplicate (the picked photo, else the slides) · hold \ before / after · ⌘Z / ⇧⌘Z · [ ] brush size · Esc puts the brush down · Delete removes the picked text · ⌘-scroll
+⌘D duplicate (the picked photo, else the slides) · hold \ before / after · ⌘Z / ⇧⌘Z · [ ] brush size · Shift [ ] hardness · right-click (brush in hand) brush panel · Alt-click Clone's source · Esc puts the brush down · Delete removes the picked text · ⌘-scroll
 zooms the view.

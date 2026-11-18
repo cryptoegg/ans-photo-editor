@@ -8,6 +8,8 @@
 //   js/ui/…         filmstrip, stage (Edit view), panel, phone (Phone view), dialogs
 //   js/effects/…    the effects and filters, copied from the lyric video app
 import { maskIdsOf } from './cutout.js';
+import { toolIcons } from './ui/brush.js';
+import './ui/tips.js';
 import { state, changed, onChange, commit, undo, redo, canUndo, canRedo, openProject, currentItem, select, selectAll, items, selectedItems } from './state.js';
 import { newProject, slides as slideList, firstSlideOf, allLists, slideCount } from './project.js';
 import { saveProject, loadProject } from './store.js';
@@ -120,6 +122,8 @@ function showCanvasBar() {
   const back = backs[0] || "#ffffff";
   $("bg-pick").style.setProperty("--bg-now", backs.every((b) => b === back) ? back : "conic-gradient(#fff 0 25%, #3b3a37 0 50%, #fff 0 75%, #3b3a37 0)");
   if (document.activeElement !== $("bg-colour")) $("bg-colour").value = back;
+  // The tools (Tom, 2026-11-18): Move (the usual pointer) or a brush, the one in hand lit
+  toolIcons("cb-icon", $("cb-tools"));
 }
 
 // The project's name is the window's title (Tom, 2026-11-17, as the Lyric Visualiser): "● Trial — Photo Editor",
