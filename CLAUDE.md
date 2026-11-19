@@ -120,8 +120,9 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   card (`js/effects/gl.js`) and keeps the result, so moving / zooming never re-runs it.
 - **Filters**: `js/filters.js`: the presets plus "Your filters" (saved in IndexedDB meta, every
   project). Picking one gives the slide its own copy (`look.chain`). Tiles: Filters · Adjust ·
-  Tools · Crop · Captions (words on the slide; `state.tab` "text"). Filter tiles show their names, grouped in folds; Strength floats at the top of Filters
-  and Adjust (only with a filter on). The presets row (Presets… menu, Save Preset, the dice) puts on
+  Tools · Crop · Captions (words on the slide; `state.tab` "text"). Filter tiles show their names, all in one grid (Original, Your filters, then the ready-made ones;
+  no folds); a ☆ on each (on hover) stars it, and All | ★ Starred over the grid shows just the starred ones (localStorage
+  `ans_photo_fav_filters` / `ans_photo_fav_only`). Strength floats at the top of Filters only (with a filter on). The presets row (Presets… menu, Save Preset, the dice) puts on
   any filter, saves the slide's look to Your filters (`saveThisFilter`), or a random one. Every setting is in **Adjust**
   (the picked tile's Edit badge goes there): Light ▸, Colour ▸, the filter's own Filter light ▸ /
   Filter colour ▸ (plus Filter curves / per colour / LUT / wheels when its chain has them), Effects ▸ (one fold opening to every effect, listed like the
@@ -163,7 +164,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   click a picture = its first slide), `js/ui/stage.js` (Edit view, behaving like the lyric app's mediaFrame: click a photo
   or text to pick it; dashed frame + corner squares on hover; drag inside = move, corner = size
   around the middle, just outside a corner or the ↻ knob = turn (Shift 15°, settles on quarter
-  turns, double-click ↻ = upright); scroll / pinch zooms the photo; faint photo past the edges;
+  turns, double-click ↻ = upright); pinch anywhere zooms the view toward the pointer, never the photo, and zoomed in a two-finger scroll moves around, Fit resets; hold Space and drag (the hand, as in Photoshop; a tap of Space still plays a video) or drag the grey round the slide to move the view (Tom, 2026-11-18; `viewPan` in stage.js); faint photo past the edges;
   guides and Canva-style soft snapping, ⌘ = free; the faint photo past the edges shows only
   while the photo is picked; pinch / ⌘-scroll over the desk zooms the view; the slide on a dotted desk
   with a soft shadow; under it the floating canvas bar: ‹ Slide 3 of 7 ›, the shape menu, − Fit +,

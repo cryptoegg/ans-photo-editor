@@ -13,15 +13,24 @@ let time = 0;          // the playhead, in seconds into the clip
 let shownFor = null;   // the item id the bar was built for
 let drag = null;
 const frameCanvas = document.createElement("canvas");
+let spaceUsed = false;
+export const spaceMovedView = () => { spaceUsed = true; }; // (Space held to drag the view: no play / pause)
 
 export function initVideoBar(onFrame) {
   redraw = onFrame;
   bar = document.getElementById("video-bar");
   onChange(() => refresh());
+  // Space plays / pauses on letting go, unless it was held to move the view (js/ui/stage.js: Space + drag)
+  const typing = (e) => e.target.closest && e.target.closest("input, textarea, select, button, [contenteditable]");
   document.addEventListener("keydown", (e) => {
-    if (e.key !== " " || !bar || bar.hidden || (e.target.closest && e.target.closest("input, textarea, select, button, [contenteditable]"))) return;
+    if (e.key !== " " || !bar || bar.hidden || typing(e)) return;
     e.preventDefault();
-    toggle();
+  });
+  document.addEventListener("keyup", (e) => {
+    if (e.key !== " " || !bar || bar.hidden || typing(e)) return;
+    const used = spaceUsed;
+    spaceUsed = false;
+    if (!used) toggle();
   });
   refresh();
 }

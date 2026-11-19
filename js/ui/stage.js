@@ -6,7 +6,7 @@
 // corner (or the ↻ under it) to turn it (Shift: 15° steps; it settles on upright and the
 // quarter turns, ⌘ = free; double-click ↻: upright). Click the grey to let go (then only the slide
 // shows). The part of a picked photo past the slide's edges shows faintly (never exported).
-// Scroll / pinch over the photo zooms it; pinch / ⌘-scroll over the grey zooms the view.
+// Pinch / ⌘-scroll anywhere zooms the view (never the photo: its corners size it).
 //
 // Guides (▦: thirds → grid → fine grid → off, per square) and snapping (🧲, on by default): a
 // moved photo or text clicks onto the centre lines, the frame's edges, the guides and a
@@ -18,7 +18,7 @@ import { drawItem, drawPlaced, layoutText, textAt, photoBox, shownBox, trimOf, i
 import { lookedPicture, lookedFrame, lookedWhole } from '../looks.js';
 import { brushReady, brushDown, brushMove, brushUp, brushLeave, drawBrush, showBrushPanel } from './brush.js';
 import { maskDown, maskMove, maskUp, drawMasks } from './masks.js';
-import { initVideoBar, videoFrame } from './videoBar.js';
+import { initVideoBar, videoFrame, spaceMovedView } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
 import { uiColour, onSkinChange } from './skin.js';
 import { duplicateLayer, removeLayer } from '../actions.js';
@@ -35,10 +35,12 @@ const ROTATE_CURSOR = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 let canvas, ctx, area;
 let prefs = { grid: 1, magnet: true };
 let viewZoom = 1;       // 1 = fit
+let viewPan = { x: 0, y: 0 };
+let spaceHeld = false;  // (Space held: the hand, dragging moves the view, as in Photoshop)
+let panning = null;     // { x, y, pan, moved } while the view is dragged // (the view moved, CSS pixels: zoomed toward the pointer, two-finger scrolled)
 let lit = [];           // lines something is snapped to: [{ axis, at }] (frame pixels)
 let drag = null;
 let hovering = false;   // the pointer is over the picked thing's frame (so its frame shows)
-let wheelTimer = null;
 
 export function initStage() {
   canvas = document.getElementById("stage-canvas");
@@ -65,7 +67,7 @@ export function initStage() {
   showPrefs();
   document.getElementById("btn-zoom-in").onclick = () => { viewZoom = Math.min(4, viewZoom * 1.25); draw(); };
   document.getElementById("btn-zoom-out").onclick = () => { viewZoom = Math.max(0.3, viewZoom / 1.25); draw(); };
-  document.getElementById("btn-zoom-fit").onclick = () => { viewZoom = 1; draw(); };
+  document.getElementById("btn-zoom-fit").onclick = () => { viewZoom = 1; viewPan = { x: 0, y: 0 }; draw(); };
 
   initVideoBar(draw);
   canvas.addEventListener("pointerdown", down);
@@ -75,6 +77,18 @@ export function initStage() {
   canvas.addEventListener("pointercancel", up);
   canvas.addEventListener("pointerleave", () => { brushLeave(); canvas.style.cursor = ""; if (!drag && hovering) { hovering = false; draw(); } });
   canvas.addEventListener("wheel", wheel, { passive: false });
+  // Hold Space: the hand (drag moves the view). A tap of Space still plays a video (js/ui/videoBar.js).
+  const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "") || (e.target && e.target.isContentEditable);
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== " " || typing(e) || state.view !== "edit") return;
+    e.preventDefault();
+    if (!spaceHeld) { spaceHeld = true; if (!drag) canvas.style.cursor = "grab"; }
+  });
+  document.addEventListener("keyup", (e) => {
+    if (e.key !== " ") return;
+    spaceHeld = false;
+    if (!panning) canvas.style.cursor = "";
+  });
   canvas.addEventListener("dblclick", (e) => {
     const item = currentItem();
     if (!item) return;
@@ -97,7 +111,7 @@ function frameRect(item) {
   const top = 24, room = H - below - top;
   const fit = Math.min((W - PAD * 2) / (span * a), room - 12);
   const h = Math.max(40, fit * viewZoom), w = h * a * span;
-  return { x: Math.round((W - w) / 2), y: Math.round(top + (room - h) / 2), w, h, pw: h * a };
+  return { x: Math.round((W - w) / 2 + viewPan.x), y: Math.round(top + (room - h) / 2 + viewPan.y), w, h, pw: h * a };
 }
 
 // ---- What's picked: the photo, a text, or nothing
@@ -254,6 +268,7 @@ function down(e) {
   const f = frameRect(item);
   const p = local(e, f);
   canvas.setPointerCapture(e.pointerId);
+  if (spaceHeld && e.button === 0) { startPan(e); return; } // (the hand: Space + drag moves the view)
   if (maskDown(e, f, p)) return; // (a mask's handle: it moves, js/ui/masks.js)
   if (brushDown(e, f, p)) return; // (a touch-up brush in hand: it paints, js/ui/brush.js)
   const picked = pickedBox(item, f);
@@ -274,9 +289,19 @@ function down(e) {
     if (!state.photoPicked || currentLayer() !== hit.layer) { pick("photo", null, hit.layer); changed("view"); }
   } else {
     if (state.textId || state.photoPicked) { pick(null); changed("view"); }
+    // the grey round the slide (or an empty part of it), dragged: the view moves (zoomed, or moved already)
+    if (e.button === 0 && (viewZoom !== 1 || viewPan.x || viewPan.y)) startPan(e);
     return;
   }
   startDrag(pickedBox(item, f), "inside", p, f);
+}
+
+// (the view's zoom and move, for checking)
+export const viewNow = () => ({ zoom: viewZoom, pan: { ...viewPan } });
+
+function startPan(e) {
+  panning = { x: e.clientX, y: e.clientY, pan: { ...viewPan }, moved: false };
+  canvas.style.cursor = "grabbing";
 }
 
 // Right-click a photo: it's picked, and a panel at the pointer has the tools (Move · Remove · Clone · Edge brush) and
@@ -306,6 +331,14 @@ function startDrag(picked, zone, p, f) {
 }
 
 function move(e) {
+  if (panning) {
+    const dx = e.clientX - panning.x, dy = e.clientY - panning.y;
+    if (Math.abs(dx) + Math.abs(dy) > 2 && !panning.moved) { panning.moved = true; if (spaceHeld) spaceMovedView(); }
+    viewPan = { x: panning.pan.x + dx, y: panning.pan.y + dy };
+    draw();
+    return;
+  }
+  if (spaceHeld) { canvas.style.cursor = "grab"; return; }
   if (!drag) { const item = currentItem(); if (item) { const f = frameRect(item), over = maskMove(e, f, local(e, f)); if (over) { canvas.style.cursor = over; return; } } }
   if (!drag && brushReady()) { const item = currentItem(), f = frameRect(item); canvas.style.cursor = "none"; brushMove(e, f, local(e, f)); return; }
   if (!drag) { hover(e); return; }
@@ -370,6 +403,7 @@ function move(e) {
 }
 
 function up() {
+  if (panning) { panning = null; canvas.style.cursor = spaceHeld ? "grab" : ""; return; }
   if (maskUp()) return;
   if (!drag) { brushUp(); return; }
   const moved = drag.moved;
@@ -400,35 +434,26 @@ function hover(e) {
   }
 }
 
-// Scroll / pinch over the photo: zoom the photo around the pointer. Pinch (or ⌘-scroll) over the
-// grey around the slide: zoom the view.
+// Pinch (or ⌘-scroll) anywhere over the canvas zooms the view toward the pointer, as in the Lyric Visualiser (Tom,
+// 2026-11-18: never the photo; its corner handles size it). Zoomed in, a two-finger scroll moves around. Fit resets both.
 function wheel(e) {
   const item = currentItem();
   if (!item || !getPicture(item.mediaId)) return;
-  const f = frameRect(item);
-  const p = local(e, f);
-  const hit = layerAt(item, f, p);
-  const onPhoto = !!(hit && hit.layer);
-  if (e.metaKey || !onPhoto) {
-    if (!e.metaKey && !e.ctrlKey) return; // (a plain scroll over the grey does nothing)
-    e.preventDefault();
-    viewZoom = Math.min(4, Math.max(0.3, viewZoom * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002))));
+  e.preventDefault();
+  if (!e.metaKey && !e.ctrlKey) {
+    if (viewZoom <= 1 && !viewPan.x && !viewPan.y) return; // (nothing to move around)
+    viewPan = { x: viewPan.x - e.deltaX, y: viewPan.y - e.deltaY };
     draw();
     return;
   }
-  e.preventDefault();
-  const rect = layerFrame(item, hit.layer, f.w, f.h);
-  const crop = hit.layer.crop;
-  const before = crop.zoom;
-  crop.zoom = Math.min(12, Math.max(0.03, before * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025))));
-  const k = crop.zoom / before;
-  const px = p.x - rect.x, py = p.y - rect.y;
-  const cx = rect.w / 2 + crop.x * rect.w, cy = rect.h / 2 + crop.y * rect.h;
-  crop.x = (px + (cx - px) * k - rect.w / 2) / rect.w;
-  crop.y = (py + (cy - py) * k - rect.h / 2) / rect.h;
-  changed("look");
-  clearTimeout(wheelTimer);
-  wheelTimer = setTimeout(commit, 350);
+  const r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+  const before = frameRect(item), u = (px - before.x) / before.w, v = (py - before.y) / before.h;
+  viewZoom = Math.min(6, Math.max(0.3, viewZoom * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002))));
+  if (viewZoom <= 1.001 && viewZoom >= 0.999) viewZoom = 1;
+  const after = frameRect(item); // (the same point of the slide stays under the pointer)
+  viewPan = { x: viewPan.x + px - (after.x + u * after.w), y: viewPan.y + py - (after.y + v * after.h) };
+  if (viewZoom <= 1) viewPan = { x: viewPan.x * 0.8, y: viewPan.y * 0.8 }; // (zoomed back out: it drifts home to the middle)
+  draw();
 }
 
 // ---- Drawing

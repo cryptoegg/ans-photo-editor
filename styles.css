@@ -853,3 +853,10 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 .mask-row.on { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
 .mask-row.off .mask-name { color: var(--muted); }
 .mask-name { font-size: var(--t-text, 13px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Starred filters: ☆ shows on hover, ★ stays once starred; All | Starred over the grid */
+.panel .filter-show { margin: 0 0 10px; }
+.panel .swatch-star { position: absolute; top: 4px; right: 4px; margin: 0 !important; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px; background: rgba(0, 0, 0, .45); color: #fff; font-size: 12px; opacity: 0; transition: opacity .12s; }
+.panel .swatch:hover .swatch-star, .panel .swatch-star.on { opacity: 1; }
+.panel .swatch-star.on { color: #ffd23f; }
+.panel .swatch-star:hover { background: rgba(0, 0, 0, .7); }

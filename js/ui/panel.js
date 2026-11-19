@@ -414,6 +414,17 @@ async function saveThisFilter(chosen) {
 
 let swatchJob = 0;
 
+// Starred filters (kept in this browser) and whether only they show
+const STAR_KEY = "ans_photo_fav_filters", ONLY_KEY = "ans_photo_fav_only";
+function starredFilters() { try { return new Set(JSON.parse(localStorage.getItem(STAR_KEY) || "[]")); } catch { return new Set(); } }
+function toggleStar(id) {
+  const s = starredFilters();
+  if (s.has(id)) s.delete(id); else s.add(id);
+  try { localStorage.setItem(STAR_KEY, JSON.stringify([...s])); } catch {}
+}
+function showStarredOnly() { try { return localStorage.getItem(ONLY_KEY) === "1"; } catch { return false; } }
+function setShowStarredOnly(on) { try { localStorage.setItem(ONLY_KEY, on ? "1" : "0"); } catch {} }
+
 // Strength, floating at the top (only once a filter is on: filters work like presets, so no name)
 function strengthBar(chosen) {
   const withFilter = chosen.filter((i) => i.look.preset);
@@ -467,19 +478,30 @@ function buildFilters() {
     };
     return b;
   };
-  const groups = [];
-  if (myFilters().length) groups.push({ name: "Your filters", list: myFilters() });
-  groups.push(...filterGroups());
-  groups.forEach((group, g) => {
-    // (each group folds; Original sits in the first, top left)
-    const card = foldCard({ key: `filters:${group.name}`, name: group.name, build: (inner) => {
-      const grid = el("div", { className: "swatches" });
-      if (g === 0) grid.append(tile(null));
-      group.list.forEach((f) => grid.append(tile(f)));
-      inner.append(grid);
-    } });
-    body.append(card);
+  // One grid (Original, Your filters, then every ready-made one); All | Starred shows just the starred ones
+  const stars = starredFilters();
+  const onlyStarred = showStarredOnly();
+  const seg = el("div", { className: "segmented wide filter-show" });
+  [["all", "All"], ["starred", "★ Starred"]].forEach(([k, label]) => seg.append(el("button", {
+    className: (k === "starred") === onlyStarred ? "on" : "", textContent: label,
+    onclick: () => { setShowStarredOnly(k === "starred"); changed("view"); }
+  })));
+  body.append(seg);
+  const all = [...myFilters(), ...filterGroups().flatMap((g) => g.list)];
+  const shown = onlyStarred ? all.filter((f) => stars.has(f.id)) : all;
+  const grid = el("div", { className: "swatches" });
+  if (!onlyStarred) grid.append(tile(null));
+  shown.forEach((f) => {
+    const t = tile(f);
+    const starred = stars.has(f.id);
+    t.append(el("span", {
+      className: "swatch-star" + (starred ? " on" : ""), textContent: starred ? "★" : "☆", title: starred ? "Unstar" : "Star",
+      onclick: (e) => { e.stopPropagation(); toggleStar(f.id); changed("view"); }
+    }));
+    grid.append(t);
   });
+  body.append(grid);
+  if (onlyStarred && !shown.length) body.append(note("No starred filters yet"));
   // (swatches drawn one at a time, so the panel opens at once)
   if (!item || !getPicture(item.mediaId)) return;
   const next = () => { if (job !== swatchJob || !queue.length) return; queue.shift()(); setTimeout(next, 0); };
@@ -490,7 +512,7 @@ function buildFilters() {
 // (on / off), an optional one slider, and ↺ (back to its starting settings). Which are open is
 // remembered while the app is open.
 
-const openCards = new Set(["adjust:light", "filters:Your filters", "filters:Everyday"]);
+const openCards = new Set(["adjust:light"]);
 function foldCard({ key, name, tick = null, quick = null, onReset = null, build, off = false }) {
   const open = openCards.has(key);
   const card = el("div", { className: "fold-card" + (open ? " open" : "") + (off ? " off" : "") });
@@ -649,7 +671,6 @@ function buildAdjust() {
   const chosen = lookItems();
   const slidesChosen = selectedItems();
   const tone = getEffect("tone"), colour = getEffect("colour");
-  body.append(strengthBar(chosen));
   const resetPart = (part, fresh, label) => () => { chosen.forEach((i) => { i.look[part] = fresh(); }); changed("project"); commit(); saidAcross(`${label} reset`, chosen.length); };
   body.append(foldCard({
     key: "adjust:light", name: "Light", onReset: resetPart("light", LIGHT_DEFAULTS, "Light"),
