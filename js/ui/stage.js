@@ -16,7 +16,7 @@ import { state, changed, commit, currentItem, currentLayer, onChange, items } fr
 import { activeSet, aspectOf, isVideo, layersOf, isGrid } from '../project.js';
 import { drawItem, drawPlaced, layoutText, textAt, photoBox, shownBox, trimOf, isTrimmed, onBox, textBox, turn, layerFrame, cellRects } from '../render.js';
 import { lookedPicture, lookedFrame, lookedWhole } from '../looks.js';
-import { brushReady, brushDown, brushMove, brushUp, brushLeave, drawBrush, showBrushPanel } from './brush.js';
+import { brushReady, brushDown, brushMove, brushUp, brushLeave, drawBrush, showBrushPanel, brushFilling } from './brush.js';
 import { maskDown, maskMove, maskUp, drawMasks } from './masks.js';
 import { initVideoBar, videoFrame, spaceMovedView } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
@@ -657,4 +657,5 @@ function paint() {
   }
   drawMasks(ctx, f); // (the picked mask: its handles, and red where it is while shaped or painted)
   drawBrush(ctx, f, ratio); // (a touch-up brush in hand: its circle)
+  if (brushFilling()) draw(); // (a Remove being filled pulses: keep drawing)
 }

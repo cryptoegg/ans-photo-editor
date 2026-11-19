@@ -67,7 +67,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 - **Tools** (Tom, 2026-11-18): its own Editor tab between Adjust and Crop (`state.tab` "tools"; `buildToolsBox` in panel.js, shown under Layers on that tab only; picking a brush anywhere opens it) for the picked photo: Remove
   background, then three brushes (`js/ui/brush.js`, painted on the canvas through stage.js; `state.tool`), covering
   Photoshop's healing tools with no mode pickers:
-  - **Remove**: paint over anything; on letting go it's rebuilt. Small strokes: Content-Aware (PatchMatch, onion-peel
+  - **Remove**: paint over anything; on letting go it's rebuilt (it flashes red / white until it's done). Small strokes: Content-Aware (PatchMatch, onion-peel
     start, `js/fill-worker.js`, no AI). Strokes over a tenth of the photo across: the AI fill, LaMa (Carve/LaMa-ONNX,
     Apache-2.0, 208 MB, downloaded the first time with progress on the button, kept in Cache "ans-models";
     `js/lama-worker.js`, onnxruntime-web 1.31.1 on WebGPU (about 0.3 s; 1.22 and older fail on its Add layer), else
@@ -125,8 +125,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   `ans_photo_fav_filters` / `ans_photo_fav_only`). Strength floats at the top of Filters only (with a filter on). The presets row (Presets… menu, Save Preset, the dice) puts on
   any filter, saves the slide's look to Your filters (`saveThisFilter`), or a random one. Every setting is in **Adjust**
   (the picked tile's Edit badge goes there): Light ▸, Colour ▸, the filter's own Filter light ▸ /
-  Filter colour ▸ (plus Filter curves / per colour / LUT / wheels when its chain has them), Effects ▸ (one fold opening to every effect, listed like the
-  lyric app: tick box, name ▸, one slider, ↺), Background ▸ (one colour picker), then "Save this
+  Filter colour ▸ (plus Filter curves / per colour / LUT / wheels when its chain has them), Effects ▸ (one fold opening to every effect (inside it), listed like the
+  lyric app: tick box, name ▸, one slider, ↺), Background ▸ (one colour picker); an open fold's name floats at the top while its settings scroll (an open effect's just under Effects), then "Save this
   filter" (always there: saves the slide's Light, Colour, filter and effects to Your filters) and
   Reset filter. Switching an effect on with no filter makes the slide's own "custom".
 - **Colour card** (Tom, 2026-11-18, copied from the Lyric Visualiser's one Colour card): Adjust → Colour = Presets…
@@ -173,7 +173,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   panorama of 2, then a number with ▴ ▾ beside it takes it up to 10 slides or back to 1; Join as panorama with several
   picked; Split apart), "7 of 20"; slides numbered above,
   the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow (its five tabs are in the top bar);
-  presets row; This slide | All 7 slides; Layers (count, +, Bottom / Top); then the tile's settings:
+  presets row; Apply this slide | Apply all (7 slides) (Filters and Adjust only; greyed on the other tabs); Layers (count, +, Bottom / Top); then the tile's settings:
   sliders with a blue fill (`fillTrack`), switches, blue fold names after a chevron; "mixed"
   sliders; a note with Undo when a change hits several slides),
   `phone.js` (Phone view: just the screen, rounded, laid out at 393 × 852 (as the Visualiser's) and scaled to

@@ -523,7 +523,8 @@ async function finishRemove(s) {
     changed("view");
   }
 }
-let removing = null; // (a Remove stroke being filled: its marks stay on the canvas meanwhile)
+let removing = null; // (a Remove stroke being filled: its marks stay on the canvas meanwhile, pulsing)
+export const brushFilling = () => !!removing;
 
 // Take every Remove and Clone touch-up off the picked photo (one undo step)
 export function clearTouchUps(layer) {
@@ -596,7 +597,11 @@ export function drawBrush(ctx, f, ratio) {
   const marks = (stroke && stroke.tool === "remove" && stroke) || removing;
   if (ready && marks) {
     ctx.save();
-    ctx.fillStyle = "rgba(220, 50, 80, 0.45)";
+    // (while it's being filled it flashes red / white, so it's plainly still working)
+    if (marks === removing && !stroke) {
+      const t = 0.5 + 0.5 * Math.cos(performance.now() / 140);
+      ctx.fillStyle = `rgba(${Math.round(220 + 35 * t)}, ${Math.round(50 + 205 * t)}, ${Math.round(80 + 175 * t)}, ${(0.6 + 0.3 * t).toFixed(3)})`;
+    } else ctx.fillStyle = "rgba(220, 50, 80, 0.45)";
     marks.dabs.forEach((d) => { const c = toFrame(marks.ready, f, d); const rr = d.r * (placement(marks.ready, f).box.w / marks.ready.pic.width); ctx.beginPath(); ctx.arc(c.x, c.y, rr, 0, Math.PI * 2); ctx.fill(); });
     ctx.restore();
   }

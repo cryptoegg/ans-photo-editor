@@ -276,9 +276,13 @@ function build() {
   const p = state.project;
   const chosen = selectedItems();
   const all = items().length;
+  // (This slide | Apply all is for Filters and Adjust only: Tools, Crop and Captions work on the one slide, so it's greyed)
+  const scoped = state.tab === "filters" || state.tab === "adjust";
+  document.getElementById("scope-switch").classList.toggle("idle", !scoped);
   document.querySelectorAll("#scope-switch button").forEach((b) => {
+    b.disabled = !scoped;
     b.classList.toggle("on", b.dataset.scope === "all" ? chosen.length > 1 && chosen.length === all : chosen.length === 1);
-    if (b.dataset.scope === "all") b.textContent = all > 1 ? `All ${all} slides` : "All";
+    if (b.dataset.scope === "all") b.textContent = all > 1 ? `Apply all (${all} slides)` : "Apply all";
   });
   document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === state.tab));
   if (state.tab === "captions") state.tab = "filters"; // (Post text is gone: the post's words are written in Post)
@@ -573,6 +577,9 @@ function effectsSection(chosen) {
       el("span", { className: "fold-arrow" }), el("span", { textContent: "Effects" })),
       el("span", { className: "note", textContent: onCount ? `${onCount} on` : "" })));
   body.append(groupHead);
+  // (the effects sit inside the Effects fold, so its name floats over them while they scroll)
+  const groupBody = el("div", { className: "fold-body" });
+  if (groupOpen) groupHead.append(groupBody);
   if (groupOpen) EFFECTS.filter((e) => !ADJUST_TYPES.includes(e.type) && (!e.later || fxOf(item, e.type))).forEach((effect) => {
     const fx = fxOf(item, effect.type);
     const on = !!fx && fx.on !== false;
@@ -594,7 +601,7 @@ function effectsSection(chosen) {
     }
     const card = foldCard({ key: `fx:${effect.type}`, name: effect.label, tick, quick, off: !on, onReset: resetTo(effect.type), build: controlsOf(effect) });
     card.classList.add("in-group");
-    body.append(card);
+    groupBody.append(card);
   });
 
 }
