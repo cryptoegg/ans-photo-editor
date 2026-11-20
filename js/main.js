@@ -7,6 +7,7 @@
 //   js/render.js    drawing a slide (screen = export)            js/exporter.js  JPEGs out
 //   js/ui/…         filmstrip, stage (Edit view), panel, phone (Phone view), dialogs
 //   js/effects/…    the effects and filters, copied from the lyric video app
+import { openPost } from './ui/post.js';
 import { maskIdsOf } from './cutout.js';
 import { toolIcons } from './ui/brush.js';
 import './ui/tips.js';
@@ -197,10 +198,9 @@ function wireTopBar() {
     if (from && from.origin === location.origin && from.pathname.startsWith("/identity/")) sessionStorage.setItem("ans_photo_home", from.pathname + from.search);
     const back = sessionStorage.getItem("ans_photo_home");
     // (Tom, 2026-11-13: Home always goes to Identity's home page, /identity/)
-    // Post: that artist's Social Media Calendar in Identity
-    const artist = back && new URL(back, location.origin).searchParams.get("artist");
-    if (artist) $("btn-post").href = `/identity/calendar/?artist=${encodeURIComponent(artist)}`;
   } catch (err) { /* the start page, then */ }
+  // Post: the calendar's Add a post, as a pop-up with the slides in it (js/ui/post.js)
+  $("btn-post").addEventListener("click", (e) => { e.preventDefault(); openPost(); });
   $("btn-file").onclick = (e) => openFileMenu(e.currentTarget);
   // Instagram | TikTok | YouTube
   document.querySelectorAll("#platform-switch button").forEach((b) => b.addEventListener("click", () => setStage(b.dataset.mode)));

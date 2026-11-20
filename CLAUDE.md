@@ -182,7 +182,11 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   grids of 3:4 tiles (the first slide cut to 3:4 from the middle) and YouTube's Posts tab,
   `buildProfile`; the video on the shown slide plays on a loop (`playShown`); the phone and the panel follow each other, so edits in Phone view go to the slide
   on the phone). File = `openFileMenu`: the name, New / Save / Save as / Open, Settings…, the projects in
-  this browser; Post = the artist's Social Media Calendar in Identity. Opens on a blank project; `?open=<projectId>` (the
+  this browser; Post = `js/ui/post.js` (Tom, 2026-11-19): the Social Media Calendar's Add a post as a pop-up over the editor
+  (ans-idently/POST-FROM-APPS.md, `pop=photo-editor&media=photo`): every slide sent as a ticked picture (a panorama one per
+  slide), on Next made as Export makes them and handed over, captioned and scheduled there as one carousel; nothing
+  downloaded. Artist: the opening Identity page's, else `identity-last-artist`; none = the calendar's Upload posts in this
+  tab. Tests: `window.__postCalendar` (a stand-in calendar's URL). Opens on a blank project; `?open=<projectId>` (the
   Account page's link, anewsong.club/account/) reopens that one, then drops the param, Delete / Backspace removes the selected slides,
   `dialogs.js` (Export, Projects). Home (top left) goes back to Identity's home page, /identity/.
 - **Main folder & saving**: `js/folder.js` (Chrome / Edge): a main folder chosen once (Settings
