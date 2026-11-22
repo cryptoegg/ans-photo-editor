@@ -17,6 +17,7 @@ import { MASK_KINDS, maskName, BRUSH_EFFECTS, RETIRED_EFFECTS, effectOf, tidyEff
 import { addMask, pickMask, removeMask, pickedMask } from './masks.js';
 import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, deleteMyFilter, isMine } from '../filters.js';
 import { presetSwatch } from '../looks.js';
+import { listFilms, loadFilm, filmsCredit } from '../effects/filmTables.js';
 import { getPicture } from '../media.js';
 import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS, PHOTO_SHAPES, photoBox, trimOf } from '../render.js';
 import { moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
@@ -28,7 +29,7 @@ const undoAction = { label: "Undo", run: () => undo() };
 
 // Filters, grouped for people new to them: everyday looks first, the A New Song collection,
 // then the strong creative ones
-const EVERYDAY = ["ans-clean-editorial", "ans-35mm-400", "expired-35mm", "film-scan", "faded-bw", "soft-bw", "grainy-bw", "painted-blur", "flash-at-night", "hard-light", "magazine-print", "photocopy"];
+const EVERYDAY = ["ans-film-snapshot", "ans-clean-editorial", "ans-35mm-400", "expired-35mm", "film-scan", "faded-bw", "soft-bw", "grainy-bw", "painted-blur", "flash-at-night", "hard-light", "magazine-print", "photocopy"];
 function filterGroups() {
   const everyday = EVERYDAY.map((id) => PRESETS.find((p) => p.id === id)).filter(Boolean);
   const ans = PRESETS.filter((p) => p.id.startsWith("ans-") && !EVERYDAY.includes(p.id));
@@ -426,8 +427,11 @@ function toggleStar(id) {
   if (s.has(id)) s.delete(id); else s.add(id);
   try { localStorage.setItem(STAR_KEY, JSON.stringify([...s])); } catch {}
 }
-function showStarredOnly() { try { return localStorage.getItem(ONLY_KEY) === "1"; } catch { return false; } }
-function setShowStarredOnly(on) { try { localStorage.setItem(ONLY_KEY, on ? "1" : "0"); } catch {} }
+// (All | Starred | Film, and the Film list's brand: kept in this browser)
+function filterShow() { try { const v = localStorage.getItem(ONLY_KEY); return v === "1" ? "starred" : v === "film" ? "film" : "all"; } catch { return "all"; } }
+function setFilterShow(k) { try { localStorage.setItem(ONLY_KEY, k === "starred" ? "1" : k === "film" ? "film" : "0"); } catch {} }
+function filmBrand() { try { return localStorage.getItem("ans_photo_film_brand") || ""; } catch { return ""; } }
+function setFilmBrand(b) { try { localStorage.setItem("ans_photo_film_brand", b); } catch {} }
 
 // Strength, floating at the top (only once a filter is on: filters work like presets, so no name)
 function strengthBar(chosen) {
@@ -472,7 +476,9 @@ function buildFilters() {
     const holder = el("div", { className: "blank" });
     b.append(holder, el("span", { textContent: filter ? filter.name : "Original" }));
     if (on && filter) b.append(el("span", { className: "swatch-edit", textContent: "Edit" }));
-    queue.push(() => {
+    queue.push(async () => {
+      if (id && id.startsWith("film:")) await loadFilm(id.slice(5)); // (its table fetched first)
+      if (job !== swatchJob) return;
       const c = presetSwatch(item, id, state.project.seed, 132);
       if (c) { const shown = el("canvas", { width: c.width, height: c.height }); shown.getContext("2d").drawImage(c, 0, 0); holder.replaceWith(shown); }
     });
@@ -482,19 +488,35 @@ function buildFilters() {
     };
     return b;
   };
-  // One grid (Original, Your filters, then every ready-made one); All | Starred shows just the starred ones
+  // One grid (Original, Your filters, then every ready-made one). All | ★ Starred | Film: just the starred ones, or the
+  // films brought in (js/effects/filmTables.js), one brand at a time
   const stars = starredFilters();
-  const onlyStarred = showStarredOnly();
+  const films = listFilms();
+  let show = filterShow();
+  if (show === "film" && !films.length) show = "all";
   const seg = el("div", { className: "segmented wide filter-show" });
-  [["all", "All"], ["starred", "★ Starred"]].forEach(([k, label]) => seg.append(el("button", {
-    className: (k === "starred") === onlyStarred ? "on" : "", textContent: label,
-    onclick: () => { setShowStarredOnly(k === "starred"); changed("view"); }
+  [["all", "All"], ["starred", "★ Starred"], ...(films.length ? [["film", "Film"]] : [])].forEach(([k, label]) => seg.append(el("button", {
+    className: k === show ? "on" : "", textContent: label,
+    onclick: () => { setFilterShow(k); changed("view"); }
   })));
   body.append(seg);
+  const filmFilter = (f) => ({ id: `film:${f.id}`, name: f.name, note: `${f.brand} ${f.name}${f.kind === "Black & white" ? " (black & white)" : ""}` });
   const all = [...myFilters(), ...filterGroups().flatMap((g) => g.list)];
-  const shown = onlyStarred ? all.filter((f) => stars.has(f.id)) : all;
+  let shown;
+  if (show === "film") {
+    const brands = [...new Set(films.map((f) => f.brand))];
+    let brand = filmBrand();
+    if (!brands.includes(brand)) brand = brands[0];
+    const pick = el("select", { className: "select film-brand", title: "Brand" });
+    brands.forEach((b) => pick.append(el("option", { value: b, textContent: b, selected: b === brand })));
+    pick.onchange = () => { setFilmBrand(pick.value); changed("view"); };
+    body.append(pick);
+    shown = films.filter((f) => f.brand === brand).map(filmFilter);
+  } else if (show === "starred") {
+    shown = [...all, ...films.map(filmFilter)].filter((f) => stars.has(f.id));
+  } else shown = all;
   const grid = el("div", { className: "swatches" });
-  if (!onlyStarred) grid.append(tile(null));
+  if (show === "all") grid.append(tile(null));
   shown.forEach((f) => {
     const t = tile(f);
     const starred = stars.has(f.id);
@@ -505,10 +527,11 @@ function buildFilters() {
     grid.append(t);
   });
   body.append(grid);
-  if (onlyStarred && !shown.length) body.append(note("No starred filters yet"));
+  if (show === "starred" && !shown.length) body.append(note("No starred filters yet"));
+  if (show === "film" && filmsCredit()) body.append(el("p", { className: "film-credit", textContent: `Film looks: ${filmsCredit()}, CC BY-SA 4.0` }));
   // (swatches drawn one at a time, so the panel opens at once)
   if (!item || !getPicture(item.mediaId)) return;
-  const next = () => { if (job !== swatchJob || !queue.length) return; queue.shift()(); setTimeout(next, 0); };
+  const next = () => { if (job !== swatchJob || !queue.length) return; Promise.resolve(queue.shift()()).then(() => setTimeout(next, 0)); };
   setTimeout(next, 0);
 }
 
@@ -872,15 +895,15 @@ function drawnControl(c, targets, get, own) {
     })));
     return box;
   }
-  // (LUT: your own .cube files, and Load a .cube file… at the end)
+  // (LUT: your own .cube files and HaldCLUT pictures, and Load a LUT… at the end)
   const input = el("select", { className: "select" });
   const now = values()[c.key];
   c.options.forEach((o) => input.append(el("option", { value: String(o.value), textContent: o.label, selected: String(o.value) === String(now) })));
-  input.append(el("option", { value: "+load", textContent: "Load a .cube file…" }));
+  input.append(el("option", { value: "+load", textContent: "Load a LUT (.cube or HaldCLUT .png)…" }));
   input.onchange = () => {
     if (input.value !== "+load") { set({ [c.key]: input.value }, true); return; }
     input.value = String(now);
-    const file = el("input", { type: "file", accept: ".cube" });
+    const file = el("input", { type: "file", accept: ".cube,.png,image/png" });
     file.onchange = async () => {
       if (!file.files[0]) return;
       try { const id = await addLutFile(file.files[0]); set({ [c.key]: id }, true); }

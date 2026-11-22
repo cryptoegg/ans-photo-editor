@@ -33,6 +33,7 @@ import curves from './curves.js';
 import hsl from './hsl.js';
 import lut from './lut.js';
 import grade from './grade.js';
+import film from './film.js';
 import halation from './halation.js';
 import solarise from './solarise.js';
 import duotone from './duotone.js';
@@ -68,6 +69,7 @@ import stripes from './stripes.js';
 // A layer's chain is always kept in this order, with at most one of each effect.
 export const EFFECTS = [
   tone, skin, curves, colour, hsl, lut, grade,  // Adjust: Light, Skin, then Colour (its Curves, Per colour, LUT and Wheels tabs)
+  film,                                         // a film camera's look (js/effects/film.js): the film filters put it on
   duotone, negative, solarise,                  // colour effects
   fisheye, liquify, stretch, slice, datamosh, melt, scan, // warp
   crumple, shards, pixelate, stripes, // break up (Tom, 2026-11-18: the Effect brush's own, from his references)

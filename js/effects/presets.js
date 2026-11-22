@@ -4,6 +4,11 @@
 // To add a preset: add an entry here.
 
 export const PRESETS = [
+  // ---- Film (2026-11-22): a film camera's look (js/effects/film.js; its numbers in js/effects/filmLooks.js)
+  {
+    id: "ans-film-snapshot", group: "Film", name: "Snapshot", note: "A pocket film camera: matte blacks, airy mids, cream highlights, soft green shadows",
+    chain: [{ type: "film", look: "snapshot" }]
+  },
   // ---- Tom's favourites (2026-10-24): first in the menu
   {
     id: "ans-flash-blowout", group: "Favourites", name: "Flash Blowout", note: "On-camera flash at night: faces blown to white, a cold blue glow",

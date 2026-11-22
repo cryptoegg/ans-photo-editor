@@ -35,6 +35,22 @@ export function parseCube(text) {
   for (let i = 0; i < values.length; i++) { const c = i % 3; data[i] = clamp((values[i] - min[c]) / ((max[c] - min[c]) || 1)); }
   return size > 64 ? resample({ size, data }, 33) : { size, data }; // (a 65-point table is too wide for some graphics cards)
 }
+// A HaldCLUT picture (2026-11-22: the RawTherapee film collection's kind, and many others): a square level³ pixels
+// across, holding a level²-point table, pixel i = red + green × n + blue × n² (red changing fastest, like .cube).
+// Shrunk to 33 points, as a .cube over 64 is.
+export async function parseHald(file) {
+  const bmp = await createImageBitmap(file, { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+  const side = bmp.width, level = Math.round(Math.cbrt(side));
+  if (bmp.height !== side || level ** 3 !== side || level < 2) throw new Error("That picture isn't a HaldCLUT (a square of level³ pixels).");
+  const c = document.createElement("canvas");
+  c.width = c.height = side;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(bmp, 0, 0);
+  const px = g.getImageData(0, 0, side, side).data, n = level * level;
+  const data = new Float32Array(n * n * n * 3);
+  for (let i = 0, j = 0; i < n * n * n; i++, j += 4) { data[i * 3] = px[j] / 255; data[i * 3 + 1] = px[j + 1] / 255; data[i * 3 + 2] = px[j + 2] / 255; }
+  return n > 33 ? resample({ size: n, data }, 33) : { size: n, data };
+}
 function resample(lut, size) {
   const out = new Float32Array(size * size * size * 3), n = lut.size;
   const at = (r, g, b, c) => lut.data[((b * n + g) * n + r) * 3 + c];
@@ -84,8 +100,9 @@ function db() {
 }
 // A .cube file brought in: kept, and its id returned
 export async function addLutFile(file) {
-  const { size, data } = parseCube(await file.text());
-  const name = file.name.replace(/\.cube$/i, "");
+  const hald = /\.png$/i.test(file.name) || file.type === "image/png";
+  const { size, data } = hald ? await parseHald(file) : parseCube(await file.text());
+  const name = file.name.replace(/\.(cube|png)$/i, "");
   let h = 2166136261;
   for (let i = 0; i < data.length; i += 7) { h ^= Math.round(data[i] * 1e4); h = Math.imul(h, 16777619); }
   const id = `user:${(h >>> 0).toString(36)}${size}`;

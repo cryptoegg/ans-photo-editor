@@ -5,6 +5,9 @@
 import { runChain, available } from './effects/gl.js';
 import { getEffect } from './effects/registry.js';
 import { getLut, onLutsChange } from './effects/lutStore.js';
+import { onFilmsChange, filmLoaded } from './effects/filmTables.js';
+// (a film filter whose table hasn't come in yet is drawn again once it has)
+const filmsIn = (look) => (look.preset && (look.chain || []).filter((fx) => fx.type === "film").map((fx) => filmLoaded(fx.look) ? 1 : 0).join("")) || "";
 import { activeMasks, masksKey, maskCanvas, layThrough, tidyEffect } from './masks.js';
 import { freshChain } from './filters.js';
 import { getPicture, loadPicture, stillAt } from './media.js';
@@ -30,6 +33,7 @@ function find(kind, key) {
 }
 
 onLutsChange(() => changed("view")); // (your .cube files are read in at start: a slide using one is drawn again)
+onFilmsChange((what) => changed(what === "table" ? "look" : "view")); // (the list: the panel again; a table fetched: the slides drawn again)
 
 const isZero = (obj) => Object.values(obj).every((v) => !v);
 // The Colour card's tabs as they come (no change): a missing one counts as that too
@@ -147,7 +151,7 @@ function lookedOnly(item, quality = "preview", seed = 0) {
   if (!source) return null;
   if (!hasLook(item.look, item) || !available()) return source;
   const look = item.look;
-  const key = JSON.stringify([masksKey(item), item.mediaId, retouchKey(item), item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.skin, look.colour, look.curves, look.grade, look.hsl, look.lut, look.lut && getLut(look.lut.look) ? 1 : 0]);
+  const key = JSON.stringify([masksKey(item), item.mediaId, retouchKey(item), item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.skin, look.colour, look.curves, look.grade, look.hsl, look.lut, look.lut && getLut(look.lut.look) ? 1 : 0, filmsIn(look)]);
   const found = find(quality, key);
   if (found) return found;
   let result;
@@ -203,7 +207,7 @@ export function lookedFrame(item, frame, quality = "preview", seed = 0) {
 // (the photo with its touch-ups: a word taken off shouldn't come back in the tiles)
 export function presetSwatch(item, presetId, seed, side = 120) {
   const mediaId = item.mediaId;
-  const key = JSON.stringify(["swatch", mediaId, retouchKey(item), presetId, side]);
+  const key = JSON.stringify(["swatch", mediaId, retouchKey(item), presetId, side, presetId && presetId.startsWith("film:") && filmLoaded(presetId.slice(5)) ? 1 : 0]);
   const found = find("swatch", key);
   if (found) return found;
   const picture = getPicture(mediaId);

@@ -141,6 +141,20 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   kept in this browser (IndexedDB `ans_photo_luts`). **Colour tint is gone**: `tintIntoGrade` (`js/effects/oldTint.js`)
   turns any tint in the ready-made filters, Your filters and saved projects into the wheels (+ B&W for Monotone).
   Halation (`halation.js`, Light & blur) is in Effects. Your filters keep the whole Colour card.
+- **Film looks** (2026-11-22, from the research chat: as good as the camera apps', the same in the Lyric Visualiser): the
+  `film` effect (`js/effects/film.js`, the engine: a look's colour as a 33-point table, then the phone's sharpening
+  softened, Fade, Halation glow, vignette and mid-tone grain, a little randomness per photo; Grain / Glow / Fade sliders,
+  50 = the look as written; Strength is the filter's). A look is only data: `js/effects/filmLooks.js` (`FILM_LOOKS`: our
+  own **Snapshot**, from the FXN measurements in ans-idently/research/dazz/FXN-LOOK.md, never Dazz's files; `FILM_LAYERS`:
+  the layers an imported film gets); looks made later from Tom's own film replace them. Snapshot is a filter
+  (`ans-film-snapshot`, first in the grid). **Imported films**: the RawTherapee Film Simulation collection (293
+  HaldCLUTs, CC BY-SA 4.0: credit Pat David, Pavlov Dmitry, Michael Ezra; our converted tables are CC BY-SA too),
+  converted once in ans-build/references-shared/film-luts/ (`convert.py`, its own .venv) to `films/<id>.bin` (33³ × 3
+  bytes, red fastest) + `films/films.json` (brand > film > variant), copied into this app's `films/` (shared with the
+  Lyric Visualiser). `js/effects/filmTables.js` reads the list at start and each table when first needed; a film filter
+  is `film:<id>` (`getFilter` in filters.js makes it). Filters → All | ★ Starred | **Film** (a brand menu, then its
+  films, the credit under them). `films/` ships (Tom, 2026-11-22, about 32 MB); only `films/_test/` (research photos) is
+  kept out of git and the deploy. Your own LUTs: .cube or **HaldCLUT .png** (`parseHald` in lutStore.js).
 - **Effects**: `js/effects/` is copied from ans-visual-text-generator (minus chain.js, chop,
   framerate). `lines.js` (Screen lines: fine
   bright lines over the photo, LED-wall look) is this app's own. `standalone.js` stands in for the song / lyrics the effects used to ask about.

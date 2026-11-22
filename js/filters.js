@@ -6,6 +6,7 @@ import { PRESETS, getPreset } from './effects/presets.js';
 import { getEffect, effectOrder } from './effects/registry.js';
 import { tintIntoGrade } from './effects/oldTint.js';
 import { dbGet, dbPut } from './store.js';
+import { filmInfo } from './effects/filmTables.js';
 
 let mine = []; // [{ id, name, note, chain }]
 
@@ -27,7 +28,12 @@ export async function deleteMyFilter(id) {
   await dbPut("meta", mine, "myFilters");
 }
 
-export const getFilter = (id) => (id ? getPreset(id) || mine.find((f) => f.id === id) || null : null);
+// (a film brought in, "film:<id>": made on the spot from the list in js/effects/filmTables.js)
+const filmFilter = (id) => {
+  const f = id.startsWith("film:") && filmInfo(id.slice(5));
+  return f ? { id, name: f.name, note: `${f.brand} ${f.name}`, chain: [{ type: "film", look: f.id }] } : null;
+};
+export const getFilter = (id) => (id ? getPreset(id) || mine.find((f) => f.id === id) || filmFilter(id) || null : null);
 export const isMine = (id) => mine.some((f) => f.id === id);
 export const filterName = (id) => { const f = getFilter(id); return f ? f.name : id ? "Custom" : "Original"; };
 
