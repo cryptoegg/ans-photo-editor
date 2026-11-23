@@ -684,7 +684,10 @@ function buildEffectsTab() {
   const controlsOf = (effect) => (inner) => (effect.controls || []).forEach((c) => inner.append(effectControl(c, effect.type, targets, shown, ensureFx)));
 
   if (id && id !== "custom") {
-    body.append(el("div", { className: "fx-filter-name", textContent: filterName(id) || "Filter" })); // (its Strength is on Filters only)
+    // (its Strength is on Filters only; the bin takes the filter off, back to Original: Tom, 2026-11-23)
+    body.append(el("div", { className: "fx-filter-head" },
+      el("span", { className: "fx-filter-name", textContent: filterName(id) || "Filter" }),
+      el("button", { className: "btn small fold-reset fold-remove", title: "Take this filter off", ariaLabel: "Take this filter off", onclick: () => useFilter(targets, null) })));
     EFFECTS.filter((e) => ADJUST_TYPES.includes(e.type) && (e.type === "tone" || e.type === "colour" || (fxOf(item, e.type) && fxOf(item, e.type).on !== false))).forEach((effect) => {
       body.append(foldCard({ key: `fx:${effect.type}`, name: FILTER_NAMES[effect.type], onReset: resetTo(effect.type), build: controlsOf(effect) }));
     });

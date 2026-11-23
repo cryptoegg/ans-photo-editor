@@ -185,7 +185,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   column away. The right column's title names
   what's picked on the canvas (Photo 2, Caption; nothing picked: no title), then Apply this slide | Apply all, Layers, and the picked thing's
   settings: a caption's own (`captionSettings`), else **Edit | Effects** (as a clip's in the Visualiser; the tab kept in
-  `ans_photo_right_tab`): Edit = the picked mask, Light, Colour, Skin, Crop, Opacity (the picked photo's opacity and blend; no Background: the colour is in the tools row; Tom, 2026-11-23); Effects (`buildEffectsTab`) = the filter's
+  `ans_photo_right_tab`): Edit = the picked mask, Light, Colour, Skin, Crop, Opacity (the picked photo's opacity and blend; no Background: the colour is in the tools row; Tom, 2026-11-23); Effects (`buildEffectsTab`) = the filter's name (a bin takes it off: Original) and its
   own Light / Colour, the effects on this photo (tick, one slider, settings), Add effect, Save this filter / Reset
   filter. Every fold starts shut; on an empty project Edit | Effects still show (on a blank stand-in, `sample` in panel.js, greyed) so new users can look round (Tom, 2026-11-23). A new Scan starts with no sweep (a still: the whole page scanned). The Editor's five tabs are gone from the top bar (`state.tab` no longer used).
 - **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Phone (one button, on / off),
