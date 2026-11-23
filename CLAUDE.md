@@ -244,6 +244,6 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 
 ## Keys
 
-← → slides (or the phone) · ⇧-click / ⌘-click select · ⌘A all · ⌘C / ⌘V copy / paste a look ·
+← → slides (or the phone); after clicking a filter tile, ← → ↑ ↓ flick through the filters (`flickFilter` in panel.js) until a click elsewhere · ⇧-click / ⌘-click select · ⌘A all · ⌘C / ⌘V copy / paste a look ·
 ⌘D duplicate (the picked photo, else the slides) · hold \ before / after · ⌘Z / ⇧⌘Z · [ ] brush size · Shift [ ] hardness · right-click (brush in hand) brush panel · Alt-click Clone's source · Esc puts the brush down · Delete removes the picked text · ⌘-scroll
 zooms the view.

@@ -504,6 +504,25 @@ export function useFilter(chosen, id) {
   saidAcross(id ? filterName(id) : "Original", chosen.length);
 }
 
+// Flick through the filters with the arrow keys (Tom, 2026-11-23): once a filter tile has been clicked, ← → step to the
+// one before / after and ↑ ↓ to the row above / below, putting each on as it goes. A click anywhere else gives the
+// arrows back to the slides.
+let flicking = false;
+document.addEventListener("pointerdown", (e) => { flicking = !!(e.target.closest && e.target.closest(".media-col .swatches .swatch")); }, true);
+export function flickFilter(key) {
+  if (!flicking || state.lib !== "filters") return false;
+  const tiles = [...document.querySelectorAll(".media-col .swatches .swatch")];
+  if (!tiles.length) return false;
+  const cols = Math.max(1, tiles.filter((t) => t.offsetTop === tiles[0].offsetTop).length);
+  const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols }[key];
+  if (!step) return false;
+  const at = tiles.findIndex((t) => t.classList.contains("on"));
+  const to = at < 0 ? 0 : Math.max(0, Math.min(tiles.length - 1, at + step));
+  if (to !== at) tiles[to].click();
+  requestAnimationFrame(() => { const on = document.querySelector(".media-col .swatches .swatch.on"); if (on) on.scrollIntoView({ block: "nearest" }); });
+  return true;
+}
+
 function buildFilters() {
   const chosen = lookItems();
   const item = lookItem();

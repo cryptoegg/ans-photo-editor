@@ -33,7 +33,7 @@ function appIcons(r) {
 }
 import { initFilmstrip } from './ui/filmstrip.js';
 import { initStage } from './ui/stage.js';
-import { initPanel } from './ui/panel.js';
+import { initPanel, flickFilter } from './ui/panel.js';
 import { initMediaColumn } from './ui/mediaColumn.js';
 import { initPhone, go as phoneGo, showPhone } from './ui/phone.js';
 import { openExport, openFileMenu, openSettings, saveNow, saveAs } from './ui/dialogs.js';
@@ -280,6 +280,7 @@ function wireKeys() {
     // ⌘D: a picked photo (on the canvas or in Layers) is copied onto the slide; else the selected slides
     if (cmd && key === "d") { e.preventDefault(); if (!(state.photoPicked && state.view === "edit" && currentItem() && duplicateLayer())) duplicateSelected(); return; }
     if (cmd) return;
+    if (e.key.startsWith("Arrow") && flickFilter(e.key)) { e.preventDefault(); return; } // (a filter tile last clicked)
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();
       const step = e.key === "ArrowRight" ? 1 : -1;
