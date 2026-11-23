@@ -263,12 +263,19 @@ function sideCursor(zone, rotation) {
 
 const local = (e, f) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left - f.x, y: e.clientY - r.top - f.y }; };
 
+// Straighten (Tom, 2026-11-23, as Photoshop's / Lightroom's): Crop → Straighten, then drag a line along something that
+// should be level (a horizon) or upright (a wall): the picked photo turns so it is
+let straightening = false, straight = null;
+document.addEventListener("straighten", () => { straightening = true; canvas.style.cursor = "crosshair"; });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && straightening) { straightening = false; straight = null; canvas.style.cursor = ""; draw(); } });
+
 function down(e) {
   const item = currentItem();
   if (!item || !getPicture(item.mediaId)) return;
   const f = frameRect(item);
   const p = local(e, f);
   canvas.setPointerCapture(e.pointerId);
+  if (straightening && e.button === 0) { straight = { a: p, b: p }; return; }
   if (spaceHeld && e.button === 0) { startPan(e); return; } // (the hand: Space + drag moves the view)
   if (maskDown(e, f, p)) return; // (a mask's handle: it moves, js/ui/masks.js)
   if (brushDown(e, f, p)) return; // (a touch-up brush in hand: it paints, js/ui/brush.js)
@@ -337,6 +344,7 @@ function startDrag(picked, zone, p, f) {
 }
 
 function move(e) {
+  if (straight) { const item = currentItem(); straight.b = local(e, frameRect(item)); draw(); return; }
   if (panning) {
     const dx = e.clientX - panning.x, dy = e.clientY - panning.y;
     if (Math.abs(dx) + Math.abs(dy) > 2 && !panning.moved) { panning.moved = true; if (spaceHeld) spaceMovedView(); }
@@ -413,6 +421,22 @@ function move(e) {
 }
 
 function up() {
+  if (straight) {
+    const { a, b } = straight;
+    straight = null; straightening = false; canvas.style.cursor = "";
+    const dx = b.x - a.x, dy = b.y - a.y;
+    if (Math.hypot(dx, dy) > 8) {
+      let deg = (Math.atan2(dy, dx) * 180) / Math.PI;
+      if (deg > 90) deg -= 180; else if (deg < -90) deg += 180; // (either way along the line)
+      const off = Math.abs(deg) <= 45 ? deg : deg - Math.sign(deg) * 90; // (nearer level, or nearer upright)
+      const layer = currentLayer() || currentItem();
+      setAngle({ kind: "photo", layer }, layer.crop.rotation - off);
+      changed("project");
+      commit();
+    }
+    draw();
+    return;
+  }
   if (panning) { panning = null; canvas.style.cursor = spaceHeld ? "grab" : ""; return; }
   if (maskUp()) return;
   if (!drag) { brushUp(); return; }
@@ -590,6 +614,13 @@ function paint() {
   guideLines("y", item, f).forEach((at) => line("y", at, guide));
   for (let k = 1; k < item.span; k++) line("x", k * f.pw, "rgba(120,120,120,0.95)", 1.5, [6, 5]);
   lit.forEach((l) => line(l.axis, l.at, uiColour("--snap") || "#ff2d8a", 1.5));
+  if (straight) {
+    ctx.save();
+    ctx.lineWidth = 3; ctx.strokeStyle = "#fff";
+    ctx.beginPath(); ctx.moveTo(straight.a.x, straight.a.y); ctx.lineTo(straight.b.x, straight.b.y); ctx.stroke();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = uiColour("--accent-ink") || "#1f4fbf"; ctx.setLineDash([6, 4]); ctx.stroke();
+    ctx.restore();
+  }
 
   // Slide numbers on a panorama
   if (item.span > 1) {

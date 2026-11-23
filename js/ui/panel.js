@@ -1200,6 +1200,13 @@ function buildCrop() {
     label: "Turn", min: -180, max: 180, step: 0.5, unit: "°", targets: [item],
     get: (i) => i.crop.rotation, set: (i, v) => { i.crop.rotation = v; }, onCommit: () => {}
   }));
+  // Straighten and perspective (Tom, 2026-11-23): drag a line on the photo that should be level or upright; Vertical /
+  // Horizontal tip the photo back so leaning walls stand straight (crop.keystone, js/looks.js)
+  if (!isVideo(slide) || item !== slide) {
+    body.append(el("div", { className: "row" }, button("Straighten", () => { document.dispatchEvent(new CustomEvent("straighten")); toast("Drag along something that should be level or upright (Esc: never mind)"); }, "btn small"), el("span", { className: "spacer" })));
+    [["v", "Vertical"], ["h", "Horizontal"]].forEach(([k, label]) => body.append(slider({ label, min: -100, max: 100, step: 1, reset: 0, targets: [item],
+      get: (i) => (i.crop.keystone && i.crop.keystone[k]) || 0, set: (i, v) => { i.crop.keystone = { v: 0, h: 0, ...(i.crop.keystone || {}), [k]: v }; }, onCommit: () => {} })));
+  }
   body.append(el("div", { className: "four" },
     button("↺ 90°", act(() => { item.crop.rotation = ((item.crop.rotation - 90 + 540) % 360) - 180; })),
     button("↻ 90°", act(() => { item.crop.rotation = ((item.crop.rotation + 90 + 540) % 360) - 180; })),

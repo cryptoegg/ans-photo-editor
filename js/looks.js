@@ -71,7 +71,38 @@ function sourceOf(item, quality) {
     const still = stillAt(item.mediaId, item.cover || 0, () => changed("view"));
     if (still) return quality === "full" ? still.full : still.preview;
   }
-  return touchedUp(item, quality === "full" ? picture.full : picture.preview);
+  return keystoned(item, touchedUp(item, quality === "full" ? picture.full : picture.preview));
+}
+
+// Perspective (Tom, 2026-11-23): crop.keystone { v, h } (-100 - 100). Vertical narrows the top (or the bottom) so walls
+// that lean in stand straight; Horizontal does the same side to side. Drawn in thin strips, each scaled about the middle,
+// so the photo stays its own size. Kept per picture and setting.
+const warped = new WeakMap();
+export function keystoned(item, picture) {
+  const ks = item.crop && item.crop.keystone;
+  if (!picture || !ks || (!ks.v && !ks.h)) return picture;
+  const key = `${ks.v || 0}|${ks.h || 0}`;
+  const was = warped.get(picture);
+  if (was && was.key === key) return was.canvas;
+  const pass = (src, amount, rows) => {
+    const k = (amount / 100) * 0.45;
+    const out = document.createElement("canvas");
+    out.width = src.width; out.height = src.height;
+    const g = out.getContext("2d");
+    g.imageSmoothingQuality = "high";
+    const n = rows ? src.height : src.width, len = rows ? src.width : src.height;
+    const at = (t) => 1 + k * (t * 2 - 1), most = Math.max(at(0), at(1));
+    for (let i = 0; i < n; i++) {
+      const s = at((i + 0.5) / n) / most, w = len * s, o = (len - w) / 2;
+      if (rows) g.drawImage(src, 0, i, len, 1, o, i, w, 1); else g.drawImage(src, i, 0, 1, len, i, o, 1, w);
+    }
+    return out;
+  };
+  let c = picture;
+  if (ks.v) c = pass(c, ks.v, true);
+  if (ks.h) c = pass(c, ks.h, false);
+  warped.set(picture, { key, canvas: c });
+  return c;
 }
 
 // The photo with its touch-ups (the Remove and Clone brushes, js/ui/brush.js) laid over it: item.retouch.tiles, each a
@@ -151,7 +182,7 @@ function lookedOnly(item, quality = "preview", seed = 0) {
   if (!source) return null;
   if (!hasLook(item.look, item) || !available()) return source;
   const look = item.look;
-  const key = JSON.stringify([masksKey(item), item.mediaId, retouchKey(item), item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.skin, look.colour, look.curves, look.grade, look.hsl, look.lut, look.lut && getLut(look.lut.look) ? 1 : 0, filmsIn(look)]);
+  const key = JSON.stringify([masksKey(item), item.crop && item.crop.keystone, item.mediaId, retouchKey(item), item.kind === "video" ? item.cover : 0, source.width, quality, seed, look.preset, look.preset ? look.chain : null, look.preset ? look.strength : 0, look.light, look.skin, look.colour, look.curves, look.grade, look.hsl, look.lut, look.lut && getLut(look.lut.look) ? 1 : 0, filmsIn(look)]);
   const found = find(quality, key);
   if (found) return found;
   let result;
