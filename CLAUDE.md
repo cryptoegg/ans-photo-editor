@@ -106,6 +106,26 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   through the mask before the filter (looks.js). Subject reuses the Remove background model (`subjectMask` in cutout.js).
   Brush: the Mask brush (`state.tool` "mask", Add / Erase, Size / Hardness in the Masks fold), red shown only while
   painting. Fade and Round have handles on the canvas (`js/ui/masks.js`).
+  **Lasso** and **Wand** (Tom, 2026-11-23, Photoshop's selections as masks): pick one in Masks, then draw round a part
+  (Lasso) or click a colour (Wand: a flood fill on the preview, Wand tolerance slider while picking, localStorage
+  `ans_photo_wand_tol`); Esc cancels. Each becomes a painted mask (`PAINTED` = brush / lasso / wand: a PNG `maskId`,
+  `maskFrom` in js/ui/masks.js) the Mask brush can touch up.
+- **Photoshop extras** (Tom, 2026-11-23, no generative AI):
+  - **Layers**: each row has an eye (`hidden`: not drawn, not pickable) and a lock (`locked`: not pickable or draggable),
+    double-click its name to rename it, ⌘ / Shift-click rows then Group (`group` id; moving one moves the rest),
+    Ungroup there or by right-click. Captions and shapes are listed above the photos (↑ ↓ ✕).
+  - **Shapes** (rail item Shapes, `buildShapes` in panel.js): shapes (`SHAPE_KINDS` in render.js: rectangle … heart,
+    arch, line, arrow), a Frame round the slide and emoji stickers. A shape is an `item.texts` entry with `kind: "shape"`
+    (`SHAPE_DEFAULTS`), so it picks, moves, sizes, turns and lists like a caption; `shapeSettings` on the right.
+  - **Align** (`alignRow` under Layers): left, centre, right, top, middle, bottom of the slide for the picked photo,
+    caption or shape (its turned outline).
+  - **Eyedropper** (`js/ui/dropper.js`): a pipette beside every colour box (the browser's EyeDropper; Chrome / Edge).
+  - **History** (the clock in the tools row): every step named by what it changed (`describe` in state.js), newest first;
+    click one to jump to it (`historyGo`).
+  - **Straighten and perspective** (Crop): Straighten = drag along a line that should be level or upright; Vertical /
+    Horizontal = `crop.keystone { v, h }`, a warp in `keystoned` (looks.js) before the look.
+  - **Caption effects**: Curve (letters on an arc), Shadow, Glow, Gradient, and Photo inside the words (`photoFill`: the
+    slide's photos show only through those letters, `drawItem` in render.js).
 - **Notes** (`js/ui/toast.js`, Tom, 2026-11-18): a small dark bar at the top of the canvas, only for what can't be seen
   (a file that won't open, a full set, where an export went). No "done · Undo" notes: `toast(text, undoAction)` shows nothing.
 - **Hover boxes** (Tom, 2026-11-18): `js/ui/tips.js` shows any `title` as a small dark box after a short wait (the
@@ -178,7 +198,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   needed; `splitPanorama` is kept in actions.js but nothing calls it)) · Undo / Redo · the canvas bar (`#canvas-bar`: the tools, ‹ Slide 1 of 7 ›, the shape, − Fit +, guides,
   snapping, background, Before; hidden in Phone view and on an empty project) · "7 of 20" at the right.
 - **The side columns** (Tom, 2026-11-23, as the Lyric Visualiser's): a see-through rail down the left edge, on the window's
-  grey (`#rail`: Media · Filters · Effects · Tools · Captions; `state.lib`) opens its library in the column beside it (`js/ui/mediaColumn.js`; Filters, Tools and
+  grey (`#rail`: Media · Filters · Effects · Tools · Captions · Shapes; `state.lib`) opens its library in the column beside it (`js/ui/mediaColumn.js`; Filters, Tools and
   Captions drawn by `buildLibrary` in panel.js: the presets row and the filter grid, Remove background and the brushes,
   New Text Overlay and the slide's captions; Effects = every effect as a tile drawn on the photo (`effectSwatch` in
   looks.js), a click puts it on the picked photo (`addEffect`) and opens it on the right); the open one again folds the
