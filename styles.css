@@ -1058,3 +1058,8 @@ body.strip-folded .tool-row .strip-fold::before { top: 9px; }
 .rail-float.on:hover { border-color: transparent; }
 .panel .ed-head { padding-right: 52px; height: 40px; }
 .ed-fold[hidden] { display: none; }
+/* (Tom, 2026-11-23, from the Visualiser's screenshot: the rail's items are square blocks the rail's full width, flush
+   with the column's top, no gaps; the open one is a block in the column's colour, running straight into it) */
+.rail { padding: 0; gap: 0; }
+.rail button, .rail button.on { margin: 0; border: 0; border-radius: 0; }
+.rail button:hover { border: 0; }
