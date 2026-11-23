@@ -2,7 +2,10 @@
 // Fade (its full and none lines) and a Round mask (its middle, its edge, the feather inside dashed), and the red
 // overlay showing where the picked mask is while it's being shaped or painted.
 import { state, changed, commit, currentItem, currentLayer } from '../state.js';
-import { newMask, maskCanvas } from '../masks.js';
+import { newMask, maskCanvas, PAINTED } from '../masks.js';
+import { putPicture } from '../media.js';
+import { dbPut } from '../store.js';
+import { newId } from '../project.js';
 import { subjectMask, cutoutStatus } from '../cutout.js';
 import { getPicture } from '../media.js';
 import { drawPlaced, layerFrame } from '../render.js';
@@ -20,9 +23,82 @@ const ready = () => {
   return item && layer && pic ? { item, layer, pic } : null;
 };
 
+// ---- Lasso and Wand (Tom, 2026-11-23): Lasso: drag round a part of the photo; Wand: click a colour and the part it runs
+// through (as far as it stays within Wand tolerance) is picked. Either becomes a painted mask on the photo.
+let picking = null, lasso = null;
+export const pickingNow = () => picking;
+export const WAND = { tolerance: (() => { try { return Number(localStorage.getItem("ans_photo_wand_tol")) || 40; } catch { return 40; } })() };
+export function setWandTolerance(v) { WAND.tolerance = v; try { localStorage.setItem("ans_photo_wand_tol", String(v)); } catch {} }
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && picking) { picking = null; lasso = null; changed("view"); } });
+
+// A new painted mask on the photo from a picture drawn by `paint(ctx, k)` (k: mask pixels per photo pixel)
+async function maskFrom(r, kind, paint) {
+  const k = Math.min(1, 2048 / Math.max(r.pic.width, r.pic.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(r.pic.width * k)); canvas.height = Math.max(1, Math.round(r.pic.height * k));
+  paint(canvas.getContext("2d"), k);
+  const id = newId("m");
+  const picture = { full: canvas, preview: canvas, width: r.pic.width, height: r.pic.height, name: `${kind === "wand" ? "Wand" : "Lasso"}.png`, rev: 0 };
+  putPicture(id, picture);
+  const m = newMask(kind);
+  m.maskId = id;
+  r.layer.masks = [...(r.layer.masks || []), m];
+  state.maskId = m.id;
+  state.photoPicked = true;
+  changed("project");
+  commit();
+  const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
+  await dbPut("media", { id, projectId: state.project.id, kind: "mask", name: picture.name, type: "image/png", blob, width: picture.width, height: picture.height, added: Date.now() });
+}
+
+function finishLasso() {
+  const { pts, f, r } = lasso;
+  lasso = null; picking = null;
+  if (pts.length < 3) { changed("view"); return; }
+  const photo = pts.map((p) => toPhoto(r, f, p));
+  maskFrom(r, "lasso", (ctx, k) => {
+    ctx.filter = "blur(1px)"; // (a soft edge, a pixel wide)
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    photo.forEach((q, i) => (i ? ctx.lineTo(q.x * k, q.y * k) : ctx.moveTo(q.x * k, q.y * k)));
+    ctx.closePath();
+    ctx.fill();
+  });
+}
+
+function wandAt(r, f, p) {
+  picking = null;
+  const src = r.pic.preview || r.pic.full;
+  const w = src.width, h = src.height;
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(src, 0, 0);
+  const q = toPhoto(r, f, p), sx = Math.floor((q.x / r.pic.width) * w), sy = Math.floor((q.y / r.pic.height) * h);
+  if (sx < 0 || sy < 0 || sx >= w || sy >= h) { changed("view"); return; }
+  const data = g.getImageData(0, 0, w, h).data, seen = new Uint8Array(w * h), out = g.createImageData(w, h);
+  const at = (sy * w + sx) * 4, r0 = data[at], g0 = data[at + 1], b0 = data[at + 2];
+  const tol = (WAND.tolerance / 100) * 255 * 1.2;
+  const stack = [sy * w + sx];
+  seen[sy * w + sx] = 1;
+  while (stack.length) {
+    const i = stack.pop(), d = i * 4;
+    if (Math.hypot(data[d] - r0, data[d + 1] - g0, data[d + 2] - b0) > tol) continue;
+    out.data[d] = out.data[d + 1] = out.data[d + 2] = out.data[d + 3] = 255;
+    const x = i % w, y = (i - x) / w;
+    if (x > 0 && !seen[i - 1]) { seen[i - 1] = 1; stack.push(i - 1); }
+    if (x < w - 1 && !seen[i + 1]) { seen[i + 1] = 1; stack.push(i + 1); }
+    if (y > 0 && !seen[i - w]) { seen[i - w] = 1; stack.push(i - w); }
+    if (y < h - 1 && !seen[i + w]) { seen[i + w] = 1; stack.push(i + w); }
+  }
+  g.putImageData(out, 0, 0);
+  maskFrom(r, "wand", (ctx) => { ctx.filter = "blur(1px)"; ctx.imageSmoothingQuality = "high"; ctx.drawImage(c, 0, 0, ctx.canvas.width, ctx.canvas.height); });
+}
+
 export async function addMask(kind) {
   const r = ready();
   if (!r) { toast("Pick a photo first"); return; }
+  if (kind === "lasso" || kind === "wand") { setTool(null); picking = kind; toast(kind === "lasso" ? "Drag round the part (Esc: never mind)" : "Click a colour on the photo (Esc: never mind)"); changed("view"); return; }
   const m = newMask(kind);
   if (kind === "subject") {
     const id = await subjectMask(r.layer);
@@ -40,7 +116,7 @@ export async function addMask(kind) {
 export function pickMask(id) {
   state.maskId = state.maskId === id ? null : id;
   const m = pickedMask();
-  if (state.tool === "mask" && !(m && m.kind === "brush")) setTool(null);
+  if (state.tool === "mask" && !(m && PAINTED.includes(m.kind))) setTool(null);
   changed("view");
 }
 export function removeMask(layer, id) {
@@ -69,6 +145,12 @@ function handles(r, f, m) {
 
 // Pressed on the canvas: a handle of the picked mask (true: taken)
 export function maskDown(e, f, p) {
+  if (picking && e.button === 0) {
+    const r = ready();
+    if (!r) return false;
+    if (picking === "lasso") lasso = { pts: [p], f, r }; else wandAt(r, f, p);
+    return true;
+  }
   if (!shown() || e.button !== 0) return false;
   const r = ready(), m = pickedMask();
   if (!r) return false;
@@ -78,6 +160,8 @@ export function maskDown(e, f, p) {
   return true;
 }
 export function maskMove(e, f, p) {
+  if (lasso) { lasso.pts.push(p); changed("view"); return "crosshair"; }
+  if (picking) return "crosshair";
   if (!drag) {
     // (the pointer over a handle: a hand)
     if (!shown()) return false;
@@ -102,6 +186,7 @@ export function maskMove(e, f, p) {
   return "grabbing";
 }
 export function maskUp() {
+  if (lasso) { finishLasso(); return true; }
   if (!drag) return false;
   drag = null;
   changed("project");
@@ -112,6 +197,14 @@ export function maskUp() {
 // ---- Drawing: the overlay while shaping / painting, and the handles
 
 export function drawMasks(ctx, f) {
+  if (lasso && lasso.pts.length > 1) {
+    ctx.save();
+    for (const [colour, w, dash] of [["rgba(0,0,0,0.6)", 3, []], ["#fff", 1.5, [5, 4]]]) {
+      ctx.strokeStyle = colour; ctx.lineWidth = w; ctx.setLineDash(dash);
+      ctx.beginPath(); lasso.pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y))); ctx.closePath(); ctx.stroke();
+    }
+    ctx.restore();
+  }
   const m = pickedMask(), r = ready();
   if (!m || !r || state.textId) return;
   // Red where the mask is, while it's dragged or painted

@@ -13,8 +13,8 @@ import { COLOUR_PRESETS } from '../effects/colourPresets.js';
 import { HSL_COLOURS } from '../effects/hsl.js';
 import { addLutFile } from '../effects/lutStore.js';
 import { curveControl, wheelsControl } from './colourControls.js';
-import { MASK_KINDS, maskName, BRUSH_EFFECTS, RETIRED_EFFECTS, effectOf, tidyEffect } from '../masks.js';
-import { addMask, pickMask, removeMask, pickedMask } from './masks.js';
+import { MASK_KINDS, PAINTED, maskName, BRUSH_EFFECTS, RETIRED_EFFECTS, effectOf, tidyEffect } from '../masks.js';
+import { addMask, pickMask, removeMask, pickedMask, pickingNow, WAND, setWandTolerance } from './masks.js';
 import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, deleteMyFilter, isMine } from '../filters.js';
 import { presetSwatch, presetSwatchKept, effectSwatch } from '../looks.js';
 import { listFilms, loadFilm, filmsCredit } from '../effects/filmTables.js';
@@ -994,8 +994,14 @@ function effectBrushControls(m, fresh = false) {
 function masksList(layer) {
   const box = el("div", { className: "tools-masks" }, el("div", { className: "tools-head", textContent: "Masks" }));
   const kinds = el("div", { className: "mask-kinds" });
-  MASK_KINDS.forEach(([kind, label, tip]) => kinds.append(el("button", { type: "button", className: "mask-kind", textContent: kind === "subject" && cutoutStatus.busy ? "Finding…" : label, title: tip, disabled: kind === "subject" && cutoutStatus.busy, onclick: () => addMask(kind) })));
+  MASK_KINDS.forEach(([kind, label, tip]) => kinds.append(el("button", { type: "button", className: "mask-kind" + (pickingNow() === kind ? " lit" : ""), textContent: kind === "subject" && cutoutStatus.busy ? "Finding…" : label, title: tip, disabled: kind === "subject" && cutoutStatus.busy, onclick: () => addMask(kind) })));
   box.append(kinds);
+  if (pickingNow() === "wand") {
+    const v = el("span", { className: "value", textContent: String(WAND.tolerance) });
+    const input = el("input", { type: "range", min: 1, max: 100, value: WAND.tolerance, oninput: (e) => { setWandTolerance(Number(e.target.value)); v.textContent = e.target.value; fillTrack(e.target); } });
+    fillTrack(input);
+    box.append(el("label", { className: "field" }, el("span", { className: "field-head" }, el("span", { textContent: "Wand tolerance" }), v), input));
+  }
   (layer.masks || []).forEach((m) => {
     const row = el("div", { className: "mask-row" + (m.id === state.maskId ? " on" : "") + (m.on ? "" : " off"), onclick: () => pickMask(m.id) });
     const flip = el("button", { type: "button", className: "mask-btn" + (m.invert ? " lit" : ""), textContent: "Invert", title: "Everything but this part", onclick: (e) => { e.stopPropagation(); m.invert = !m.invert; changed("project"); commit(); } });
@@ -1020,7 +1026,7 @@ function maskCard() {
       inner.append(...effectBrushControls(m));
       return;
     }
-    if (m.kind === "brush") {
+    if (PAINTED.includes(m.kind)) {
       const paint = state.tool === "mask";
       inner.append(el("div", { className: "row" },
         el("button", { type: "button", className: "mask-btn" + (paint ? " lit" : ""), textContent: paint ? "Painting" : "Paint", title: "Paint on the photo (Esc puts the brush down)", onclick: () => { setTool(paint ? null : "mask"); } }),

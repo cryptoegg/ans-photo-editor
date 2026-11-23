@@ -50,7 +50,7 @@ export function brushReady() {
   const item = currentItem(), layer = currentLayer();
   if (!item || !layer || !state.photoPicked || (item.kind === "video" && layer === item)) return null;
   if (state.tool === "edge" && !(layer.cutout && layer.cutout.on && layer.cutout.maskId)) return null;
-  if (state.tool === "mask" && !((layer.masks || []).some((m) => m.id === state.maskId && m.kind === "brush"))) return null;
+  if (state.tool === "mask" && !((layer.masks || []).some((m) => m.id === state.maskId && ["brush", "lasso", "wand"].includes(m.kind)))) return null;
   const pic = getPicture(layer.mediaId);
   return pic ? { item, layer, pic } : null;
 }

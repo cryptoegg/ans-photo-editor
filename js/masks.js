@@ -16,8 +16,13 @@ export const MASK_KINDS = [
   ["brush", "Brush", "Paint where the fix goes"],
   ["linear", "Gradient", "A fix that fades in across the photo (a sky, a floor)"],
   // (Round, "radial", taken off the menu by Tom, 2026-11-23; a Round mask already made still works and shows as Round)
-  ["subject", "Subject", "The person or main thing, found for you"]
+  ["subject", "Subject", "The person or main thing, found for you"],
+  // (Tom, 2026-11-23, as Photoshop's selections: each makes a painted mask, touched up after with the mask brush)
+  ["lasso", "Lasso", "Draw round the part the fix goes on"],
+  ["wand", "Wand", "Click a colour: the part of the photo that colour runs through"]
 ];
+// Masks made as a picture that the mask brush can paint on
+export const PAINTED = ["brush", "lasso", "wand"];
 // The Effect brush's effects (Tom, 2026-11-18, from his references): [id, label, effect type, its settings]. A mask with
 // `effect: { id, type, settings }` paints that effect on (a Brush mask: the Effect brush, js/ui/brush.js).
 export const BRUSH_EFFECTS = [
