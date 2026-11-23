@@ -99,8 +99,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   in Adjust → Masks the menu changes the picked one's effect. New effects for it in js/effects/ ("Break up"): pixelate,
   shards, crumple, stripes. Settings (`effectBrushControls` in panel.js) in the Tools fold while in hand and in Adjust → Masks.
   No red overlay for it: the effect shows as it's painted.
-- **Masks** (Tom, 2026-11-18, like Lightroom's): fixes on part of a photo. Adjust → Masks: Brush · Gradient (was Fade, renamed 2026-11-23) · Subject (Round taken off the menu 2026-11-23; old Round masks still work),
-  then a row per mask (Invert, On / Off, ✕) and the picked one's Light and Colour sliders (Round: Feather too). The record
+- **Masks** (Tom, 2026-11-18, like Lightroom's): fixes on part of a photo. In Tools (Tom, 2026-11-23: under the brushes, `masksList` in panel.js): Brush · Gradient (was Fade, renamed 2026-11-23) · Subject (Round taken off the menu 2026-11-23; old Round masks still work),
+  then a row per mask (Invert, On / Off, ✕); the picked one's Light and Colour sliders are first in Edit on the right (`maskCard`, "Mask · Gradient 1", open as it's picked) (Round: Feather too). The record
   is the layer's `masks` (`js/masks.js`: brush / subject keep a PNG `maskId`, Fade a `line`, Round a `round`); `state.maskId`
   is the picked one. Each mask's fix is worked out on the whole photo after its own Light / Colour card and laid on
   through the mask before the filter (looks.js). Subject reuses the Remove background model (`subjectMask` in cutout.js).
@@ -185,7 +185,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   column away. The right column's title names
   what's picked on the canvas (Photo 2, Caption; nothing picked: no title), then Apply this slide | Apply all, Layers, and the picked thing's
   settings: a caption's own (`captionSettings`), else **Edit | Effects** (as a clip's in the Visualiser; the tab kept in
-  `ans_photo_right_tab`): Edit = Light, Colour, Skin, Masks, Crop, Opacity (the picked photo's opacity and blend; no Background: the colour is in the tools row; Tom, 2026-11-23); Effects (`buildEffectsTab`) = the filter's
+  `ans_photo_right_tab`): Edit = the picked mask, Light, Colour, Skin, Crop, Opacity (the picked photo's opacity and blend; no Background: the colour is in the tools row; Tom, 2026-11-23); Effects (`buildEffectsTab`) = the filter's
   own Light / Colour, the effects on this photo (tick, one slider, settings), Add effect, Save this filter / Reset
   filter. Every fold starts shut; on an empty project Edit | Effects still show (on a blank stand-in, `sample` in panel.js, greyed) so new users can look round (Tom, 2026-11-23). A new Scan starts with no sweep (a still: the whole page scanned). The Editor's five tabs are gone from the top bar (`state.tab` no longer used).
 - **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Phone (one button, on / off),

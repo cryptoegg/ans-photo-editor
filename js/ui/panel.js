@@ -195,7 +195,7 @@ function buildToolsBox() {
   icons.className = "tool-icons";
   box.append(icons);
   if (fxInHand()) box.append(...effectBrushControls(pickedMask(), true)); // (the Effect brush: its effect, Add / Erase, size)
-  else if (state.tool && state.tool !== "mask") { // (the Mask brush's settings are in Adjust → Masks)
+  else if (state.tool && state.tool !== "mask") { // (the Mask brush's settings are with the picked mask, in Edit)
     box.append(brushSliders());
     if (state.tool === "edge" || state.tool === "clone") {
       const seg = el("div", { className: "segmented wide" });
@@ -208,6 +208,7 @@ function buildToolsBox() {
   }
   const touched = picked.retouch && (picked.retouch.patchId || (picked.retouch.tiles || []).length);
   if (touched) box.append(el("div", { className: "tool-row" }, button("Clear touch-ups", () => clearTouchUps(picked), "btn small cut-btn")));
+  if (!isVideo(slide) || picked !== slide) box.append(masksList(picked));
 }
 
 function cutoutRow(layer) {
@@ -302,6 +303,9 @@ function build() {
     : "";
 
   buildLayersBox();
+  // (a mask just picked in Tools: its settings are in Edit)
+  if (state.maskId && state.maskId !== maskSeen && rightTab === "effects") rightTab = "edit";
+  maskSeen = state.maskId;
   const mode = caption ? "caption" : rightTab;
   const scroll = mode === shownTab ? body.scrollTop : 0; // (switching between a caption and a photo starts at the top)
   shownTab = mode;
@@ -811,7 +815,7 @@ function buildAdjust() {
       get: (i) => (i.look.skin || skin.defaults())[c.key], set: (i, v) => { i.look.skin = { ...skin.defaults(), ...(i.look.skin || {}), [c.key]: v }; }
     })))
   });
-  // Edit (Tom, 2026-11-23): Light, Colour, Skin, Masks, Crop (the background colour is in the tools row)
+  // Edit (Tom, 2026-11-23): the picked mask (if one is), Light, Colour, Skin, Crop, Opacity (Masks are in Tools) (the background colour is in the tools row)
   // Opacity (Tom, 2026-11-23, as in Edits): the picked photo (else the slide's own) seen through, and how it mixes with
   // what's under it
   const layer = lookItem();
@@ -828,7 +832,9 @@ function buildAdjust() {
       inner.append(el("label", { className: "field" }, el("span", { textContent: "Blend" }), blend));
     }
   }) : null;
-  body.append(colourCard(chosen), skinCard, masksCard(), foldCard({ key: "adjust:crop", name: "Crop", build: (inner) => withBody(inner, buildCrop) }));
+  const mask = maskCard();
+  if (mask) body.insertBefore(mask, body.querySelector(".fold-card"));
+  body.append(colourCard(chosen), skinCard, foldCard({ key: "adjust:crop", name: "Crop", build: (inner) => withBody(inner, buildCrop) }));
   if (opacityCard) body.append(opacityCard);
 }
 
@@ -860,27 +866,33 @@ function effectBrushControls(m, fresh = false) {
 }
 
 // ---- Masks (Tom, 2026-11-18, like Lightroom's; js/masks.js, js/ui/masks.js): fixes on part of the photo picked.
-// Brush · Fade · Round · Subject add one; each row picks it (its handles on the canvas), with Invert, its eye and ✕;
-// the picked one's settings under the list: the brush's Paint | Erase, Size and Hardness (a Brush mask), Feather
-// (Round), then its own Light and Colour sliders.
-function masksCard() {
-  const layer = layerNow();
-  const list = (layer && layer.masks) || [];
-  const card = foldCard({ key: "adjust:masks", name: "Masks", build: (inner) => {
-    if (!layer || (!sample && !getPicture(layer.mediaId))) { inner.append(note("Pick a photo")); return; }
-    const kinds = el("div", { className: "mask-kinds" });
-    MASK_KINDS.forEach(([kind, label, tip]) => kinds.append(el("button", { type: "button", className: "mask-kind", textContent: kind === "subject" && cutoutStatus.busy ? "Finding…" : label, title: tip, disabled: kind === "subject" && cutoutStatus.busy, onclick: () => addMask(kind) })));
-    inner.append(kinds);
-    list.forEach((m) => {
-      const row = el("div", { className: "mask-row" + (m.id === state.maskId ? " on" : "") + (m.on ? "" : " off"), onclick: () => pickMask(m.id) });
-      const flip = el("button", { type: "button", className: "mask-btn" + (m.invert ? " lit" : ""), textContent: "Invert", title: "Everything but this part", onclick: (e) => { e.stopPropagation(); m.invert = !m.invert; changed("project"); commit(); } });
-      const eye = el("button", { type: "button", className: "mask-btn", textContent: m.on ? "On" : "Off", title: "Switch this mask on / off", onclick: (e) => { e.stopPropagation(); m.on = !m.on; changed("project"); commit(); } });
-      const del = el("button", { type: "button", className: "mask-btn", textContent: "✕", title: "Delete this mask", onclick: (e) => { e.stopPropagation(); removeMask(layer, m.id); } });
-      row.append(el("span", { className: "mask-name", textContent: maskName(layer, m) }), flip, eye, del);
-      inner.append(row);
-    });
-    const m = pickedMask();
-    if (!m) return;
+// (Tom, 2026-11-23: in Tools, with the brushes) The Tools library has Brush · Gradient · Subject, which add one, and a
+// row per mask (picking it shows its handles on the canvas) with Invert, On / Off and ✕. The picked one's settings are on
+// the right, in Edit: the brush's Add | Erase, Size and Hardness (a Brush mask), Feather (an old Round one), then its own
+// Light and Colour sliders.
+function masksList(layer) {
+  const box = el("div", { className: "tools-masks" }, el("div", { className: "tools-head", textContent: "Masks" }));
+  const kinds = el("div", { className: "mask-kinds" });
+  MASK_KINDS.forEach(([kind, label, tip]) => kinds.append(el("button", { type: "button", className: "mask-kind", textContent: kind === "subject" && cutoutStatus.busy ? "Finding…" : label, title: tip, disabled: kind === "subject" && cutoutStatus.busy, onclick: () => addMask(kind) })));
+  box.append(kinds);
+  (layer.masks || []).forEach((m) => {
+    const row = el("div", { className: "mask-row" + (m.id === state.maskId ? " on" : "") + (m.on ? "" : " off"), onclick: () => pickMask(m.id) });
+    const flip = el("button", { type: "button", className: "mask-btn" + (m.invert ? " lit" : ""), textContent: "Invert", title: "Everything but this part", onclick: (e) => { e.stopPropagation(); m.invert = !m.invert; changed("project"); commit(); } });
+    const eye = el("button", { type: "button", className: "mask-btn", textContent: m.on ? "On" : "Off", title: "Switch this mask on / off", onclick: (e) => { e.stopPropagation(); m.on = !m.on; changed("project"); commit(); } });
+    const del = el("button", { type: "button", className: "mask-btn", textContent: "✕", title: "Delete this mask", onclick: (e) => { e.stopPropagation(); removeMask(layer, m.id); } });
+    row.append(el("span", { className: "mask-name", textContent: maskName(layer, m) }), flip, eye, del);
+    box.append(row);
+  });
+  return box;
+}
+// The picked mask's settings (Edit, first, open as it's picked)
+let shownMask = null, maskSeen = null;
+function maskCard() {
+  const layer = layerNow(), m = !sample && pickedMask();
+  if (!m || !layer) { shownMask = null; return null; }
+  const key = `mask:${m.id}`;
+  if (shownMask !== m.id) { shownMask = m.id; openCards.add(key); }
+  return foldCard({ key, name: `Mask · ${maskName(layer, m)}`, build: (inner) => {
     if (m.effect) {
       const paint = state.tool === "mask";
       inner.append(el("div", { className: "row" }, el("button", { type: "button", className: "mask-btn" + (paint ? " lit" : ""), textContent: paint ? "Painting" : "Paint", title: "Paint on the photo (Esc puts the brush down)", onclick: () => { setTool(paint ? null : "mask"); } })));
@@ -899,7 +911,6 @@ function masksCard() {
       label: c.label, min: c.min, max: c.max, step: c.step, targets: [m], get: (x) => x[part][c.key], set: (x, v) => { x[part][c.key] = v; }
     }))));
   } });
-  return card;
 }
 
 // ---- Colour (Tom, 2026-11-18, as the Lyric Visualiser's one Colour card): Presets… on top (js/effects/colourPresets.js:

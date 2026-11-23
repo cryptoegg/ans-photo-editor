@@ -1037,3 +1037,7 @@ body.strip-folded .tool-row .strip-fold::before { top: 9px; }
 
 /* An empty project (Tom, 2026-11-23): Edit and Effects still show, folds shut, the settings greyed */
 #tab-body.sample .fold-body, #tab-body.sample .fold-reset, #tab-body.sample .add-effect, #tab-body.sample .save-filter { opacity: .45; }
+
+/* Masks in Tools (Tom, 2026-11-23): under the brushes, a bold heading with a line under it */
+.tools-masks { margin-top: 14px; display: grid; gap: 4px; }
+.tools-head { font: 600 13px var(--font); color: var(--accent-ink); padding-bottom: 4px; box-shadow: inset 0 -1px 0 var(--line, rgba(128,128,128,.3)); margin-bottom: 4px; }
