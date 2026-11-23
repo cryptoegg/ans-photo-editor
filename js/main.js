@@ -34,6 +34,7 @@ function appIcons(r) {
 import { initFilmstrip } from './ui/filmstrip.js';
 import { initStage } from './ui/stage.js';
 import { initPanel, flickFilter } from './ui/panel.js';
+import { initDropper } from './ui/dropper.js';
 import { initMediaColumn } from './ui/mediaColumn.js';
 import { initPhone, go as phoneGo, showPhone } from './ui/phone.js';
 import { openExport, openFileMenu, openSettings, saveNow, saveAs } from './ui/dialogs.js';
@@ -46,6 +47,7 @@ async function start() {
   initFilmstrip();
   initStage();
   initPanel();
+  initDropper();
   initMediaColumn();
   initPhone();
   wireTopBar();
