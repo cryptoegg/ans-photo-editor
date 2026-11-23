@@ -150,17 +150,7 @@ function buildLayersBox() {
     list.append(row);
   });
   box.append(list);
-  // The picked layer's opacity and blend (how it mixes with the layers under it)
-  if (all.length > 1) {
-    const st = picked.style;
-    const opacity = slider({ label: `${nameOf(all.indexOf(picked))} opacity`, min: 0, max: 100, unit: "%", reset: 100, targets: [picked], get: (l) => (l.style.opacity ?? 1) * 100, set: (l, v) => { l.style.opacity = v / 100; }, onCommit: () => {} });
-    const blend = el("select", { className: "select", title: "How this photo mixes with the ones under it" });
-    Object.entries(BLENDS).forEach(([value, label]) => blend.append(el("option", { value, textContent: label })));
-    blend.value = st.blend || "normal";
-    blend.onchange = () => { st.blend = blend.value; changed("project"); commit(); };
-    opacity.classList.add("half");
-    box.append(el("div", { className: "row layer-mix" }, opacity, el("label", { className: "field" }, el("span", { textContent: "Blend" }), blend)));
-  }
+  // (the picked photo's opacity and blend: Edit → Opacity, Tom 2026-11-23)
   if (isGrid(slide)) {
     const foot = el("div", { className: "row" });
     const gap = slider({ label: "Gap", min: 0, max: 10, step: 0.5, unit: "%", targets: [slide], get: (i) => i.layout.gap * 100, set: (i, v) => { i.layout.gap = v / 100; }, onCommit: () => {} });
@@ -813,7 +803,24 @@ function buildAdjust() {
     })))
   });
   // Edit (Tom, 2026-11-23): Light, Colour, Skin, Masks, Crop (the background colour is in the tools row)
+  // Opacity (Tom, 2026-11-23, as in Edits): the picked photo (else the slide's own) seen through, and how it mixes with
+  // what's under it
+  const layer = lookItem();
+  const opacityCard = layer ? foldCard({
+    key: "adjust:opacity", name: "Opacity",
+    onReset: () => { layer.style = { ...(layer.style || {}), opacity: 1, blend: "normal" }; changed("project"); commit(); },
+    build: (inner) => {
+      inner.append(slider({ label: "Opacity", min: 0, max: 100, unit: "%", reset: 100, targets: [layer],
+        get: (l) => ((l.style && l.style.opacity) ?? 1) * 100, set: (l, v) => { l.style = l.style || {}; l.style.opacity = v / 100; }, onCommit: () => {} }));
+      const blend = el("select", { className: "select", title: "How this photo mixes with what's under it" });
+      Object.entries(BLENDS).forEach(([value, label]) => blend.append(el("option", { value, textContent: label })));
+      blend.value = (layer.style && layer.style.blend) || "normal";
+      blend.onchange = () => { layer.style = layer.style || {}; layer.style.blend = blend.value; changed("project"); commit(); };
+      inner.append(el("label", { className: "field" }, el("span", { textContent: "Blend" }), blend));
+    }
+  }) : null;
   body.append(colourCard(chosen), skinCard, masksCard(), foldCard({ key: "adjust:crop", name: "Crop", build: (inner) => withBody(inner, buildCrop) }));
+  if (opacityCard) body.append(opacityCard);
 }
 
 // The Effect brush's settings (a mask carrying an effect, js/masks.js BRUSH_EFFECTS): which effect, its sliders,
