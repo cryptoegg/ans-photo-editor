@@ -214,9 +214,13 @@ export function presetSwatch(item, presetId, seed, side = 120) {
   return swatchOf(item, presetId, presetId ? { preset: presetId, strength: 100, light: {}, colour: {} } : null, seed, side);
 }
 
+// (a filter tile already made, else null: nothing is drawn)
+export function presetSwatchKept(item, presetId, side = 120) { return item ? find("swatch", swatchKey(item, presetId, side)) : null; }
+const swatchKey = (item, presetId, side) => JSON.stringify(["swatch", item.mediaId, retouchKey(item), presetId, side, presetId && presetId.startsWith("film:") && filmLoaded(presetId.slice(5)) ? 1 : 0]);
+
 function swatchOf(item, presetId, look, seed, side) {
   const mediaId = item.mediaId;
-  const key = JSON.stringify(["swatch", mediaId, retouchKey(item), presetId, side, presetId && presetId.startsWith("film:") && filmLoaded(presetId.slice(5)) ? 1 : 0]);
+  const key = swatchKey(item, presetId, side);
   const found = find("swatch", key);
   if (found) return found;
   const picture = getPicture(mediaId);

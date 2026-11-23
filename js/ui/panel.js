@@ -16,7 +16,7 @@ import { curveControl, wheelsControl } from './colourControls.js';
 import { MASK_KINDS, maskName, BRUSH_EFFECTS, RETIRED_EFFECTS, effectOf, tidyEffect } from '../masks.js';
 import { addMask, pickMask, removeMask, pickedMask } from './masks.js';
 import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, deleteMyFilter, isMine } from '../filters.js';
-import { presetSwatch, effectSwatch } from '../looks.js';
+import { presetSwatch, presetSwatchKept, effectSwatch } from '../looks.js';
 import { listFilms, loadFilm, filmsCredit } from '../effects/filmTables.js';
 import { getPicture } from '../media.js';
 import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS, PHOTO_SHAPES, photoBox, trimOf } from '../render.js';
@@ -539,7 +539,9 @@ function buildFilters() {
     const b = el("button", { className: "swatch" + (on ? " on" : ""), title: filter ? filter.note || filter.name : "No filter" });
     const holder = el("div", { className: "blank" });
     b.append(holder, el("span", { textContent: filter ? filter.name : "Original" }));
-    queue.push(async () => {
+    const ready = presetSwatchKept(item, id, 132); // (already made: drawn at once, so flicking doesn't blank the grid)
+    if (ready) { const shown = el("canvas", { width: ready.width, height: ready.height }); shown.getContext("2d").drawImage(ready, 0, 0); holder.replaceWith(shown); }
+    else queue.push(async () => {
       if (id && id.startsWith("film:")) await loadFilm(id.slice(5)); // (its table fetched first)
       if (job !== swatchJob) return;
       const c = presetSwatch(item, id, state.project.seed, 132);
@@ -624,7 +626,6 @@ function foldCard({ key, name, tick = null, quick = null, onReset = null, onRemo
 // that's off switches it on. A slide with no filter can switch effects on too (its own "Custom").
 
 const ADJUST_TYPES = ["tone", "skin", "curves", "colour", "hsl", "lut", "grade"];
-const FILTER_NAMES = { tone: "Filter light", colour: "Filter colour", curves: "Filter curves", hsl: "Filter per colour", lut: "Filter LUT", grade: "Filter wheels" };
 // An effect on a slide's look: the one in its chain (the filter's own copy), or none
 const fxOf = (i, type) => (i.look.chain || (i.look.preset ? freshChain(i.look.preset) : [])).find((fx) => fx.type === type) || null;
 // The effect on a slide, made (switched on, in its place in the order) if it isn't there yet
@@ -707,9 +708,8 @@ function buildEffectsTab() {
     body.append(el("div", { className: "fx-filter-head" },
       el("span", { className: "fx-filter-name", textContent: filterName(id) || "Filter" }),
       el("button", { className: "btn small fold-reset fold-remove", title: "Take this filter off", ariaLabel: "Take this filter off", onclick: () => useFilter(targets, null) })));
-    EFFECTS.filter((e) => ADJUST_TYPES.includes(e.type) && (e.type === "tone" || e.type === "colour" || (fxOf(item, e.type) && fxOf(item, e.type).on !== false))).forEach((effect) => {
-      body.append(foldCard({ key: `fx:${effect.type}`, name: FILTER_NAMES[effect.type], onReset: resetTo(effect.type), build: controlsOf(effect) }));
-    });
+    // (no Filter light / colour any more, Tom 2026-11-23: a filter's own light and colour stay inside it, scaled by
+    // Strength; Edit's Light and Colour are the one set of sliders, on top of whatever filter is on)
   }
   effectsOn(item).forEach((effect) => {
     const fx = fxOf(item, effect.type);

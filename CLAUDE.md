@@ -185,8 +185,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   column away. The right column's title names
   what's picked on the canvas (Photo 2, Caption; nothing picked: no title), then Apply this slide | Apply all, Layers, and the picked thing's
   settings: a caption's own (`captionSettings`), else **Edit | Effects** (as a clip's in the Visualiser; the tab kept in
-  `ans_photo_right_tab`): Edit = the picked mask, Light, Colour, Skin, Crop, Opacity (the picked photo's opacity and blend; no Background: the colour is in the tools row; Tom, 2026-11-23); Effects (`buildEffectsTab`) = the filter's name (a bin takes it off: Original) and its
-  own Light / Colour, the effects on this photo (tick, one slider, settings), Add effect, Save this filter / Reset
+  `ans_photo_right_tab`): Edit = the picked mask, Light, Colour, Skin, Crop, Opacity (the picked photo's opacity and blend; no Background: the colour is in the tools row; Tom, 2026-11-23); Effects (`buildEffectsTab`) = the filter's name (a bin takes it off: Original; no Filter light / colour: a filter's own stay inside it, scaled by
+  Strength, and Edit's Light / Colour are the one set, Tom 2026-11-23), the effects on this photo (tick, one slider, settings), Add effect, Save this filter / Reset
   filter. Every fold starts shut; on an empty project Edit | Effects still show (on a blank stand-in, `sample` in panel.js, greyed) so new users can look round (Tom, 2026-11-23). A new Scan starts with no sweep (a still: the whole page scanned). The Editor's five tabs are gone from the top bar (`state.tab` no longer used).
 - **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Phone (one button, on / off),
   Instagram | TikTok | YouTube, Feed | Profile as icons (faint while editing), centred over the canvas (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
@@ -244,6 +244,6 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 
 ## Keys
 
-← → slides (or the phone); after clicking a filter tile, ← → ↑ ↓ flick through the filters (`flickFilter` in panel.js) until a click elsewhere · ⇧-click / ⌘-click select · ⌘A all · ⌘C / ⌘V copy / paste a look ·
+← → slides (or the phone); after clicking a filter tile, ← → ↑ ↓ flick through the filters (`flickFilter` in panel.js; tiles already made are drawn at once, `presetSwatchKept`) until a click elsewhere · ⇧-click / ⌘-click select · ⌘A all · ⌘C / ⌘V copy / paste a look ·
 ⌘D duplicate (the picked photo, else the slides) · hold \ before / after · ⌘Z / ⇧⌘Z · [ ] brush size · Shift [ ] hardness · right-click (brush in hand) brush panel · Alt-click Clone's source · Esc puts the brush down · Delete removes the picked text · ⌘-scroll
 zooms the view.
