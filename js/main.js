@@ -16,7 +16,7 @@ import { newProject, slides as slideList, firstSlideOf, allLists, slideCount } f
 import { saveProject, loadProject } from './store.js';
 import { loadPicture, warmHeicReader } from './media.js';
 import { FONTS } from './render.js';
-import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, splitPanorama, setSpan, panoMost, copyLook, pasteLook, setStage, setRatio, addLayerFiles, duplicateLayer } from './actions.js';
+import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, setSpan, panoMost, copyLook, pasteLook, setStage, setRatio, addLayerFiles, duplicateLayer } from './actions.js';
 import { loadMyFilters } from './filters.js';
 import { initInstall } from './install.js';
 import { STAGES, SHAPES, PLATFORMS, fitFor } from './project.js';
@@ -88,18 +88,17 @@ function refresh(what) {
   const item = currentItem();
   const has = items().length > 0;
   ["btn-duplicate", "btn-reset", "btn-delete", "btn-pano"].forEach((id) => { $(id).disabled = !has; });
-  $("btn-split").disabled = !item || item.span < 2;
   // Panorama (Tom, 2026-11-18): the button makes the slide a panorama of 2; then the number beside it, with its arrows,
   // takes it up to 10 slides or back down to 1
   const joining = state.selected.size > 1, pano = !joining && item && item.span > 1;
-  $("btn-pano").textContent = joining ? "Join as panorama" : "Panorama";
+  $("btn-pano").title = joining ? "Join as panorama: the picked slides become one photo across them" : "Panorama: one photo across several slides";
   $("btn-pano").classList.toggle("on", !!pano);
   $("pano-step").hidden = !pano;
   if (pano) {
     $("pano-n").textContent = String(item.span);
     $("pano-up").disabled = item.span >= panoMost(item);
   }
-  document.querySelectorAll("#view-switch button").forEach((b) => b.classList.toggle("on", b.dataset.view === state.view));
+  $("btn-phone").classList.toggle("on", state.view === "phone");
   // The app the set is shown as, and how well the set suits each (faded: it doesn't take this shape; a dot: something
   // to know, in its hover box: too many slides, videos left out, or TikTok's tall frame)
   const p = state.project;
@@ -132,7 +131,7 @@ function stepSlide(step, how = "one") {
 // The canvas bar: "Slide 3 of 7" (a panorama "Slides 5–6 of 7"), ‹ › and the background colour of the slides chosen
 function showCanvasBar() {
   const p = state.project, item = currentItem(), list = items();
-  $("canvas-bar").hidden = !list.length; // (an empty project: just "Drop photos here")
+  $("canvas-bar").hidden = !list.length || state.view !== "edit"; // (an empty project: just "Drop photos here"; Phone view has its own − Fit +)
   const total = slideCount(p);
   const first = item ? firstSlideOf(p, item) : 0;
   $("slide-of").textContent = !item ? "No slides" : item.span > 1 ? `Slides ${first}–${first + item.span - 1} of ${total}` : `Slide ${first} of ${total}`;
@@ -159,21 +158,14 @@ function showStatus() {
 // The top bar lined up with the columns (Tom, 2026-11-17, as the Lyric Visualiser): Edit | Phone, the platform and
 // Feed | Profile centred over the canvas; the Editor's tabs spread over the Editor (folded: at the bar's right)
 function alignBar() {
-  const bar = document.querySelector(".topbar"), centre = document.querySelector(".topbar-centre"), right = $("topbar-right");
-  if (!bar || !centre || !right) return;
+  const bar = document.querySelector(".topbar"), centre = document.querySelector(".topbar-centre");
+  if (!bar || !centre) return;
+  // (the Editor's tabs went to the left rail, 2026-11-23: Phone, the platforms and Feed | Profile centred over the
+  // canvas, never over the buttons at the left)
   const zoom = parseFloat(getComputedStyle(bar).zoom) || 1, b = bar.getBoundingClientRect();
   const canvas = $("stage-area").getBoundingClientRect(), cw = centre.getBoundingClientRect().width;
-  const e = $("panel").getBoundingClientRect(), open = e.width > 150;
-  right.classList.toggle("over-editor", open);
-  right.style.left = open ? `${(e.left - b.left) / zoom}px` : "";
-  right.style.width = open ? `${e.width / zoom}px` : "";
-  // (never over the buttons either side: a narrow window moves it off the canvas's middle first, then the tabs
-  // drop their names, the icons alone, name on hover)
-  bar.classList.remove("tight");
-  const roomFor = () => right.getBoundingClientRect().left - 8 - (document.querySelector(".topbar-left").getBoundingClientRect().right + 8);
-  if (roomFor() < cw) bar.classList.add("tight");
   const leftEdge = document.querySelector(".topbar-left").getBoundingClientRect().right + 8;
-  const rightEdge = right.getBoundingClientRect().left - 8;
+  const rightEdge = b.right - 8;
   const left = Math.max(leftEdge, Math.min(canvas.left + canvas.width / 2 - cw / 2, rightEdge - cw));
   centre.style.left = `${(left - b.left) / zoom}px`;
 }
@@ -220,7 +212,7 @@ function wireTopBar() {
   const hold = (on) => { if (state.before !== on) { state.before = on; changed("look"); } };
   before.addEventListener("pointerdown", (e) => { before.setPointerCapture(e.pointerId); hold(true); });
   ["pointerup", "pointercancel", "lostpointercapture"].forEach((t) => before.addEventListener(t, () => hold(false)));
-  document.querySelectorAll("#view-switch button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+  $("btn-phone").onclick = () => setView(state.view === "phone" ? "edit" : "phone"); // (one button, on / off, as the Lyric Visualiser's)
   $("btn-undo").onclick = undo;
   $("btn-redo").onclick = redo;
   $("btn-export").onclick = openExport;
@@ -249,7 +241,6 @@ function wireStrip() {
     e.preventDefault();
     bar.scrollLeft += e.deltaY;
   }, { passive: false }));
-  $("btn-split").onclick = splitPanorama;
   // Photos onto the slide as layers (＋ Add photo in Layers, or an empty grid cell)
   const layerInput = $("layer-input");
   document.addEventListener("add-layer", () => layerInput.click());

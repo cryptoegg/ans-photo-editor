@@ -19,7 +19,8 @@ export const state = {
   phonePlatform: "instagram", // (the app the set is shown as: project.stage, Phone view)
   phoneSlide: 0,          // the slide the phone shows (0-based)
   phoneScreen: "feed",    // "feed" (the post in the feed) | "profile" (on your profile page)
-  tab: "filters",         // the panel's tab
+  tab: "filters",         // (old: the Editor's tabs; gone 2026-11-23)
+  lib: "media",           // the left rail's library: media, filters, tools, captions
   before: false,          // \ held: the photos without their look
   maskId: null,           // the mask picked in Adjust → Masks (js/masks.js): its settings show, its handles on the canvas
   tool: null              // a brush in hand (js/ui/brush.js): "edge" (the cut-out's edge) | "heal" (spot heal) | null

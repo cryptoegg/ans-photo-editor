@@ -5,7 +5,7 @@ and a **YouTube post**. **One set, edited once** (Tom, 2026-11-18): `project.set
 Instagram | TikTok | YouTube only changes how it's shown (Phone view, Feed / Profile; `project.stage`), and each icon says
 how well the set suits that app (`fitFor` in js/project.js): faded = it doesn't take the set's shape, a dot = something to
 know (too many slides, videos left out), said in its hover box; TikTok shows a shape other than 9:16 inside its tall screen,
-on black. What each app takes (checked Oct 2026, `STAGES`): Instagram 4:5 / 3:4 (app only since May 2025) / 1:1 / 1.91:1,
+on black. What each app takes (checked Oct 2026, `STAGES`): Instagram 4:5 / 3:4 (app only since May 2025) / 1:1 / 16:9 / 1.91:1 (anything from 1.91:1 to 3:4; rechecked Nov 2026),
 up to 20, videos; TikTok 9:16 / 4:5 / 1:1, up to 35, photos only; YouTube 1:1 / 4:5 / 16:9, up to 10, photos only. The
 shape menu (`SHAPES`) names the apps each shape suits ("4:5 · all three", "9:16 · TikTok"). A new project starts on 4:5.
 Older records (a set per platform, `project.stages`, or a "Linked" `project.items`) open with the set last edited; the
@@ -99,7 +99,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   in Adjust → Masks the menu changes the picked one's effect. New effects for it in js/effects/ ("Break up"): pixelate,
   shards, crumple, stripes. Settings (`effectBrushControls` in panel.js) in the Tools fold while in hand and in Adjust → Masks.
   No red overlay for it: the effect shows as it's painted.
-- **Masks** (Tom, 2026-11-18, like Lightroom's): fixes on part of a photo. Adjust → Masks: Brush · Fade · Round · Subject,
+- **Masks** (Tom, 2026-11-18, like Lightroom's): fixes on part of a photo. Adjust → Masks: Brush · Gradient (was Fade, renamed 2026-11-23) · Subject (Round taken off the menu 2026-11-23; old Round masks still work),
   then a row per mask (Invert, On / Off, ✕) and the picked one's Light and Colour sliders (Round: Feather too). The record
   is the layer's `masks` (`js/masks.js`: brush / subject keep a PNG `maskId`, Fade a `line`, Round a `round`); `state.maskId`
   is the picked one. Each mask's fix is worked out on the whole photo after its own Light / Colour card and laid on
@@ -169,11 +169,30 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   bar and the strip's toolbar are drawn at `--ui-zoom: .85` (CSS `zoom`; the slide, phone and thumbnails never are).
   The Editor is compact: an effect's on / off a small dot by its name; sliders two to a row (in a fold its grid, else
   `pairSliders`); on / off settings small boxes lit when on; labels drop any "(…)" (full name on hover).
-- **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Edit | Phone,
-  Instagram | TikTok | YouTube, Feed | Profile as icons (faint while editing), centred over the canvas | at the right the
-  Editor's five tabs, spread over the Editor (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
-  columns, Media 320 | canvas | Editor 320 (each folds to a 44px strip with its blue arrow, remembered in
-  localStorage), then the slides strip.
+- **The Lyric Visualiser's new layout** (Tom, 2026-11-23, the last block of styles.css): panels edge to edge with a thin
+  line between, no gaps or rounded boxes; the top bar has no bar of its own (on the window's grey); no grey trays behind
+  buttons: every control is the Visualiser's (`--ctl-*` on `:root`: 24 px, 4 px corners, 1 px line, 11 px text, 16 px
+  icons, 4 px apart, 12 px between groups with a thin divider, 40 px rows); switches are one thin box, the picked part lit.
+  **The tools row** (`#tool-row`, under the canvas, one row like the Visualiser's timeline toolbar): fold · the slide
+  actions as icons (Add (blue), Duplicate, Panorama + its count, Reset, Remove; no Split apart button (Tom: not
+  needed; `splitPanorama` is kept in actions.js but nothing calls it)) · Undo / Redo · the canvas bar (`#canvas-bar`: the tools, ‹ Slide 1 of 7 ›, the shape, − Fit +, guides,
+  snapping, background, Before; hidden in Phone view and on an empty project) · "7 of 20" at the right.
+- **The side columns** (Tom, 2026-11-23, as the Lyric Visualiser's): a see-through rail down the left edge, on the window's
+  grey (`#rail`: Media · Filters · Effects · Tools · Captions; `state.lib`) opens its library in the column beside it (`js/ui/mediaColumn.js`; Filters, Tools and
+  Captions drawn by `buildLibrary` in panel.js: the presets row and the filter grid, Remove background and the brushes,
+  New Text Overlay and the slide's captions; Effects = every effect as a tile drawn on the photo (`effectSwatch` in
+  looks.js), a click puts it on the picked photo (`addEffect`) and opens it on the right); the open one again folds the
+  column away. The right column's title names
+  what's picked on the canvas (Photo 2, Caption; nothing picked: no title), then Apply this slide | Apply all, Layers, and the picked thing's
+  settings: a caption's own (`captionSettings`), else **Edit | Effects** (as a clip's in the Visualiser; the tab kept in
+  `ans_photo_right_tab`): Edit = Light, Colour, Skin, Masks, Crop (no Background: the colour is in the tools row; Tom, 2026-11-23); Effects (`buildEffectsTab`) = the filter's
+  own Light / Colour, the effects on this photo (tick, one slider, settings), Add effect, Save this filter / Reset
+  filter. A new Scan starts with no sweep (a still: the whole page scanned). The Editor's five tabs are gone from the top bar (`state.tab` no longer used).
+- **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Phone (one button, on / off),
+  Instagram | TikTok | YouTube, Feed | Profile as icons (faint while editing), centred over the canvas (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
+  columns after the rail, Media 320 | canvas | Editor 320 (each folds away with its blue arrow, remembered in
+  localStorage: Media leaves just the rail; the Editor leaves one see-through Editor button at the desk's top right,
+  `#btn-editor-open`, as the Visualiser's), then the slides strip.
 - **UI**: `js/ui/mediaColumn.js` (Media: Photos, Videos (3 across), Your filters with their dates;
   click a picture = its first slide), `js/ui/stage.js` (Edit view, behaving like the lyric app's mediaFrame: click a photo
   or text to pick it; dashed frame + corner squares on hover; drag inside = move, corner = size
@@ -181,12 +200,12 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   turns, double-click ↻ = upright); pinch anywhere zooms the view toward the pointer, never the photo, and zoomed in a two-finger scroll moves around, Fit resets; hold Space and drag (the hand, as in Photoshop; a tap of Space still plays a video) or drag the grey round the slide to move the view (Tom, 2026-11-18; `viewPan` in stage.js); faint photo past the edges;
   guides and Canva-style soft snapping, ⌘ = free; the faint photo past the edges shows only
   while the photo is picked; pinch / ⌘-scroll over the desk zooms the view; the slide on a dotted desk
-  with a soft shadow; under it the floating canvas bar: ‹ Slide 3 of 7 ›, the shape menu, − Fit +,
-  guides, snapping, background colour, Before (hold), `showCanvasBar` in main.js; it scrolls sideways in a narrow window, the mouse wheel too), `filmstrip.js`
-  (the slides strip: toolbar with fold, Add (blue), trays of actions (Panorama, Tom 2026-11-18: makes the slide a
+  with a soft shadow; the canvas bar (now in the tools row under the canvas): ‹ Slide 3 of 7 ›, the shape menu, − Fit +,
+  guides, snapping, background colour, Before (hold: the picked photo without its look, nothing picked every photo), `showCanvasBar` in main.js; it scrolls sideways in a narrow window, the mouse wheel too), `filmstrip.js`
+  (the slides strip, under the tools row (Panorama, Tom 2026-11-18: makes the slide a
   panorama of 2, then a number with ▴ ▾ beside it takes it up to 10 slides or back to 1; Join as panorama with several
-  picked; Split apart), "7 of 20"; slides numbered above,
-  the current one ringed blue), `panel.js` (the Editor: Editor + undo / redo + fold arrow (its five tabs are in the top bar);
+  picked), "7 of 20"; slides numbered above,
+  the current one ringed blue), `panel.js` (the Editor: Editor + fold arrow (its five tabs are in the top bar);
   presets row; Apply this slide | Apply all (7 slides) (Filters and Adjust only; greyed on the other tabs); Layers (count, +, Bottom / Top); then the tile's settings:
   sliders with a blue fill (`fillTrack`), switches, blue fold names after a chevron; "mixed"
   sliders; a note with Undo when a change hits several slides),

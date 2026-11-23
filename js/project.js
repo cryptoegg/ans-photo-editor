@@ -42,14 +42,15 @@ import { tintIntoGrade } from './effects/oldTint.js';
 export const MAX_SLIDES = 10;
 export const RATIOS = { "1:1": [1, 1], "4:5": [4, 5], "3:4": [3, 4], "1.91:1": [1.91, 1], "9:16": [9, 16], "16:9": [16, 9] };
 // The shapes each platform takes for sure (checked October 2026):
-//   Instagram  4:5, 1:1, 1.91:1 (always), 3:4 (the app, since May 2025; tools posting through
-//              Meta's API may still crop it to 4:5)
+//   Instagram  anything from 1.91:1 to 3:4, so 4:5, 1:1, 16:9, 1.91:1 (always), 3:4 (the app, since May 2025;
+//              tools posting through Meta's API may still crop it to 4:5). 16:9 added 2026-11-23 (Tom asked; it sits
+//              inside Instagram's 1.91:1 - 3:4 range)
 //   TikTok     9:16 (full screen), 4:5, 1:1; 4:5 and 1:1 go out as 9:16 with the fill round
 //              them, so TikTok always gets a full-screen picture
 //   YouTube    1:1, 4:5, 16:9 (its help suggests 1:1; the feed shows 4:5 and 16:9 posts too),
 //              up to 10 images
 export const STAGES = {
-  instagram: { ratios: ["4:5", "3:4", "1:1", "1.91:1"], max: 20, video: true },
+  instagram: { ratios: ["4:5", "3:4", "1:1", "16:9", "1.91:1"], max: 20, video: true },
   tiktok: { ratios: ["9:16", "4:5", "1:1"], max: 35, video: false },
   youtube: { ratios: ["1:1", "4:5", "16:9"], max: 10, video: false }
 };

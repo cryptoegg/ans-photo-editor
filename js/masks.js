@@ -14,8 +14,8 @@ import { changed } from './state.js';
 
 export const MASK_KINDS = [
   ["brush", "Brush", "Paint where the fix goes"],
-  ["linear", "Fade", "A fix that fades across the photo (a sky, a floor)"],
-  ["radial", "Round", "A round fix (a face, a spotlight)"],
+  ["linear", "Gradient", "A fix that fades in across the photo (a sky, a floor)"],
+  // (Round, "radial", taken off the menu by Tom, 2026-11-23; a Round mask already made still works and shows as Round)
   ["subject", "Subject", "The person or main thing, found for you"]
 ];
 // The Effect brush's effects (Tom, 2026-11-18, from his references): [id, label, effect type, its settings]. A mask with
@@ -41,7 +41,7 @@ export const tidyEffect = (e) => (e && known(e.id) ? e : e ? effectOf("pixelate"
 export const effectOf = (id) => { const [k, , type, settings] = brushEffect(id); return { id: k, type, settings: { ...settings } }; };
 
 export const maskName = (layer, m) => {
-  const label = m.effect ? brushEffect(m.effect.id)[1] : (MASK_KINDS.find(([k]) => k === m.kind) || [, "Mask"])[1];
+  const label = m.effect ? brushEffect(m.effect.id)[1] : m.kind === "radial" ? "Round" : (MASK_KINDS.find(([k]) => k === m.kind) || [, "Mask"])[1];
   const same = (layer.masks || []).filter((x) => (m.effect ? x.effect && x.effect.id === m.effect.id : x.kind === m.kind && !x.effect));
   return same.length > 1 ? `${label} ${same.indexOf(m) + 1}` : label;
 };

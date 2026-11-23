@@ -6,7 +6,7 @@ import { state, onChange, items, select } from '../state.js';
 import { allLists, layersOf } from '../project.js';
 import { getPicture, loadPicture } from '../media.js';
 import { myFilters } from '../filters.js';
-import { lookItems, useFilter } from './panel.js';
+import { lookItems, useFilter, buildLibrary } from './panel.js';
 
 const $ = (id) => document.getElementById(id);
 const FOLD_KEY = "ans_photo_media_folded";
@@ -19,6 +19,15 @@ export function initMediaColumn() {
   try { folded = localStorage.getItem(FOLD_KEY) === "1"; } catch (e) {}
   setFolded(folded);
   col.addEventListener("click", (e) => { if (col.classList.contains("folded") && !e.target.closest(".col-fold")) setFolded(false); });
+  // The left rail (Tom, 2026-11-23, as the Lyric Visualiser's): Media · Filters · Tools · Captions open here; the one
+  // already open folds the column away, or opens it again
+  document.querySelectorAll("#rail button").forEach((b) => b.addEventListener("click", () => {
+    const shown = !col.classList.contains("folded");
+    if (state.lib === b.dataset.lib) { setFolded(shown); build(); return; }
+    state.lib = b.dataset.lib;
+    if (!shown) setFolded(false);
+    build();
+  }));
   onChange((what) => { if (what !== "look") build(); });
   build();
 }
@@ -43,9 +52,18 @@ function mediaList() {
 
 const usedOn = (item, mediaId) => layersOf(item).some((l) => l.mediaId === mediaId);
 
+const LIBS = { media: "Media", filters: "Filters", effects: "Effects", tools: "Tools", captions: "Captions" };
+let shownLib = null;
+
 function build() {
   const col = $("media-col");
   if (!col) return;
+  const lib = LIBS[state.lib] ? state.lib : "media";
+  // (something picked elsewhere opened a library, like a brush picked in the tools row: the column opens to it)
+  if (shownLib && lib !== shownLib && col.classList.contains("folded")) setFolded(false);
+  document.querySelectorAll("#rail button").forEach((b) => b.classList.toggle("on", b.dataset.lib === lib && !col.classList.contains("folded")));
+  const scroll = lib === shownLib ? col.scrollTop : 0;
+  shownLib = lib;
   const media = mediaList();
   const photos = media.filter((m) => !m.video), videos = media.filter((m) => m.video);
   const current = items().find((i) => i.id === state.current);
@@ -55,16 +73,24 @@ function build() {
   // (like the Editor's: the name, then a blue arrow at the right that folds the column away)
   const fold = el("button", "col-fold");
   fold.type = "button";
-  fold.title = "Fold the Media column";
-  fold.setAttribute("aria-label", "Fold the Media column");
+  fold.title = "Fold this column";
+  fold.setAttribute("aria-label", "Fold this column");
   fold.onclick = () => setFolded(!col.classList.contains("folded"));
-  head.append(el("span", "col-title", "Media"), fold);
+  head.append(el("span", "col-title", LIBS[lib]), fold);
   col.append(head);
+  if (lib !== "media") {
+    const host = el("div", "lib-body panel"); // (".panel": the Editor's own look for sliders, switches and boxes)
+    col.append(host);
+    buildLibrary(host, lib);
+    col.scrollTop = scroll;
+    return;
+  }
 
   col.append(section("photos", "Photos", photos.length, true, () => grid(photos, current)));
   col.append(section("videos", "Videos", videos.length, true, () => grid(videos, current)));
   const mine = myFilters();
   col.append(section("filters", "Your filters", mine.length, false, () => filterRows(mine)));
+  col.scrollTop = scroll;
 }
 
 function section(key, name, count, canAdd, body) {

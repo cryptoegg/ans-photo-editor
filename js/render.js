@@ -173,7 +173,7 @@ function drawLayer(ctx, item, layer, picture, rect, grid) {
 }
 
 // The whole item into (0, 0, W, H): its background, its layers (bottom first), its texts.
-// options: quality "preview" | "full", before (no look), texts (default true), seed, frame (a
+// options: quality "preview" | "full", before (no look: true = every layer, or one layer = just that one), texts (default true), seed, frame (a
 // video's frame for this moment, a canvas the video's size: playing, exporting; else its still)
 export function drawItem(ctx, item, W, H, options = {}) {
   const { quality = "preview", before = false, texts = true, seed = 0, frame = null, frameLooked = false } = options;
@@ -190,8 +190,9 @@ export function drawItem(ctx, item, W, H, options = {}) {
     if (!rect) return; // (more layers than cells: the rest wait off the grid)
     const pic = getPicture(layer.mediaId);
     if (!pic) return;
-    const picture = layer === item && frame ? (before || frameLooked ? frame : lookedFrame(item, frame, quality, seed))
-      : before ? (quality === "full" ? pic.full : pic.preview) : lookedPicture(layer, quality, seed);
+    const bare = before === true || before === layer;
+    const picture = layer === item && frame ? (bare || frameLooked ? frame : lookedFrame(item, frame, quality, seed))
+      : bare ? (quality === "full" ? pic.full : pic.preview) : lookedPicture(layer, quality, seed);
     if (picture) drawLayer(ctx, item, layer, picture, rect, grid);
   });
   if (texts) item.texts.forEach((t) => drawText(ctx, t, W, H));

@@ -54,7 +54,7 @@ export function removeMask(layer, id) {
 
 let drag = null; // { m, part, start, line / round as they were }
 const HIT = 9;
-const shown = () => state.tab === "adjust" && !state.tool && pickedMask() && ["linear", "radial"].includes(pickedMask().kind);
+const shown = () => !state.textId && !state.tool && pickedMask() && ["linear", "radial"].includes(pickedMask().kind);
 const frac = (r, f, p) => { const q = toPhoto(r, f, p); return { x: q.x / r.pic.width, y: q.y / r.pic.height }; };
 const at = (r, f, x, y) => toFrame(r, f, { x: x * r.pic.width, y: y * r.pic.height });
 
@@ -113,7 +113,7 @@ export function maskUp() {
 
 export function drawMasks(ctx, f) {
   const m = pickedMask(), r = ready();
-  if (!m || !r || state.tab !== "adjust") return;
+  if (!m || !r || state.textId) return;
   // Red where the mask is, while it's dragged or painted
   if (drag || (state.tool === "mask" && brushStroking() && !m.effect)) { // (an effect shows itself as it's painted)
     const side = 600, k = side / Math.max(r.pic.width, r.pic.height);

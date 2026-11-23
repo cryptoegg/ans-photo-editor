@@ -96,7 +96,7 @@ export function initStage() {
     const picked = pickedBox(item, f);
     if (picked && zoneAt(picked.box, p) === "rotate") { setAngle(picked, 0); changed("project"); commit(); return; }
     const hit = textAt(ctx, item, f.w, f.h, p.x, p.y);
-    if (hit) { pick("text", hit.id); state.tab = "text"; changed("view"); document.dispatchEvent(new CustomEvent("focus-text")); }
+    if (hit) { pick("text", hit.id); changed("view"); document.dispatchEvent(new CustomEvent("focus-text")); }
   });
 }
 
@@ -280,7 +280,7 @@ function down(e) {
   const hitText = textAt(ctx, item, f.w, f.h, p.x, p.y);
   const hit = hitText ? null : layerAt(item, f, p);
   if (hitText) {
-    if (state.textId !== hitText.id) { pick("text", hitText.id); state.tab = "text"; changed("view"); }
+    if (state.textId !== hitText.id) { pick("text", hitText.id); changed("view"); }
   } else if (hit && hit.cell !== undefined) {
     // an empty grid cell: a photo for it
     document.dispatchEvent(new CustomEvent("add-layer"));
@@ -486,7 +486,9 @@ function paint() {
 
   // A video: the frame at the playhead, with its look (worked out once for both draws below)
   const raw = isVideo(item) ? videoFrame(item) : null;
-  const frame = raw && !state.before ? lookedFrame(item, raw, "preview", state.project.seed) : raw;
+  // Before (held): the picked photo without its look, or with none picked every photo (Tom, 2026-11-23)
+  const bareLayer = !state.before ? false : state.photoPicked || state.layerId ? currentLayer() || true : true;
+  const frame = raw && !(bareLayer === true || bareLayer === item) ? lookedFrame(item, raw, "preview", state.project.seed) : raw;
 
   // The slide lifted off the dotted desk: a soft shadow under it
   ctx.save();
@@ -511,7 +513,7 @@ function paint() {
     ctx.restore();
   }
 
-  drawItem(ctx, item, f.w, f.h, { before: state.before, seed: state.project.seed, frame, frameLooked: true });
+  drawItem(ctx, item, f.w, f.h, { before: bareLayer, seed: state.project.seed, frame, frameLooked: true });
   // A picked photo's trimmed-off sides, faint over the slide (as past its edges), to see what the side handles took off
   if (state.photoPicked && layerPic && rect && !isGrid(item) && isTrimmed(layer.crop)) {
     const looked = (layer === item && frame) || (state.before ? layerPic.preview : lookedPicture(layer, "preview", state.project.seed));

@@ -16,7 +16,7 @@ import { curveControl, wheelsControl } from './colourControls.js';
 import { MASK_KINDS, maskName, BRUSH_EFFECTS, RETIRED_EFFECTS, effectOf, tidyEffect } from '../masks.js';
 import { addMask, pickMask, removeMask, pickedMask } from './masks.js';
 import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, deleteMyFilter, isMine } from '../filters.js';
-import { presetSwatch } from '../looks.js';
+import { presetSwatch, effectSwatch } from '../looks.js';
 import { listFilms, loadFilm, filmsCredit } from '../effects/filmTables.js';
 import { getPicture } from '../media.js';
 import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS, PHOTO_SHAPES, photoBox, trimOf } from '../render.js';
@@ -39,14 +39,15 @@ function filterGroups() {
 
 let body = null;
 let shownTab = null;
+// (the presets row and the Tools box move into the left column's libraries, out of the page now and then, so they're
+// kept here rather than looked up by id)
+const keep = {};
+const kept = (id) => keep[id] || (keep[id] = document.getElementById(id));
 
 export function initPanel() {
   body = document.getElementById("tab-body");
-  document.querySelectorAll("#tabs button").forEach((b) => b.addEventListener("click", () => {
-    state.tab = b.dataset.tab;
-    if (document.getElementById("panel").classList.contains("folded")) foldEditor(false); // (a tab opens a folded Editor)
-    changed("view");
-  }));
+  ["presets-row", "preset-pick", "tools-box"].forEach(kept);
+  keep["presets-row"].remove(); keep["tools-box"].remove(); // (they live in the Filters and Tools libraries on the left)
   document.querySelectorAll("#scope-switch button").forEach((b) => b.addEventListener("click", () => {
     if (b.dataset.scope === "all") selectAll();
     else if (state.current) select(state.current, "one");
@@ -61,13 +62,14 @@ export function initPanel() {
   let folded = false;
   try { folded = localStorage.getItem("ans_photo_editor_folded") === "1"; } catch (e) {}
   foldEditor(folded);
+  document.getElementById("btn-editor-open").onclick = () => foldEditor(false);
   document.getElementById("btn-editor-fold").onclick = () => foldEditor(!document.getElementById("panel").classList.contains("folded"));
   document.getElementById("panel").addEventListener("click", (e) => { if (e.target === e.currentTarget && e.currentTarget.classList.contains("folded")) foldEditor(false); });
   // The presets row: every filter (yours first), Save Preset (this slide's look as one of yours), the dice (a random one)
-  const pick = document.getElementById("preset-pick");
+  const pick = kept("preset-pick");
   pick.onchange = () => { const chosen = lookItems().filter(Boolean); if (chosen.length && pick.value !== "-") useFilter(chosen, pick.value || null); };
-  document.getElementById("btn-save-preset").onclick = () => saveThisFilter(lookItems().filter(Boolean));
-  document.getElementById("btn-random").onclick = () => {
+  keep["presets-row"].querySelector("#btn-save-preset").onclick = () => saveThisFilter(lookItems().filter(Boolean));
+  keep["presets-row"].querySelector("#btn-random").onclick = () => {
     const chosen = lookItems().filter(Boolean);
     if (!chosen.length) return;
     const all = [...myFilters(), ...PRESETS].filter((f) => f.id !== (lookItem() && lookItem().look.preset));
@@ -184,7 +186,7 @@ function brushSliders(sizeLabel = "Size") {
 // ---- Tools (Tom, 2026-11-18): everything that works on the picked photo itself, in one fold under Layers:
 // Remove background, then the brushes: Remove, Clone, Edge brush
 function buildToolsBox() {
-  const box = document.getElementById("tools-box");
+  const box = kept("tools-box");
   const slide = currentItem();
   box.innerHTML = "";
   const picked = slide && currentLayer();
@@ -273,39 +275,79 @@ const layerName = (item, layer) => layerLabel(item, layersOf(item).indexOf(layer
 
 // ---- Building
 
+// The right column (Tom, 2026-11-23, as the Lyric Visualiser's): its title names what's picked, then Layers, then the
+// settings of what's picked: a caption's own, else Crop and Adjust (Light, Skin, Colour, Masks, Effects, Background).
+// The libraries (Filters, Tools, Captions) are on the left: buildLibrary.
+let rightTab = (() => { try { return localStorage.getItem("ans_photo_right_tab") === "effects" ? "effects" : "edit"; } catch { return "edit"; } })();
+export function setRightTab(t) { rightTab = t; try { localStorage.setItem("ans_photo_right_tab", t); } catch {} changed("view"); }
+const withBody = (host, fn, ...args) => { const keep = body; body = host; try { fn(...args); } finally { body = keep; } };
+const pickedCaption = () => { const slide = currentItem(); return slide && state.textId ? slide.texts.find((t) => t.id === state.textId) : null; };
+
 function build() {
   const p = state.project;
   const chosen = selectedItems();
   const all = items().length;
-  // (This slide | Apply all is for Filters and Adjust only: Tools, Crop and Captions work on the one slide, so it's greyed)
-  const scoped = state.tab === "filters" || state.tab === "adjust";
+  const slide = currentItem();
+  const caption = pickedCaption();
+  // (This slide | Apply all: what Adjust and the filters change; a caption is on its own slide, so it's greyed then)
+  const scoped = !caption;
   document.getElementById("scope-switch").classList.toggle("idle", !scoped);
   document.querySelectorAll("#scope-switch button").forEach((b) => {
     b.disabled = !scoped;
     b.classList.toggle("on", b.dataset.scope === "all" ? chosen.length > 1 && chosen.length === all : chosen.length === 1);
     if (b.dataset.scope === "all") b.textContent = all > 1 ? `Apply all (${all} slides)` : "Apply all";
   });
-  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === state.tab));
-  if (state.tab === "captions") state.tab = "filters"; // (Post text is gone: the post's words are written in Post)
-  document.getElementById("presets-row").hidden = !all;
   document.getElementById("scope-switch").hidden = !all;
-  fillPresets();
+  // The title: what's picked
+  const layer = currentLayer();
+  // (only once something's picked on the canvas: a photo or a caption; nothing picked, no title: Tom, 2026-11-23)
+  document.querySelector("#panel .ed-title").textContent = !slide ? ""
+    : caption ? "Caption"
+    : state.photoPicked || state.layerId ? layerLabel(slide, layersOf(slide).indexOf(layer))
+    : "";
 
   buildLayersBox();
-  buildToolsBox();
-  if (state.tab === "text") document.getElementById("layers-box").hidden = document.getElementById("tools-box").hidden = true;
-  if (state.tab !== "tools") document.getElementById("tools-box").hidden = true; // (Tom, 2026-11-18: the tools have their own tab)
-  const scroll = state.tab === shownTab ? body.scrollTop : 0; // (a different tab starts at its top)
-  shownTab = state.tab;
+  const mode = caption ? "caption" : rightTab;
+  const scroll = mode === shownTab ? body.scrollTop : 0; // (switching between a caption and a photo starts at the top)
+  shownTab = mode;
   body.innerHTML = "";
-  if (!all) {
-    body.append(note("Add photos to start. Everything you set here shows on the canvas straight away."));
-    return;
+  if (!all) return;
+  if (caption) buildText("edit");
+  else {
+    // Edit | Effects (Tom, 2026-11-23, as a clip's in the Lyric Visualiser): Edit = Crop, Light, Skin, Colour, Masks,
+    // Background; Effects = the filter and the effects on this photo, Add effect (the Effects library on the left too)
+    const on = effectsOn(lookItem()).filter((e) => fxOf(lookItem(), e.type).on !== false).length;
+    const tabs = el("div", { className: "segmented wide right-tabs" },
+      el("button", { className: rightTab === "edit" ? "on" : "", textContent: "Edit", onclick: () => setRightTab("edit") }),
+      el("button", { className: rightTab === "effects" ? "on" : "", textContent: on ? `Effects (${on})` : "Effects", onclick: () => setRightTab("effects") }));
+    body.append(el("div", { className: "sticky" }, tabs));
+    if (rightTab === "effects") buildEffectsTab(); else buildAdjust();
   }
-  ({ filters: buildFilters, adjust: buildAdjust, tools: buildTools, crop: buildCrop, text: buildText })[state.tab]();
   document.querySelectorAll('#panel input[type="range"]').forEach(fillTrack);
   pairSliders(body);
   body.scrollTop = scroll;
+}
+
+// A library on the left (js/ui/mediaColumn.js asks for it): Filters (the presets row, then the grid), Tools (Remove
+// background and the brushes, for the picked photo), Captions (new captions and the slide's list of them)
+export function buildLibrary(host, lib) {
+  const all = items().length;
+  if (!all) { host.append(note("Add photos first")); return; }
+  if (lib === "filters") {
+    fillPresets();
+    const row = kept("presets-row");
+    row.hidden = false;
+    host.append(row);
+    withBody(host, buildFilters);
+  } else if (lib === "tools") {
+    const box = kept("tools-box");
+    host.append(box);
+    buildToolsBox();
+    if (box.hidden) withBody(host, buildTools);
+  } else if (lib === "effects") withBody(host, buildEffectsLibrary);
+  else if (lib === "captions") withBody(host, buildText, "add");
+  host.querySelectorAll('input[type="range"]').forEach(fillTrack);
+  pairSliders(host);
 }
 
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); kids.forEach((k) => e.append(k)); return e; };
@@ -380,7 +422,7 @@ function segmented(options, value, onPick) {
 
 // The presets row's menu: Presets… (or the filter the chosen slides have), Original, Your filters, then the groups
 function fillPresets() {
-  const pick = document.getElementById("preset-pick");
+  const pick = kept("preset-pick");
   const chosen = lookItems().filter(Boolean);
   const ids = chosen.map((i) => i.look.preset || "");
   const same = ids.length && ids.every((x) => x === ids[0]) ? ids[0] : null;
@@ -472,10 +514,9 @@ function buildFilters() {
   const tile = (filter) => {
     const id = filter ? filter.id : null;
     const on = !mixed && (presets[0] || null) === id;
-    const b = el("button", { className: "swatch" + (on ? " on" : ""), title: filter ? `${filter.note || filter.name}${on ? " · click again to edit it in Adjust" : ""}` : "No filter" });
+    const b = el("button", { className: "swatch" + (on ? " on" : ""), title: filter ? filter.note || filter.name : "No filter" });
     const holder = el("div", { className: "blank" });
     b.append(holder, el("span", { textContent: filter ? filter.name : "Original" }));
-    if (on && filter) b.append(el("span", { className: "swatch-edit", textContent: "Edit" }));
     queue.push(async () => {
       if (id && id.startsWith("film:")) await loadFilm(id.slice(5)); // (its table fetched first)
       if (job !== swatchJob) return;
@@ -483,7 +524,6 @@ function buildFilters() {
       if (c) { const shown = el("canvas", { width: c.width, height: c.height }); shown.getContext("2d").drawImage(c, 0, 0); holder.replaceWith(shown); }
     });
     b.onclick = () => {
-      if (on && filter) { state.tab = "adjust"; changed("view"); return; } // (the picked one again: all its settings, in Adjust)
       useFilter(chosen, id);
     };
     return b;
@@ -540,7 +580,7 @@ function buildFilters() {
 // remembered while the app is open.
 
 const openCards = new Set(["adjust:light"]);
-function foldCard({ key, name, tick = null, quick = null, onReset = null, build, off = false }) {
+function foldCard({ key, name, tick = null, quick = null, onReset = null, onRemove = null, build, off = false }) {
   const open = openCards.has(key);
   const card = el("div", { className: "fold-card" + (open ? " open" : "") + (off ? " off" : "") });
   const head = el("div", { className: "fold-head" });
@@ -550,6 +590,7 @@ function foldCard({ key, name, tick = null, quick = null, onReset = null, build,
   head.append(label, el("span", { className: "spacer" }));
   if (quick) head.append(quick);
   if (onReset) head.append(el("button", { className: "btn small fold-reset", textContent: "↺", title: "Back to its starting settings", onclick: onReset }));
+  if (onRemove) head.append(el("button", { className: "btn small fold-reset fold-remove", title: "Take this effect off", ariaLabel: "Take this effect off", onclick: onRemove }));
   card.append(head);
   if (open) { const inner = el("div", { className: "fold-body" }); build(inner); card.append(inner); }
   return card;
@@ -562,71 +603,125 @@ function foldCard({ key, name, tick = null, quick = null, onReset = null, build,
 
 const ADJUST_TYPES = ["tone", "skin", "curves", "colour", "hsl", "lut", "grade"];
 const FILTER_NAMES = { tone: "Filter light", colour: "Filter colour", curves: "Filter curves", hsl: "Filter per colour", lut: "Filter LUT", grade: "Filter wheels" };
-function effectsSection(chosen) {
+// An effect on a slide's look: the one in its chain (the filter's own copy), or none
+const fxOf = (i, type) => (i.look.chain || (i.look.preset ? freshChain(i.look.preset) : [])).find((fx) => fx.type === type) || null;
+// The effect on a slide, made (switched on, in its place in the order) if it isn't there yet
+function ensureFx(i, type) {
+  if (!i.look.chain) i.look.chain = i.look.preset ? freshChain(i.look.preset) : [];
+  if (!i.look.preset) { i.look.preset = "custom"; i.look.strength = i.look.strength || 100; }
+  let fx = i.look.chain.find((f) => f.type === type);
+  if (!fx) {
+    fx = newEffect(type);
+    const effect = getEffect(type);
+    if (effect.vibe) Object.assign(fx, vibeSettings(effect, VIBE_DEFAULT), { vibe: VIBE_DEFAULT });
+    if ("sweep" in fx) fx.sweep = 0; // (a photo is a still: Scan's whole page already scanned, not mid-sweep)
+    i.look.chain.push(fx);
+    i.look.chain.sort((x, y) => effectOrder(x.type) - effectOrder(y.type));
+  }
+  fx.on = true;
+  return fx;
+}
+// The effects that can be added (not Light / Colour and the rest, which are in Edit; not the ones a filter puts on)
+const addable = () => EFFECTS.filter((e) => !ADJUST_TYPES.includes(e.type) && !e.later);
+// The effects in a slide's look (on or switched off), in order
+const effectsOn = (item) => (item ? EFFECTS.filter((e) => !ADJUST_TYPES.includes(e.type) && fxOf(item, e.type)) : []);
+
+// Put an effect on the picked photo(s) and show it open in Effects
+function addEffect(type) {
+  const chosen = lookItems().filter(Boolean);
+  if (!chosen.length) return;
+  chosen.forEach((i) => ensureFx(i, type));
+  openCards.add(`fx:${type}`);
+  rightTab = "effects";
+  try { localStorage.setItem("ans_photo_right_tab", "effects"); } catch {}
+  changed("project");
+  commit();
+  saidAcross(getEffect(type).label, chosen.length);
+}
+
+// ---- The Effects library on the left (Tom, 2026-11-23, as the Lyric Visualiser's): every effect as a tile, drawn on the
+// photo; a click puts it on the picked photo (lit: it's on already, a click opens it in Effects on the right)
+let fxJob = 0;
+function buildEffectsLibrary() {
+  const item = lookItem();
+  const job = ++fxJob, queue = [];
+  const grid = el("div", { className: "swatches" });
+  addable().forEach((effect) => {
+    const on = !!item && !!fxOf(item, effect.type) && fxOf(item, effect.type).on !== false;
+    const holder = el("div", { className: "blank" });
+    const b = el("button", { className: "swatch" + (on ? " on" : ""), title: effect.description || effect.label }, holder, el("span", { textContent: effect.label }));
+    b.onclick = () => { if (on) { openCards.add(`fx:${effect.type}`); setRightTab("effects"); } else addEffect(effect.type); };
+    grid.append(b);
+    queue.push(() => {
+      if (job !== fxJob || !item) return;
+      const fx = { type: effect.type, ...effect.defaults() };
+      if (effect.vibe) Object.assign(fx, vibeSettings(effect, VIBE_DEFAULT));
+      if ("sweep" in fx) fx.sweep = 0;
+      const c = effectSwatch(item, fx, state.project.seed, 132);
+      if (c) { const shown = el("canvas", { width: c.width, height: c.height }); shown.getContext("2d").drawImage(c, 0, 0); holder.replaceWith(shown); }
+    });
+  });
+  body.append(grid);
+  if (!item || !getPicture(item.mediaId)) return;
+  const next = () => { if (job !== fxJob || !queue.length) return; queue.shift()(); setTimeout(next, 0); };
+  setTimeout(next, 0);
+}
+
+// ---- Effects on the right: the filter's own Light and Colour (when it has one), each effect on this photo (its tick,
+// one slider, its settings folded under its name), Add effect, then Save this filter / Reset filter
+function buildEffectsTab() {
+  const chosen = lookItems();
   const item = lookItem();
   if (!item) return;
   const id = item.look.preset;
   const targets = chosen;
   const done = () => { changed("project"); commit(); };
-  const fxOf = (i, type) => (i.look.chain || (i.look.preset ? freshChain(i.look.preset) : [])).find((fx) => fx.type === type) || null;
-  // The effect on a slide, made (switched on, in its place in the order) if it isn't there yet
-  const ensure = (i, type) => {
-    if (!i.look.chain) i.look.chain = i.look.preset ? freshChain(i.look.preset) : [];
-    if (!i.look.preset) { i.look.preset = "custom"; i.look.strength = i.look.strength || 100; }
-    let fx = i.look.chain.find((f) => f.type === type);
-    if (!fx) {
-      fx = newEffect(type);
-      i.look.chain.push(fx);
-      i.look.chain.sort((x, y) => effectOrder(x.type) - effectOrder(y.type));
-    }
-    fx.on = true;
-    return fx;
-  };
   const shown = (type) => fxOf(item, type) || { type, ...getEffect(type).defaults() };
   const resetTo = (type) => () => { targets.forEach((i) => { const fx = i.look.chain && i.look.chain.find((f) => f.type === type); if (fx) Object.assign(fx, getEffect(type).defaults()); }); done(); };
-  const controlsOf = (effect) => (inner) => (effect.controls || []).forEach((c) => inner.append(effectControl(c, effect.type, targets, shown, ensure)));
+  const controlsOf = (effect) => (inner) => (effect.controls || []).forEach((c) => inner.append(effectControl(c, effect.type, targets, shown, ensureFx)));
 
-  // (the filter's Light and Colour always; its Curves, Per colour, LUT and wheels when it has them, e.g. an old Colour tint)
-  if (id) {
+  if (id && id !== "custom") {
+    body.append(el("div", { className: "fx-filter-name", textContent: filterName(id) || "Filter" })); // (its Strength is on Filters only)
     EFFECTS.filter((e) => ADJUST_TYPES.includes(e.type) && (e.type === "tone" || e.type === "colour" || (fxOf(item, e.type) && fxOf(item, e.type).on !== false))).forEach((effect) => {
       body.append(foldCard({ key: `fx:${effect.type}`, name: FILTER_NAMES[effect.type], onReset: resetTo(effect.type), build: controlsOf(effect) }));
     });
   }
-  // Effects: one fold that opens to the whole list (each effect folds open in turn)
-  const groupOpen = openCards.has("adjust:effects");
-  const onCount = EFFECTS.filter((e) => !ADJUST_TYPES.includes(e.type)).filter((e) => { const f = fxOf(item, e.type); return f && f.on !== false; }).length;
-  const groupHead = el("div", { className: "fold-card effects-group" + (groupOpen ? " open" : "") },
-    el("div", { className: "fold-head" }, el("button", { className: "fold-name", title: "Show / hide every effect", onclick: () => { if (groupOpen) openCards.delete("adjust:effects"); else openCards.add("adjust:effects"); changed("view"); } },
-      el("span", { className: "fold-arrow" }), el("span", { textContent: "Effects" })),
-      el("span", { className: "note", textContent: onCount ? `${onCount} on` : "" })));
-  body.append(groupHead);
-  // (the effects sit inside the Effects fold, so its name floats over them while they scroll)
-  const groupBody = el("div", { className: "fold-body" });
-  if (groupOpen) groupHead.append(groupBody);
-  if (groupOpen) EFFECTS.filter((e) => !ADJUST_TYPES.includes(e.type) && (!e.later || fxOf(item, e.type))).forEach((effect) => {
+  effectsOn(item).forEach((effect) => {
     const fx = fxOf(item, effect.type);
     const on = !!fx && fx.on !== false;
     const tick = el("input", { type: "checkbox", checked: on, title: "Switch this effect on / off" });
-    tick.onchange = () => { targets.forEach((i) => { if (tick.checked) ensure(i, effect.type); else { const f = i.look.chain && i.look.chain.find((x) => x.type === effect.type); if (f) f.on = false; } }); done(); };
+    tick.onchange = () => { targets.forEach((i) => { if (tick.checked) ensureFx(i, effect.type); else { const f = i.look.chain && i.look.chain.find((x) => x.type === effect.type); if (f) f.on = false; } }); done(); };
     let quick = null;
     if (effect.vibe) {
-      // The one slider: 0 = off, up from there a light touch to the full look (several settings at once)
       quick = el("input", { type: "range", min: 0, max: 100, step: 1, className: "fold-quick", value: on ? (fx.vibe > 0 ? fx.vibe : VIBE_DEFAULT) : 0, title: `${effect.label}: 0 = off, up to the full look` });
       const move = () => {
         const v = Number(quick.value);
         targets.forEach((i) => {
           if (v <= 0) { const f = i.look.chain && i.look.chain.find((x) => x.type === effect.type); if (f) { f.on = false; f.vibe = 0; } }
-          else Object.assign(ensure(i, effect.type), vibeSettings(effect, v), { vibe: v });
+          else Object.assign(ensureFx(i, effect.type), vibeSettings(effect, v), { vibe: v });
         });
       };
       quick.addEventListener("input", () => { move(); changed("look"); });
       quick.addEventListener("change", () => { move(); done(); });
     }
-    const card = foldCard({ key: `fx:${effect.type}`, name: effect.label, tick, quick, off: !on, onReset: resetTo(effect.type), build: controlsOf(effect) });
-    card.classList.add("in-group");
-    groupBody.append(card);
+    // (✕ takes it off the photo altogether: Tom, 2026-11-23)
+    const remove = () => {
+      targets.forEach((i) => {
+        if (!i.look.chain) i.look.chain = i.look.preset ? freshChain(i.look.preset) : [];
+        i.look.chain = i.look.chain.filter((x) => x.type !== effect.type);
+        if (i.look.preset === "custom" && !i.look.chain.length) { i.look.preset = null; i.look.chain = null; }
+      });
+      openCards.delete(`fx:${effect.type}`);
+      done();
+    };
+    body.append(foldCard({ key: `fx:${effect.type}`, name: effect.label, tick, quick, off: !on, onReset: resetTo(effect.type), onRemove: remove, build: controlsOf(effect) }));
   });
-
+  const add = button("Add effect", (e) => {
+    const have = new Set(effectsOn(item).map((x) => x.type));
+    showMenu(e, addable().filter((x) => !have.has(x.type)).map((x) => ({ label: x.label, action: () => addEffect(x.type) })), { above: e.currentTarget });
+  }, "btn add-effect");
+  body.append(add);
+  saveFilterSection(chosen);
 }
 
 // Save this filter: the slide's whole look (its Light, Colour, filter and effects) as one of Your
@@ -699,7 +794,6 @@ function effectControl(c, type, targets, shown, ensure) {
 
 function buildAdjust() {
   const chosen = lookItems();
-  const slidesChosen = selectedItems();
   const tone = getEffect("tone"), colour = getEffect("colour");
   const resetPart = (part, fresh, label) => () => { chosen.forEach((i) => { i.look[part] = fresh(); }); changed("project"); commit(); saidAcross(`${label} reset`, chosen.length); };
   body.append(foldCard({
@@ -711,30 +805,15 @@ function buildAdjust() {
   }));
   // Skin (js/effects/skin.js): smooth it, even its tone, keep its texture
   const skin = getEffect("skin");
-  body.append(foldCard({
+  const skinCard = foldCard({
     key: "adjust:skin", name: "Skin", onReset: resetPart("skin", skin.defaults, "Skin"),
     build: (inner) => skin.controls.forEach((c) => inner.append(slider({
       label: c.label, min: c.min, max: c.max, step: c.step, targets: chosen,
       get: (i) => (i.look.skin || skin.defaults())[c.key], set: (i, v) => { i.look.skin = { ...skin.defaults(), ...(i.look.skin || {}), [c.key]: v }; }
     })))
-  }));
-  body.append(colourCard(chosen));
-  body.append(masksCard());
-  effectsSection(chosen);
-  body.append(foldCard({
-    key: "adjust:background", name: "Background",
-    onReset: () => { slidesChosen.forEach((i) => { i.background = "#ffffff"; }); changed("project"); commit(); saidAcross("Background reset", slidesChosen.length); },
-    build: (inner) => {
-      const backs = slidesChosen.map((i) => i.background);
-      const same = backs.every((b) => b === backs[0]) ? backs[0] : null;
-      const setBack = (v, finished) => { slidesChosen.forEach((i) => { i.background = v; }); changed(finished ? "project" : "look"); if (finished) { commit(); saidAcross("Background", slidesChosen.length); } };
-      const picker = el("input", { type: "color", className: "colour-big", value: same || "#ffffff", title: "Pick a colour" });
-      picker.oninput = () => setBack(picker.value, false);
-      picker.onchange = () => setBack(picker.value, true);
-      inner.append(el("div", { className: "row" }, el("span", { textContent: "Colour" }), picker, same ? el("span", { className: "note", textContent: same }) : el("span", { className: "note", textContent: "mixed" })));
-    }
-  }));
-  saveFilterSection(chosen);
+  });
+  // Edit (Tom, 2026-11-23): Light, Colour, Skin, Masks, Crop (the background colour is in the tools row)
+  body.append(colourCard(chosen), skinCard, masksCard(), foldCard({ key: "adjust:crop", name: "Crop", build: (inner) => withBody(inner, buildCrop) }));
 }
 
 // The Effect brush's settings (a mask carrying an effect, js/masks.js BRUSH_EFFECTS): which effect, its sliders,
@@ -1003,9 +1082,10 @@ function buildCrop() {
 
 // ---- Text (the slide on the canvas only)
 
-function buildText() {
+function buildText(part = "add") {
   const item = currentItem();
   if (!item) return;
+  if (part === "edit") return captionSettings(item);
   if (selectedItems().length > 1) body.append(note(`Text goes on ${slideLabel(state.project, item).toLowerCase()} only.`));
   const add = (style) => () => {
     const s = TEXT_STYLES[style];
@@ -1030,7 +1110,10 @@ function buildText() {
     list.append(row);
   });
   body.append(list);
+}
 
+// The picked caption's settings (on the right)
+function captionSettings(item) {
   const t = item.texts.find((x) => x.id === state.textId);
   if (!t) return;
   const live = () => changed("look");

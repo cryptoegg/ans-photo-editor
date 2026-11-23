@@ -83,7 +83,7 @@ export function toolIcons(cls, into = null, after = null) {
       const b = Object.assign(document.createElement("button"), { type: "button", className: cls });
       b.dataset.tool = tool;
       b.setAttribute("aria-label", tip.split(":")[0]);
-      b.onclick = () => { if (tool && state.tab !== "tools") state.tab = "tools"; if (tool === "fx") effectBrush(); else setTool(tool); if (after) after(tool); }; // (a brush's settings are on the Tools tab)
+      b.onclick = () => { if (tool && state.lib !== "tools") state.lib = "tools"; if (tool === "fx") effectBrush(); else setTool(tool); if (after) after(tool); }; // (a brush's settings are on the Tools tab)
       return b;
     }));
   }

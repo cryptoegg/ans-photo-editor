@@ -27,10 +27,7 @@
     <a id="btn-post" class="topbar-btn" href="/identity/calendar/?part=new&media=photo" title="Post these slides: a new post on your Social Media Calendar">Post</a>
   </div>
   <div class="topbar-centre">
-    <div class="segmented" id="view-switch" role="tablist" aria-label="View">
-      <button data-view="edit" class="on">Edit</button>
-      <button data-view="phone">Phone</button>
-    </div>
+    <button type="button" id="btn-phone" class="topbar-btn" title="Phone view: the post as it looks in the app">Phone</button>
     <div class="segmented" id="platform-switch">
       <button data-mode="instagram" class="seg-icon" title="Instagram" aria-label="Instagram"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r=".6" fill="currentColor"/></svg></button>
       <button data-mode="tiktok" class="seg-icon" title="TikTok" aria-label="TikTok"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18.5a3 3 0 1 1-3-3"/><path d="M9 18.5V4.5c.8 2.6 3 4.4 6 4.5"/></svg></button>
@@ -41,20 +38,20 @@
       <button data-screen="profile" class="seg-icon" title="Profile" aria-label="Profile"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9.33 4v16M14.67 4v16M4 9.33h16M4 14.67h16"/></svg></button>
     </div>
   </div>
-  <!-- the Editor's four tabs, over the Editor (js/main.js alignBar); the project's name is the window's title -->
-  <div class="topbar-right" id="topbar-right">
-  <nav class="kinds" id="tabs">
-    <button data-tab="filters" class="on" title="Filters"><i class="k-ico"></i>Filters</button>
-    <button data-tab="adjust" title="Adjust"><i class="k-ico"></i>Adjust</button>
-    <button data-tab="tools" title="Tools"><i class="k-ico"></i>Tools</button>
-    <button data-tab="crop" title="Crop"><i class="k-ico"></i>Crop</button>
-    <button data-tab="text" title="Captions"><i class="k-ico"></i>Captions</button>
-  </nav>
-  </div>
 </header>
 
 <main class="workspace" id="workspace">
   <!-- Media (js/ui/mediaColumn.js): the project's photos and videos, and your saved filters -->
+  <!-- The left rail (Tom, 2026-11-23, as the Lyric Visualiser's): what to pick from, opening in the column beside it
+       (js/ui/mediaColumn.js; the libraries themselves are drawn by js/ui/panel.js buildLibrary). The settings of what's
+       picked are on the right. -->
+  <nav class="rail" id="rail">
+    <button type="button" data-lib="media" title="Media: your photos and videos"><i class="k-ico"></i>Media</button>
+    <button type="button" data-lib="filters" title="Filters"><i class="k-ico"></i>Filters</button>
+    <button type="button" data-lib="effects" title="Effects: click one to put it on the picked photo"><i class="k-ico"></i>Effects</button>
+    <button type="button" data-lib="tools" title="Tools: Remove background and the brushes"><i class="k-ico"></i>Tools</button>
+    <button type="button" data-lib="captions" title="Captions: words on the slide"><i class="k-ico"></i>Captions</button>
+  </nav>
   <aside class="media-col" id="media-col"></aside>
   <section class="stage-area" id="stage-area">
     <!-- Edit view -->
@@ -65,29 +62,9 @@
         <button class="btn primary" id="btn-empty-add">Add photos</button>
       </div>
       <div class="video-bar" id="video-bar" hidden></div>
-      <!-- The canvas bar (Style 2, as the Lyric Visualiser's): the tools (Move · Remove · Clone · Eraser · Edge brush, from js/ui/brush.js), ‹ Slide 1 of 7 ›, the shape, − Fit +, guides, snapping,
-           the background colour, Before (hold) -->
-      <div class="stage-tools canvas-bar" id="canvas-bar">
-        <span class="cb-tools" id="cb-tools"></span>
-        <span class="cb-sep"></span>
-        <button class="cb-icon" id="btn-slide-prev" title="Previous slide (←)" aria-label="Previous slide"></button>
-        <span class="cb-slide" id="slide-of">Slide 1 of 1</span>
-        <button class="cb-icon" id="btn-slide-next" title="Next slide (→)" aria-label="Next slide"></button>
-        <span class="cb-sep"></span>
-        <button type="button" id="ratio-select" class="cb-ratio" title="The set's shape"></button>
-        <span class="cb-sep"></span>
-        <button class="cb-icon" id="btn-zoom-out" title="Zoom out" aria-label="Zoom out"></button>
-        <button class="cb-btn" id="btn-zoom-fit" title="Fit">Fit</button>
-        <button class="cb-icon" id="btn-zoom-in" title="Zoom in" aria-label="Zoom in"></button>
-        <span class="cb-sep"></span>
-        <button class="cb-icon" id="btn-guides" title="Guides" aria-label="Guides"></button>
-        <button class="cb-icon" id="btn-magnet" title="Snapping" aria-label="Snapping"></button>
-        <label class="cb-icon cb-bg" id="bg-pick" title="Background colour"><input type="color" id="bg-colour" aria-label="Background colour"></label>
-        <span class="cb-sep"></span>
-        <button class="cb-btn" id="btn-before" title="Hold to see the photos without their look (or hold \)">Before</button>
-        <span class="hint" id="before-hint" hidden>Before</span>
-      </div>
     </div>
+    <!-- The folded Editor (Tom, 2026-11-23, as the Lyric Visualiser's #nl-rail-right): just this, floating at the desk's top right -->
+    <button type="button" class="rail-float" id="btn-editor-open" title="Open the Editor"><i class="k-ico"></i>Editor</button>
     <!-- Phone view -->
     <!-- Phone view (Style 2, as the Lyric Visualiser's): just the screen, rounded, on the dotted desk; ‹ › beside it;
          − Fit + in a floating bar under it -->
@@ -110,8 +87,6 @@
          Layers; then the tile's own settings -->
     <div class="ed-head">
       <span class="ed-title">Editor</span>
-      <button id="btn-undo" class="btn ghost icon undo-redo" title="Undo (⌘Z)" aria-label="Undo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
-      <button id="btn-redo" class="btn ghost icon undo-redo" title="Redo (⇧⌘Z)" aria-label="Redo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
       <button type="button" class="ed-fold" id="btn-editor-fold" title="Fold the Editor" aria-label="Fold the Editor"></button>
     </div>
     <div class="presets-row" id="presets-row">
@@ -130,20 +105,46 @@
 </main>
 
 <footer class="filmstrip-area">
-  <!-- The slides strip's toolbar (Style 2, as the Lyric Visualiser's timeline bar): fold, Add (blue), trays of actions, the count -->
-  <div class="strip-tools">
+  <!-- The tools row (Tom, 2026-11-23, as the Lyric Visualiser's timeline toolbar): one 40px row of 24px controls under the
+       canvas. Left: fold, the slide actions as icons (Add, Duplicate, Panorama with its count, Reset, Remove); then
+       the canvas tools (Move · Remove · Clone · Eraser · Effect brush · Edge brush), Undo / Redo, ‹ Slide 1 of 7 ›, the shape,
+       − Fit +, guides, snapping, the background colour, Before (hold); at the right "7 of 20" -->
+  <div class="strip-tools tool-row" id="tool-row">
     <button type="button" class="strip-fold" id="btn-strip-fold" title="Fold the slides" aria-label="Fold the slides"></button>
-    <button class="btn primary small" id="btn-add">Add photos or videos</button>
-    <div class="tray">
-      <button id="btn-duplicate" title="Duplicate (⌘D)">Duplicate</button>
-      <button id="btn-pano" title="One photo across several slides">Panorama</button>
+    <span class="tr-grp">
+      <button type="button" class="tr-icon tr-add" id="btn-add" title="Add photos or videos" aria-label="Add photos or videos"></button>
+      <button type="button" class="tr-icon" id="btn-duplicate" title="Duplicate (⌘D)" aria-label="Duplicate"></button>
+      <button type="button" class="tr-icon" id="btn-pano" title="Panorama: one photo across several slides" aria-label="Panorama"></button>
       <span class="pano-step" id="pano-step" hidden><span id="pano-n">2</span><span class="pano-arrows"><button type="button" id="pano-up" title="One more slide" aria-label="One more slide"></button><button type="button" id="pano-down" title="One slide fewer (1: back to one slide)" aria-label="One slide fewer"></button></span></span>
-      <button id="btn-split" title="Turn a panorama back into separate slides">Split apart</button>
-    </div>
-    <div class="tray">
-      <button id="btn-reset" title="Back to the photo as it came in">Reset</button>
-      <button id="btn-delete" title="Remove from the set">Remove</button>
-    </div>
+      <button type="button" class="tr-icon" id="btn-reset" title="Reset: back to the photo as it came in" aria-label="Reset"></button>
+      <button type="button" class="tr-icon" id="btn-delete" title="Remove from the set (Delete)" aria-label="Remove"></button>
+    </span>
+    <span class="cb-sep"></span>
+    <span class="tr-grp">
+        <button id="btn-undo" class="tr-icon" title="Undo (⌘Z)" aria-label="Undo"></button>
+        <button id="btn-redo" class="tr-icon" title="Redo (⇧⌘Z)" aria-label="Redo"></button>
+    </span>
+    <span class="cb-sep"></span>
+    <span class="canvas-bar" id="canvas-bar">
+        <span class="cb-tools" id="cb-tools"></span>
+        <span class="cb-sep"></span>
+        <button class="cb-icon" id="btn-slide-prev" title="Previous slide (←)" aria-label="Previous slide"></button>
+        <span class="cb-slide" id="slide-of">Slide 1 of 1</span>
+        <button class="cb-icon" id="btn-slide-next" title="Next slide (→)" aria-label="Next slide"></button>
+        <span class="cb-sep"></span>
+        <button type="button" id="ratio-select" class="cb-ratio" title="The set's shape"></button>
+        <span class="cb-sep"></span>
+        <button class="cb-icon" id="btn-zoom-out" title="Zoom out" aria-label="Zoom out"></button>
+        <button class="cb-btn" id="btn-zoom-fit" title="Fit">Fit</button>
+        <button class="cb-icon" id="btn-zoom-in" title="Zoom in" aria-label="Zoom in"></button>
+        <span class="cb-sep"></span>
+        <button class="cb-icon" id="btn-guides" title="Guides" aria-label="Guides"></button>
+        <button class="cb-icon" id="btn-magnet" title="Snapping" aria-label="Snapping"></button>
+        <label class="cb-icon cb-bg" id="bg-pick" title="Background colour"><input type="color" id="bg-colour" aria-label="Background colour"></label>
+        <span class="cb-sep"></span>
+        <button class="cb-btn" id="btn-before" title="Hold to see the picked photo without its look (nothing picked: every photo; or hold \)">Before</button>
+        <span class="hint" id="before-hint" hidden>Before</span>
+    </span>
     <span class="spacer"></span>
     <span class="count" id="slide-count">0 of 10</span>
   </div>

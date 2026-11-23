@@ -205,7 +205,16 @@ export function lookedFrame(item, frame, quality = "preview", seed = 0) {
 
 // A small filter swatch: a little square of the photo with a preset on it (no adjustments)
 // (the photo with its touch-ups: a word taken off shouldn't come back in the tiles)
+// An effect's tile in the Effects library (Tom, 2026-11-23): the photo with just that effect on (fx: its settings)
+export function effectSwatch(item, fx, seed, side = 120) {
+  return swatchOf(item, `fx:${fx.type}`, { preset: "custom", chain: [{ ...fx, on: true }], strength: 100, light: {}, colour: {} }, seed, side);
+}
+
 export function presetSwatch(item, presetId, seed, side = 120) {
+  return swatchOf(item, presetId, presetId ? { preset: presetId, strength: 100, light: {}, colour: {} } : null, seed, side);
+}
+
+function swatchOf(item, presetId, look, seed, side) {
   const mediaId = item.mediaId;
   const key = JSON.stringify(["swatch", mediaId, retouchKey(item), presetId, side, presetId && presetId.startsWith("film:") && filmLoaded(presetId.slice(5)) ? 1 : 0]);
   const found = find("swatch", key);
@@ -218,8 +227,8 @@ export function presetSwatch(item, presetId, seed, side = 120) {
   const s = Math.min(source.width, source.height);
   square.getContext("2d").drawImage(source, (source.width - s) / 2, (source.height - s) / 2, s, s, 0, 0, side, side);
   let result = square;
-  if (presetId && available()) {
-    const { filter } = stepsOf({ preset: presetId, strength: 100, light: {}, colour: {} }, mix(seed, mediaId));
+  if (look && available()) {
+    const { filter } = stepsOf(look, mix(seed, mediaId));
     try {
       const out = runChain(`swatch@${mediaId}@${side}`, square, side, side, filter, { fresh: true });
       if (out) result = copyOf(out);

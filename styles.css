@@ -841,7 +841,7 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 
 /* Masks (Tom, 2026-11-18; masksCard in js/ui/panel.js): Brush · Fade · Round · Subject, then a row per mask (picked = lit)
    with Invert, On / Off and ✕ at the right, all thin boxes */
-.mask-kinds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.mask-kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .mask-kind, .mask-btn { height: 22px; padding: 0 6px; border: 1px solid var(--btn-line); border-radius: 4px; background: transparent; color: var(--muted);
   font: 500 var(--t-label, 11px) var(--font, inherit); cursor: pointer; white-space: nowrap; }
 .mask-kind:hover, .mask-btn:hover { color: var(--text); }
@@ -877,3 +877,160 @@ body.strip-folded .strip-tools { border-bottom: 0; }
 .panel .film-brand { width: 100%; margin: 0 0 10px; }
 .panel .film-credit { margin: 10px 0 0; font-size: 11px; color: var(--muted-strong); }
 .panel .swatches { grid-template-columns: repeat(3, minmax(0, 1fr)); } /* (a long film name never widens its column) */
+
+/* ==== The Lyric Visualiser's new layout (Tom, 2026-11-23: "match the styles"; its ans-vtg-styles.css "New layout" and
+   its control rules). The panels meet edge to edge with a thin line between them, no gaps or rounded boxes; the top bar
+   has no bar of its own (it sits on the window's grey); no grey trays behind buttons; every control the same size. */
+:root { --ctl-h: 24px; --ctl-r: 4px; --ctl-line: var(--btn-line); --ctl-text: 11px; --ctl-icon: 16px; --ctl-gap: 4px; --ctl-group: 12px; --ctl-row: 40px; }
+.workspace { padding: 0; gap: 0; }
+.media-col, .stage-area, .panel, .filmstrip-area { border: 0; border-radius: 0; margin: 0; }
+.media-col { border-right: 1px solid var(--rule); }
+.panel { border-left: 1px solid var(--rule); }
+.filmstrip-area { border-top: 1px solid var(--rule); }
+.topbar { margin: 0; border: 0; border-radius: 0; background: transparent; }
+
+/* (the top bar: 24px controls, a thin box on hover, the one picked lit; Post stays blue) */
+.topbar-btn { height: var(--ctl-h); padding: 0 10px; border: 1px solid transparent; border-radius: var(--ctl-r); background: transparent; font: 500 var(--ctl-text) var(--font); }
+.topbar-btn:hover { background: transparent; border-color: var(--ctl-line); }
+.topbar-btn.on { background: var(--raised); border-color: var(--ctl-line); color: var(--accent-ink); }
+#btn-home::before { font-size: 14px; margin-right: 4px; }
+#btn-post { border-color: var(--accent); }
+#btn-post:hover { border-color: var(--accent-hover); }
+
+/* (switches: one thin box, the picked part raised and blue, no grey tray) */
+.segmented { gap: 0; padding: 0; border: 1px solid var(--ctl-line); border-radius: var(--ctl-r); background: transparent; overflow: hidden; height: var(--ctl-h); box-sizing: border-box; align-items: stretch; }
+.segmented button { height: auto; padding: 0 10px; border-radius: 0; color: var(--muted); font: 500 var(--ctl-text) var(--font); }
+.segmented button:hover { background: transparent; color: var(--text); }
+.segmented button.on { background: var(--raised); color: var(--accent-ink); box-shadow: none; font-weight: 500; }
+.segmented button.seg-icon { padding: 0 6px; }
+.segmented button.seg-icon svg { width: var(--ctl-icon); height: var(--ctl-icon); }
+.panel .segmented { height: var(--ctl-h); }
+.panel .segmented button { height: auto; }
+
+/* (the Editor's presets row: 24px, thin boxes) */
+.panel .presets-row .select, .panel .presets-row .btn { height: var(--ctl-h); border-radius: var(--ctl-r); font: 400 var(--ctl-text) var(--font); }
+.panel .presets-row .btn { background: transparent; border: 1px solid var(--ctl-line); padding: 0 10px; }
+.panel .presets-row .btn:hover:not(:disabled) { background: var(--raised); }
+.panel .presets-row .select { box-shadow: 0 0 0 1px var(--ctl-line); }
+
+/* ---- The tools row (Tom, 2026-11-23): one 40px row under the canvas with the slide actions and the canvas tools */
+.strip-tools.tool-row { zoom: 1; height: var(--ctl-row); gap: var(--ctl-gap); padding: 0 10px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; white-space: nowrap; }
+.tool-row::-webkit-scrollbar { display: none; }
+.tool-row > * { flex: none; }
+.tool-row .spacer { flex: 1 1 0; min-width: 8px; }
+.tool-row .tr-grp, .tool-row .canvas-bar, .tool-row .cb-tools { display: inline-flex; align-items: center; gap: var(--ctl-gap); zoom: 1; }
+.tool-row .canvas-bar[hidden] { display: none; }
+.tool-row .cb-sep { flex: none; width: 1px; height: 16px; margin: 0 4px; background: var(--ctl-line); }
+.tool-row :is(.tr-icon, .cb-icon, .cb-btn, .cb-ratio, .strip-fold) { position: relative; height: var(--ctl-h); border: 1px solid transparent; border-radius: var(--ctl-r); background-color: transparent;
+  color: var(--muted-strong); font: 500 var(--ctl-text) var(--font); cursor: pointer; box-sizing: border-box; }
+.tool-row :is(.tr-icon, .cb-icon, .strip-fold) { width: var(--ctl-h); padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.tool-row :is(.tr-icon, .cb-icon)::before { content: ""; flex: none; width: var(--ctl-icon); height: var(--ctl-icon); background: currentColor; -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat; }
+.tool-row .cb-btn { padding: 0 8px; }
+.tool-row :is(.tr-icon, .cb-icon, .cb-btn, .cb-ratio, .strip-fold):hover:not(:disabled) { background-color: transparent; border-color: var(--ctl-line); color: var(--text); }
+.tool-row :is(.tr-icon, .cb-icon, .cb-btn):disabled { color: var(--disabled); cursor: default; }
+.tool-row :is(.tr-icon, .cb-icon, .cb-btn).on, .tool-row .cb-tools .cb-icon.on { color: var(--accent-ink); background-color: var(--raised); border-color: var(--ctl-line); box-shadow: none; }
+.tool-row .cb-slide { padding: 0 2px; font: 500 var(--ctl-text) var(--font); color: var(--text); }
+.tool-row .cb-ratio { padding: 0 22px 0 26px; background-size: 14px 14px, 10px 10px; background-position: 6px center, right 6px center; }
+.tool-row .cb-ratio .app-icons svg { width: 12px; height: 12px; }
+.tool-row .cb-bg::before { width: 14px; height: 14px; border-radius: 50%; -webkit-mask: none; mask: none; background: var(--bg-now, #fff); box-shadow: 0 0 0 1px var(--btn-line); }
+.tool-row .strip-fold::before { left: 8px; top: 6px; width: 6px; height: 6px; border-width: 1.5px; }
+body.strip-folded .tool-row .strip-fold::before { top: 9px; }
+.tool-row .count { font: 500 var(--ctl-text) var(--font); color: var(--muted); }
+.tool-row .tr-add { color: var(--accent-ink); }
+.tool-row .tr-add:hover:not(:disabled) { color: var(--accent-ink); border-color: var(--accent); }
+.tool-row .pano-step { height: var(--ctl-h); box-sizing: border-box; border: 1px solid var(--ctl-line); border-radius: var(--ctl-r); background: var(--raised); font: 600 var(--ctl-text) var(--font); padding: 0 1px 0 6px; gap: 2px; }
+.tool-row .pano-arrows button { height: 10px; width: 16px; padding: 0; border: 0; border-radius: 2px; background: transparent; color: var(--text); cursor: pointer; position: relative; }
+.tool-row .pano-arrows button::before { content: ""; position: absolute; left: 4px; top: 2px; border: 4px solid transparent; }
+.tool-row .pano-arrows button:disabled { color: var(--disabled); }
+#btn-add { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6'/><path d='M4 16l4.5-4.5L13 16l2-2 5 5'/><path d='M18 3v6M15 6h6'/></svg>"); }
+#btn-duplicate { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='8' y='8' width='12' height='12' rx='2'/><path d='M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2'/></svg>"); }
+#btn-pano { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='7' width='20' height='10' rx='1.5'/><path d='M8.67 7v10M15.33 7v10' stroke-dasharray='1.5 2'/></svg>"); }
+#btn-reset { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 12a8 8 0 1 0 2.5-5.8'/><path d='M4 4v5h5'/></svg>"); }
+#btn-delete { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3'/></svg>"); }
+#btn-undo { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 14 4 9l5-5'/><path d='M4 9h10.5a5.5 5.5 0 0 1 0 11H11'/></svg>"); }
+#btn-redo { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m15 14 5-5-5-5'/><path d='M20 9H9.5a5.5 5.5 0 0 0 0 11H13'/></svg>"); }
+/* (the video bar, floating over the canvas, now sits at its foot) */
+.video-bar { bottom: 14px; }
+/* (the + beside Photos, Videos, Layers: a thin box like every other button, no grey circle) */
+.mc-plus, .panel .mc-plus { width: var(--ctl-h); height: var(--ctl-h); border: 1px solid var(--ctl-line); border-radius: var(--ctl-r); background: transparent; color: var(--muted-strong); font-size: 15px; line-height: 22px; box-shadow: none; }
+.mc-plus:hover, .panel .mc-plus:hover:not(:disabled) { background: var(--raised); color: var(--text); }
+
+/* ---- The left rail (Tom, 2026-11-23, as the Lyric Visualiser's #nl-rail): icon over name, opening its library in the
+   column beside it; the open one lit. A folded column is gone (the rail stays). */
+:root { --rail: calc(64px * var(--ui-zoom)); }
+.workspace { grid-template-columns: var(--rail) var(--col) minmax(0, 1fr) var(--col); }
+.workspace.no-media { grid-template-columns: var(--rail) 0 minmax(0, 1fr) var(--col); }
+.workspace.no-editor { grid-template-columns: var(--rail) var(--col) minmax(0, 1fr) var(--col-shut); }
+.workspace.no-media.no-editor { grid-template-columns: var(--rail) 0 minmax(0, 1fr) var(--col-shut); }
+.media-col.folded { display: none; }
+.rail { zoom: var(--ui-zoom); display: flex; flex-direction: column; gap: 2px; padding: 6px 4px; background: var(--panel); border-right: 1px solid var(--rule); overflow-y: auto; min-height: 0; }
+.rail button { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; padding: 7px 0 6px; border: 1px solid transparent; border-radius: var(--ctl-r);
+  background: transparent; color: var(--muted); font: 500 var(--ctl-text) var(--font); cursor: pointer; }
+.rail button:hover { color: var(--text); border-color: var(--ctl-line); }
+.rail button.on { color: var(--accent-ink); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.rail .k-ico { width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat; }
+.rail [data-lib="media"] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='4.5' width='17' height='15' rx='2'/><circle cx='9' cy='10' r='1.8'/><path d='M20.5 16l-5-5-9 8.5'/></svg>"); }
+.rail [data-lib="filters"] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8.5' r='5'/><path d='M8 11a5 5 0 1 0 4 2'/><path d='M12 19a5 5 0 1 0 4-8'/></svg>"); }
+.rail [data-lib="tools"] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M4 20l9-9'/><path d='M14.5 9.5l-1-1 4-4.5 2.5 2.5-4.5 4z'/><path d='M7 4v3M5.5 5.5h3M18 15v3M16.5 16.5h3'/></svg>"); }
+.rail [data-lib="captions"] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='5' width='18' height='14' rx='2.5'/><path d='M7 10h10M7 14h6'/></svg>"); }
+/* (a library in the left column: the panel's own look for its controls) */
+.media-col .lib-body { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; font: 400 14px var(--font); }
+.media-col .lib-body .presets-row { margin: 0; }
+.media-col .lib-body .tools-box { margin: 0; padding: 0; border: 0; max-height: none; overflow: visible; }
+.media-col .swatches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.media-col .swatch canvas, .media-col .swatch .blank { aspect-ratio: 1; border-radius: 8px; outline: 0; }
+.media-col .swatch.on canvas { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--accent); }
+.media-col .swatch span { margin-top: 5px; font-size: 12px; }
+.media-col .swatch-star { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px; background: rgba(0, 0, 0, .45); color: #fff; font-size: 12px; opacity: 0; }
+.media-col .swatch:hover .swatch-star, .media-col .swatch-star.on { opacity: 1; }
+.media-col .swatch-star.on { color: #ffd23f; }
+.media-col .film-brand { width: 100%; }
+.media-col .film-credit { margin: 0; font-size: 11px; color: var(--muted-strong); }
+.media-col .select { height: var(--ctl-h); border-radius: var(--ctl-r); font: 400 var(--ctl-text) var(--font); box-shadow: 0 0 0 1px var(--ctl-line); background-color: var(--raised); padding: 0 8px; }
+.media-col .btn { height: var(--ctl-h); padding: 0 10px; border: 1px solid var(--ctl-line); border-radius: var(--ctl-r); background: transparent; font: 500 var(--ctl-text) var(--font); }
+.media-col .btn:hover:not(:disabled) { background: var(--raised); }
+.media-col .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.media-col .presets-row { display: flex; gap: 4px; }
+.media-col .presets-row .select { flex: 1; min-width: 0; }
+.media-col .text-styles { display: flex; flex-wrap: wrap; gap: 4px; }
+.media-col .note { font-size: 12px; color: var(--muted); margin: 0; }
+/* (the right column's title names what's picked) */
+.panel .ed-title { font: 700 15px var(--font); color: var(--text); }
+.media-col .lib-body.panel { zoom: 1; padding: 8px 0 0; border: 0; background: none; min-height: auto; overflow: visible; }
+.media-col .btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--accent-text); }
+/* (Tom, 2026-11-23: the rail see-through, on the window's grey like the top bar, as the Visualiser's) */
+.rail { background: transparent; border-right: 0; }
+.rail button:hover { background: color-mix(in srgb, var(--raised) 50%, transparent); }
+.rail [data-lib="effects"] { --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z'/><path d='M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z'/></svg>"); }
+/* (the right column: Edit | Effects floating at the top; the filter's name over its own settings; Add effect) */
+.panel .right-tabs { display: flex; width: 100%; }
+.panel .right-tabs button { flex: 1 1 0; }
+.panel .fx-filter-name { font: 700 var(--ctl-text) var(--font); color: var(--muted-strong); text-transform: none; }
+.panel .add-effect { width: 100%; height: var(--ctl-h); border: 1px solid var(--ctl-line); border-radius: var(--ctl-r); background: transparent; font: 500 var(--ctl-text) var(--font); color: var(--accent-ink); }
+.panel .add-effect:hover { background: var(--raised); }
+/* (Edit | Effects floats on top; an open fold's name floats just under it) */
+.panel .tab-body > .sticky:has(.right-tabs) { z-index: 5; padding-top: 10px; padding-bottom: 8px; border-bottom: 0; }
+.panel .tab-body:has(> .sticky .right-tabs) .fold-card.open > .fold-head { top: 30px; margin-top: 0; padding-top: 4px; }
+.panel .tab-body:has(> .sticky .right-tabs) .fold-card.open .fold-card.open > .fold-head { top: 62px; }
+/* ---- The folded Editor (Tom, 2026-11-23, as the Lyric Visualiser's): no strip; the desk runs to the window's edge with
+   one see-through Editor button floating at its top right */
+.workspace.no-editor { grid-template-columns: var(--rail) var(--col) minmax(0, 1fr) 0; }
+.workspace.no-media.no-editor { grid-template-columns: var(--rail) 0 minmax(0, 1fr) 0; }
+.panel.folded { display: none; }
+.rail-float { position: absolute; top: 6px; right: 6px; z-index: 6; zoom: var(--ui-zoom); width: 56px; display: none; flex-direction: column; align-items: center; gap: 3px;
+  padding: 7px 0 6px; border: 1px solid transparent; border-radius: var(--ctl-r); background: transparent; color: var(--muted); font: 500 var(--ctl-text) var(--font); cursor: pointer; }
+.workspace.no-editor .rail-float { display: flex; }
+.rail-float:hover { color: var(--text); border-color: var(--ctl-line); background: color-mix(in srgb, var(--raised) 50%, transparent); }
+.rail-float .k-ico { width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat;
+  --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'><path d='M4 7h9M17 7h3M4 12h4M12 12h8M4 17h11M19 17h1'/><circle cx='15' cy='7' r='2'/><circle cx='10' cy='12' r='2'/><circle cx='17' cy='17' r='2'/></svg>"); }
+.panel .ed-title:empty { visibility: hidden; }
+/* (each column in its own place, so a folded, hidden one never shifts the others) */
+.workspace > .rail { grid-column: 1; grid-row: 1; }
+.workspace > .media-col { grid-column: 2; grid-row: 1; }
+.workspace > .stage-area { grid-column: 3; grid-row: 1; }
+.workspace > .panel { grid-column: 4; grid-row: 1; }
+/* (an effect's ✕: takes it off the photo) */
+.panel .fold-remove { position: relative; }
+.panel .fold-remove::before { content: ""; position: absolute; inset: 0; margin: auto; width: 14px; height: 14px; background: currentColor;
+  -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat;
+  --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3'/></svg>"); }
