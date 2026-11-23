@@ -36,6 +36,7 @@ function setFolded(on) {
   $("media-col").classList.toggle("folded", on);
   $("workspace").classList.toggle("no-media", on);
   try { localStorage.setItem(FOLD_KEY, on ? "1" : "0"); } catch (e) {}
+  document.querySelectorAll("#rail button").forEach((b) => b.classList.toggle("on", !on && b.dataset.lib === state.lib)); // (folded: none lit)
   window.dispatchEvent(new Event("resize")); // (the canvas fits the new width)
 }
 
@@ -70,13 +71,13 @@ function build() {
   col.replaceChildren();
 
   const head = el("div", "col-head");
-  // (like the Editor's: the name, then a blue arrow at the right that folds the column away)
+  // (as the Lyric Visualiser's, Tom 2026-11-23: the blue ‹ first, then the name: "‹ Filters"; it folds the column away)
   const fold = el("button", "col-fold");
   fold.type = "button";
   fold.title = "Fold this column";
   fold.setAttribute("aria-label", "Fold this column");
   fold.onclick = () => setFolded(!col.classList.contains("folded"));
-  head.append(el("span", "col-title", LIBS[lib]), fold);
+  head.append(fold, el("span", "col-title", LIBS[lib]));
   col.append(head);
   if (lib !== "media") {
     const host = el("div", "lib-body panel"); // (".panel": the Editor's own look for sliders, switches and boxes)

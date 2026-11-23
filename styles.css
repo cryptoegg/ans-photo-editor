@@ -1044,3 +1044,17 @@ body.strip-folded .tool-row .strip-fold::before { top: 9px; }
 
 /* The filter's name in Effects, with its bin at the right (Tom, 2026-11-23) */
 .panel .fx-filter-head { display: flex; align-items: center; justify-content: space-between; min-height: 28px; }
+
+/* ---- Folding the columns, as the Lyric Visualiser's (Tom, 2026-11-23): "‹ Filters" on the left (the arrow first); the
+   open rail item joined to its column in the column's colour; one Editor button at the top right, open or folded */
+.col-title { margin-right: 0; flex: 1; }
+.col-fold::before { left: 4px; }
+.rail { padding-right: 0; }
+.rail button.on { color: var(--accent-ink); border-color: transparent; background: var(--panel); border-radius: 8px 0 0 8px; }
+.rail button.on:hover { background: var(--panel); }
+.workspace { position: relative; }
+.rail-float { display: flex; top: 4px; right: 4px; z-index: 30; }
+.rail-float.on { color: var(--accent-ink); }
+.rail-float.on:hover { border-color: transparent; }
+.panel .ed-head { padding-right: 52px; height: 40px; }
+.ed-fold[hidden] { display: none; }

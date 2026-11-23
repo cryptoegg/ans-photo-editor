@@ -191,8 +191,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
 - **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Phone (one button, on / off),
   Instagram | TikTok | YouTube, Feed | Profile as icons (faint while editing), centred over the canvas (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
   columns after the rail, Media 320 | canvas | Editor 320 (each folds away with its blue arrow, remembered in
-  localStorage: Media leaves just the rail; the Editor leaves one see-through Editor button at the desk's top right,
-  `#btn-editor-open`, as the Visualiser's), then the slides strip.
+  localStorage: Media leaves just the rail; the Editor folds and opens with one Editor button at the window's top right, there open or folded and blue while open,
+  `#btn-editor-open`, as the Visualiser's; the left column's ‹ sits before its name, "‹ Filters", and the open rail item joins the column in its colour; Tom, 2026-11-23), then the slides strip.
 - **UI**: `js/ui/mediaColumn.js` (Media: Photos, Videos (3 across), Your filters with their dates;
   click a picture = its first slide), `js/ui/stage.js` (Edit view, behaving like the lyric app's mediaFrame: click a photo
   or text to pick it; dashed frame + corner squares on hover; drag inside = move, corner = size

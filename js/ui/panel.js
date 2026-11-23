@@ -56,14 +56,20 @@ export function initPanel() {
   const foldEditor = (on) => {
     document.getElementById("panel").classList.toggle("folded", on);
     document.getElementById("workspace").classList.toggle("no-editor", on);
+    const b = document.getElementById("btn-editor-open");
+    b.classList.toggle("on", !on); b.title = on ? "Open the Editor" : "Fold the Editor";
     try { localStorage.setItem("ans_photo_editor_folded", on ? "1" : "0"); } catch (e) {}
     window.dispatchEvent(new Event("resize"));
   };
   let folded = false;
   try { folded = localStorage.getItem("ans_photo_editor_folded") === "1"; } catch (e) {}
   foldEditor(folded);
-  document.getElementById("btn-editor-open").onclick = () => foldEditor(false);
-  document.getElementById("btn-editor-fold").onclick = () => foldEditor(!document.getElementById("panel").classList.contains("folded"));
+  // (one Editor button at the window's top right, open or folded, as the Lyric Visualiser's #nl-editor-btn: it opens and
+  // shuts the column, lit while it's open; Tom, 2026-11-23)
+  const editorBtn = document.getElementById("btn-editor-open");
+  document.getElementById("workspace").append(editorBtn);
+  editorBtn.onclick = () => foldEditor(!document.getElementById("panel").classList.contains("folded"));
+  document.getElementById("btn-editor-fold").hidden = true;
   document.getElementById("panel").addEventListener("click", (e) => { if (e.target === e.currentTarget && e.currentTarget.classList.contains("folded")) foldEditor(false); });
   // The presets row: every filter (yours first), Save Preset (this slide's look as one of yours), the dice (a random one)
   const pick = kept("preset-pick");
