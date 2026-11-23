@@ -187,7 +187,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   settings: a caption's own (`captionSettings`), else **Edit | Effects** (as a clip's in the Visualiser; the tab kept in
   `ans_photo_right_tab`): Edit = Light, Colour, Skin, Masks, Crop, Opacity (the picked photo's opacity and blend; no Background: the colour is in the tools row; Tom, 2026-11-23); Effects (`buildEffectsTab`) = the filter's
   own Light / Colour, the effects on this photo (tick, one slider, settings), Add effect, Save this filter / Reset
-  filter. A new Scan starts with no sweep (a still: the whole page scanned). The Editor's five tabs are gone from the top bar (`state.tab` no longer used).
+  filter. Every fold starts shut; on an empty project Edit | Effects still show (on a blank stand-in, `sample` in panel.js, greyed) so new users can look round (Tom, 2026-11-23). A new Scan starts with no sweep (a still: the whole page scanned). The Editor's five tabs are gone from the top bar (`state.tab` no longer used).
 - **Layout**: the top bar (‹ Home · File · Export · Post (blue) | in the middle Phone (one button, on / off),
   Instagram | TikTok | YouTube, Feed | Profile as icons (faint while editing), centred over the canvas (`alignBar` in main.js); the name is the window title, "● Trial — Photo Editor"), then three
   columns after the rail, Media 320 | canvas | Editor 320 (each folds away with its blue arrow, remembered in

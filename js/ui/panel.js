@@ -5,7 +5,7 @@
 import { removeBackground, restoreBackground, cutoutStatus } from '../cutout.js';
 import { brush, setBrush, setTool, clearTouchUps, brushStatus, cloneHasSource, sizeToSlider, sliderToSize, toolIcons, fxInHand, rememberFx, effectBrush } from './brush.js';
 import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, select, selectAll, onChange, items } from '../state.js';
-import { slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, partDefaults, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
+import { newItem, slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, partDefaults, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
 import { PRESETS } from '../effects/presets.js';
 import { getEffect, EFFECTS, effectOrder } from '../effects/registry.js';
 import { vibeSettings, VIBE_DEFAULT } from '../effects/vibe.js';
@@ -259,8 +259,13 @@ function dragRow(e, row, list, all) {
 
 // What Filters, Adjust and Crop change: a picked extra layer by itself, else the selected slides
 // (each slide's own photo)
-export const lookItems = () => (state.layerId ? [currentLayer()] : selectedItems());
-const lookItem = () => currentLayer() || currentItem();
+// (sample: a blank photo standing in while the project is empty, so the settings can be looked through, greyed:
+// Tom, 2026-11-23: new users click around before they start)
+let sample = null;
+const slideNow = () => sample || currentItem();
+const layerNow = () => sample || currentLayer();
+export const lookItems = () => (sample ? [sample] : state.layerId ? [currentLayer()] : selectedItems());
+const lookItem = () => layerNow() || currentItem();
 const layerName = (item, layer) => layerLabel(item, layersOf(item).indexOf(layer)).toLowerCase();
 
 // ---- Building
@@ -301,7 +306,8 @@ function build() {
   const scroll = mode === shownTab ? body.scrollTop : 0; // (switching between a caption and a photo starts at the top)
   shownTab = mode;
   body.innerHTML = "";
-  if (!all) return;
+  sample = all ? null : newItem(null);
+  body.classList.toggle("sample", !!sample);
   if (caption) buildText("edit");
   else {
     // Edit | Effects (Tom, 2026-11-23, as a clip's in the Lyric Visualiser): Edit = Crop, Light, Skin, Colour, Masks,
@@ -316,6 +322,9 @@ function build() {
   document.querySelectorAll('#panel input[type="range"]').forEach(fillTrack);
   pairSliders(body);
   body.scrollTop = scroll;
+  // (the stand-in's settings show but can't be changed; the folds and the Edit | Effects tabs still open)
+  if (sample) body.querySelectorAll("input, select, textarea, button:not(.fold-name):not(.right-tabs button)").forEach((x) => { x.disabled = true; });
+  sample = null;
 }
 
 // A library on the left (js/ui/mediaColumn.js asks for it): Filters (the presets row, then the grid), Tools (Remove
@@ -569,7 +578,7 @@ function buildFilters() {
 // (on / off), an optional one slider, and ↺ (back to its starting settings). Which are open is
 // remembered while the app is open.
 
-const openCards = new Set(["adjust:light"]);
+const openCards = new Set(); // (every fold shut to start: site rule 2)
 function foldCard({ key, name, tick = null, quick = null, onReset = null, onRemove = null, build, off = false }) {
   const open = openCards.has(key);
   const card = el("div", { className: "fold-card" + (open ? " open" : "") + (off ? " off" : "") });
@@ -855,10 +864,10 @@ function effectBrushControls(m, fresh = false) {
 // the picked one's settings under the list: the brush's Paint | Erase, Size and Hardness (a Brush mask), Feather
 // (Round), then its own Light and Colour sliders.
 function masksCard() {
-  const layer = currentLayer();
+  const layer = layerNow();
   const list = (layer && layer.masks) || [];
   const card = foldCard({ key: "adjust:masks", name: "Masks", build: (inner) => {
-    if (!layer || !getPicture(layer.mediaId) || false) { inner.append(note("Pick a photo")); return; }
+    if (!layer || (!sample && !getPicture(layer.mediaId))) { inner.append(note("Pick a photo")); return; }
     const kinds = el("div", { className: "mask-kinds" });
     MASK_KINDS.forEach(([kind, label, tip]) => kinds.append(el("button", { type: "button", className: "mask-kind", textContent: kind === "subject" && cutoutStatus.busy ? "Finding…" : label, title: tip, disabled: kind === "subject" && cutoutStatus.busy, onclick: () => addMask(kind) })));
     inner.append(kinds);
@@ -1030,7 +1039,7 @@ function squareUp(item, pic, frame) {
 }
 
 function buildCrop() {
-  const slide = currentItem();
+  const slide = slideNow();
   if (!slide) return;
   const item = lookItem(); // (the picked layer: its crop)
   const pic = getPicture(item.mediaId);

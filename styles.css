@@ -1034,3 +1034,6 @@ body.strip-folded .tool-row .strip-fold::before { top: 9px; }
 .panel .fold-remove::before { content: ""; position: absolute; inset: 0; margin: auto; width: 14px; height: 14px; background: currentColor;
   -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat;
   --i: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3'/></svg>"); }
+
+/* An empty project (Tom, 2026-11-23): Edit and Effects still show, folds shut, the settings greyed */
+#tab-body.sample .fold-body, #tab-body.sample .fold-reset, #tab-body.sample .add-effect, #tab-body.sample .save-filter { opacity: .45; }
