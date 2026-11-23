@@ -153,7 +153,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   bytes, red fastest) + `films/films.json` (brand > film > variant), copied into this app's `films/` (shared with the
   Lyric Visualiser). `js/effects/filmTables.js` reads the list at start and each table when first needed; a film filter
   is `film:<id>` (`getFilter` in filters.js makes it). Filters → All | ★ Starred | **Film** (a brand menu, then its
-  films, the credit under them). `films/` ships (Tom, 2026-11-22, about 32 MB); only `films/_test/` (research photos) is
+  films, the credit under them). `films/` ships (Tom, 2026-11-22, about 32 MB); plus 5 the collection lacks (2026-11-23: Gold 200, UltraMax 400, ColorPlus 200, 800T Tungsten from GlassMeter, CC BY 4.0; Fuji C200 ours, from Superia 200; `extras` in convert.py); the Film menu shows only the 50 picked (`menu` in films.json, `MENU` in convert.py; `listFilms`), the rest still open for older work; each film gets its own grain, glow, softness and corners from its name (`layersOf` in film.js, the same as the Lyric Visualiser's, 2026-11-23); only `films/_test/` (research photos) is
   kept out of git and the deploy. Your own LUTs: .cube or **HaldCLUT .png** (`parseHald` in lutStore.js).
 - **Effects**: `js/effects/` is copied from ans-visual-text-generator (minus chain.js, chop,
   framerate). `lines.js` (Screen lines: fine

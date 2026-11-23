@@ -1,8 +1,8 @@
 {
  "size": 33,
  "order": "r fastest, then g, then b; bytes 0-255",
- "licence": "CC BY-SA 4.0",
- "credit": "RawTherapee Film Simulation collection (2015-09-20) by Pat David, Pavlov Dmitry and Michael Ezra",
+ "licence": "CC BY-SA 4.0 (RawTherapee films); CC BY 4.0 (GlassMeter films)",
+ "credit": "RawTherapee Film Simulation collection (2015-09-20) by Pat David, Pavlov Dmitry and Michael Ezra, CC BY-SA 4.0; Gold 200, UltraMax 400, ColorPlus 200 and 800T Tungsten: film simulations from GlassMeter by Glass Works (glass-works.ai), CC BY 4.0",
  "films": [
   {
    "id": "color-agfa-agfa-precisa-100",
@@ -10,7 +10,8 @@
    "brand": "Agfa",
    "film": "Precisa 100",
    "variant": "",
-   "file": "color-agfa-agfa-precisa-100.bin"
+   "file": "color-agfa-agfa-precisa-100.bin",
+   "menu": false
   },
   {
    "id": "color-agfa-agfa-ultra-color-100",
@@ -18,7 +19,8 @@
    "brand": "Agfa",
    "film": "Ultra Color 100",
    "variant": "",
-   "file": "color-agfa-agfa-ultra-color-100.bin"
+   "file": "color-agfa-agfa-ultra-color-100.bin",
+   "menu": false
   },
   {
    "id": "color-agfa-agfa-vista-200",
@@ -26,7 +28,8 @@
    "brand": "Agfa",
    "film": "Vista 200",
    "variant": "",
-   "file": "color-agfa-agfa-vista-200.bin"
+   "file": "color-agfa-agfa-vista-200.bin",
+   "menu": true
   },
   {
    "id": "color-creative-anime",
@@ -34,7 +37,8 @@
    "brand": "Creative",
    "film": "Anime",
    "variant": "",
-   "file": "color-creative-anime.bin"
+   "file": "color-creative-anime.bin",
+   "menu": false
   },
   {
    "id": "color-creative-bleachbypass1",
@@ -42,7 +46,8 @@
    "brand": "Creative",
    "film": "BleachBypass1",
    "variant": "",
-   "file": "color-creative-bleachbypass1.bin"
+   "file": "color-creative-bleachbypass1.bin",
+   "menu": false
   },
   {
    "id": "color-creative-bleachbypass2",
@@ -50,7 +55,8 @@
    "brand": "Creative",
    "film": "BleachBypass2",
    "variant": "",
-   "file": "color-creative-bleachbypass2.bin"
+   "file": "color-creative-bleachbypass2.bin",
+   "menu": false
   },
   {
    "id": "color-creative-bleachbypass3",
@@ -58,7 +64,8 @@
    "brand": "Creative",
    "film": "BleachBypass3",
    "variant": "",
-   "file": "color-creative-bleachbypass3.bin"
+   "file": "color-creative-bleachbypass3.bin",
+   "menu": false
   },
   {
    "id": "color-creative-bleachbypass4",
@@ -66,7 +73,8 @@
    "brand": "Creative",
    "film": "BleachBypass4",
    "variant": "",
-   "file": "color-creative-bleachbypass4.bin"
+   "file": "color-creative-bleachbypass4.bin",
+   "menu": false
   },
   {
    "id": "color-creative-candlelight",
@@ -74,7 +82,8 @@
    "brand": "Creative",
    "film": "CandleLight",
    "variant": "",
-   "file": "color-creative-candlelight.bin"
+   "file": "color-creative-candlelight.bin",
+   "menu": false
   },
   {
    "id": "color-creative-colornegative",
@@ -82,7 +91,8 @@
    "brand": "Creative",
    "film": "ColorNegative",
    "variant": "",
-   "file": "color-creative-colornegative.bin"
+   "file": "color-creative-colornegative.bin",
+   "menu": false
   },
   {
    "id": "color-creative-crispwarm",
@@ -90,7 +100,8 @@
    "brand": "Creative",
    "film": "CrispWarm",
    "variant": "",
-   "file": "color-creative-crispwarm.bin"
+   "file": "color-creative-crispwarm.bin",
+   "menu": false
   },
   {
    "id": "color-creative-crispwinter",
@@ -98,7 +109,8 @@
    "brand": "Creative",
    "film": "CrispWinter",
    "variant": "",
-   "file": "color-creative-crispwinter.bin"
+   "file": "color-creative-crispwinter.bin",
+   "menu": false
   },
   {
    "id": "color-creative-dropblues",
@@ -106,7 +118,8 @@
    "brand": "Creative",
    "film": "DropBlues",
    "variant": "",
-   "file": "color-creative-dropblues.bin"
+   "file": "color-creative-dropblues.bin",
+   "menu": false
   },
   {
    "id": "color-creative-edgyember",
@@ -114,7 +127,8 @@
    "brand": "Creative",
    "film": "EdgyEmber",
    "variant": "",
-   "file": "color-creative-edgyember.bin"
+   "file": "color-creative-edgyember.bin",
+   "menu": false
   },
   {
    "id": "color-creative-fallcolors",
@@ -122,7 +136,8 @@
    "brand": "Creative",
    "film": "FallColors",
    "variant": "",
-   "file": "color-creative-fallcolors.bin"
+   "file": "color-creative-fallcolors.bin",
+   "menu": false
   },
   {
    "id": "color-creative-foggynight",
@@ -130,7 +145,8 @@
    "brand": "Creative",
    "film": "FoggyNight",
    "variant": "",
-   "file": "color-creative-foggynight.bin"
+   "file": "color-creative-foggynight.bin",
+   "menu": false
   },
   {
    "id": "color-creative-futuristicbleak1",
@@ -138,7 +154,8 @@
    "brand": "Creative",
    "film": "FuturisticBleak1",
    "variant": "",
-   "file": "color-creative-futuristicbleak1.bin"
+   "file": "color-creative-futuristicbleak1.bin",
+   "menu": false
   },
   {
    "id": "color-creative-futuristicbleak2",
@@ -146,7 +163,8 @@
    "brand": "Creative",
    "film": "FuturisticBleak2",
    "variant": "",
-   "file": "color-creative-futuristicbleak2.bin"
+   "file": "color-creative-futuristicbleak2.bin",
+   "menu": false
   },
   {
    "id": "color-creative-futuristicbleak3",
@@ -154,7 +172,8 @@
    "brand": "Creative",
    "film": "FuturisticBleak3",
    "variant": "",
-   "file": "color-creative-futuristicbleak3.bin"
+   "file": "color-creative-futuristicbleak3.bin",
+   "menu": false
   },
   {
    "id": "color-creative-futuristicbleak4",
@@ -162,7 +181,8 @@
    "brand": "Creative",
    "film": "FuturisticBleak4",
    "variant": "",
-   "file": "color-creative-futuristicbleak4.bin"
+   "file": "color-creative-futuristicbleak4.bin",
+   "menu": false
   },
   {
    "id": "color-creative-horrorblue",
@@ -170,7 +190,8 @@
    "brand": "Creative",
    "film": "HorrorBlue",
    "variant": "",
-   "file": "color-creative-horrorblue.bin"
+   "file": "color-creative-horrorblue.bin",
+   "menu": false
   },
   {
    "id": "color-creative-latesunset",
@@ -178,7 +199,8 @@
    "brand": "Creative",
    "film": "LateSunset",
    "variant": "",
-   "file": "color-creative-latesunset.bin"
+   "file": "color-creative-latesunset.bin",
+   "menu": false
   },
   {
    "id": "color-creative-moonlight",
@@ -186,7 +208,8 @@
    "brand": "Creative",
    "film": "Moonlight",
    "variant": "",
-   "file": "color-creative-moonlight.bin"
+   "file": "color-creative-moonlight.bin",
+   "menu": false
   },
   {
    "id": "color-creative-nightfromday",
@@ -194,7 +217,8 @@
    "brand": "Creative",
    "film": "NightFromDay",
    "variant": "",
-   "file": "color-creative-nightfromday.bin"
+   "file": "color-creative-nightfromday.bin",
+   "menu": false
   },
   {
    "id": "color-creative-redblueyellow",
@@ -202,7 +226,8 @@
    "brand": "Creative",
    "film": "RedBlueYellow",
    "variant": "",
-   "file": "color-creative-redblueyellow.bin"
+   "file": "color-creative-redblueyellow.bin",
+   "menu": false
   },
   {
    "id": "color-creative-smokey",
@@ -210,7 +235,8 @@
    "brand": "Creative",
    "film": "Smokey",
    "variant": "",
-   "file": "color-creative-smokey.bin"
+   "file": "color-creative-smokey.bin",
+   "menu": false
   },
   {
    "id": "color-creative-softwarming",
@@ -218,7 +244,8 @@
    "brand": "Creative",
    "film": "SoftWarming",
    "variant": "",
-   "file": "color-creative-softwarming.bin"
+   "file": "color-creative-softwarming.bin",
+   "menu": false
   },
   {
    "id": "color-creative-tealmagentagold",
@@ -226,7 +253,8 @@
    "brand": "Creative",
    "film": "TealMagentaGold",
    "variant": "",
-   "file": "color-creative-tealmagentagold.bin"
+   "file": "color-creative-tealmagentagold.bin",
+   "menu": false
   },
   {
    "id": "color-creative-tealorange",
@@ -234,7 +262,8 @@
    "brand": "Creative",
    "film": "TealOrange",
    "variant": "",
-   "file": "color-creative-tealorange.bin"
+   "file": "color-creative-tealorange.bin",
+   "menu": false
   },
   {
    "id": "color-creative-tealorange1",
@@ -242,7 +271,8 @@
    "brand": "Creative",
    "film": "TealOrange1",
    "variant": "",
-   "file": "color-creative-tealorange1.bin"
+   "file": "color-creative-tealorange1.bin",
+   "menu": false
   },
   {
    "id": "color-creative-tealorange2",
@@ -250,7 +280,8 @@
    "brand": "Creative",
    "film": "TealOrange2",
    "variant": "",
-   "file": "color-creative-tealorange2.bin"
+   "file": "color-creative-tealorange2.bin",
+   "menu": false
   },
   {
    "id": "color-creative-tealorange3",
@@ -258,7 +289,8 @@
    "brand": "Creative",
    "film": "TealOrange3",
    "variant": "",
-   "file": "color-creative-tealorange3.bin"
+   "file": "color-creative-tealorange3.bin",
+   "menu": false
   },
   {
    "id": "color-creative-tensiongreen1",
@@ -266,7 +298,8 @@
    "brand": "Creative",
    "film": "TensionGreen1",
    "variant": "",
-   "file": "color-creative-tensiongreen1.bin"
+   "file": "color-creative-tensiongreen1.bin",
+   "menu": false
   },
   {
    "id": "color-creative-tensiongreen2",
@@ -274,7 +307,8 @@
    "brand": "Creative",
    "film": "TensionGreen2",
    "variant": "",
-   "file": "color-creative-tensiongreen2.bin"
+   "file": "color-creative-tensiongreen2.bin",
+   "menu": false
   },
   {
    "id": "color-creative-tensiongreen3",
@@ -282,7 +316,8 @@
    "brand": "Creative",
    "film": "TensionGreen3",
    "variant": "",
-   "file": "color-creative-tensiongreen3.bin"
+   "file": "color-creative-tensiongreen3.bin",
+   "menu": false
   },
   {
    "id": "color-creative-tensiongreen4",
@@ -290,7 +325,8 @@
    "brand": "Creative",
    "film": "TensionGreen4",
    "variant": "",
-   "file": "color-creative-tensiongreen4.bin"
+   "file": "color-creative-tensiongreen4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-160c-1",
@@ -298,7 +334,8 @@
    "brand": "Fuji",
    "film": "160C",
    "variant": "−",
-   "file": "color-fuji-fuji-160c-1.bin"
+   "file": "color-fuji-fuji-160c-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-160c-2",
@@ -306,7 +343,8 @@
    "brand": "Fuji",
    "film": "160C",
    "variant": "",
-   "file": "color-fuji-fuji-160c-2.bin"
+   "file": "color-fuji-fuji-160c-2.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-160c-3",
@@ -314,7 +352,8 @@
    "brand": "Fuji",
    "film": "160C",
    "variant": "+",
-   "file": "color-fuji-fuji-160c-3.bin"
+   "file": "color-fuji-fuji-160c-3.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-160c-4",
@@ -322,7 +361,8 @@
    "brand": "Fuji",
    "film": "160C",
    "variant": "++",
-   "file": "color-fuji-fuji-160c-4.bin"
+   "file": "color-fuji-fuji-160c-4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-400h-1",
@@ -330,7 +370,8 @@
    "brand": "Fuji",
    "film": "400H",
    "variant": "−",
-   "file": "color-fuji-fuji-400h-1.bin"
+   "file": "color-fuji-fuji-400h-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-400h-2",
@@ -338,7 +379,8 @@
    "brand": "Fuji",
    "film": "400H",
    "variant": "",
-   "file": "color-fuji-fuji-400h-2.bin"
+   "file": "color-fuji-fuji-400h-2.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-400h-3",
@@ -346,7 +388,8 @@
    "brand": "Fuji",
    "film": "400H",
    "variant": "+",
-   "file": "color-fuji-fuji-400h-3.bin"
+   "file": "color-fuji-fuji-400h-3.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-400h-4",
@@ -354,7 +397,8 @@
    "brand": "Fuji",
    "film": "400H",
    "variant": "++",
-   "file": "color-fuji-fuji-400h-4.bin"
+   "file": "color-fuji-fuji-400h-4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-800z-1",
@@ -362,7 +406,8 @@
    "brand": "Fuji",
    "film": "800Z",
    "variant": "−",
-   "file": "color-fuji-fuji-800z-1.bin"
+   "file": "color-fuji-fuji-800z-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-800z-2",
@@ -370,7 +415,8 @@
    "brand": "Fuji",
    "film": "800Z",
    "variant": "",
-   "file": "color-fuji-fuji-800z-2.bin"
+   "file": "color-fuji-fuji-800z-2.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-800z-3",
@@ -378,7 +424,8 @@
    "brand": "Fuji",
    "film": "800Z",
    "variant": "+",
-   "file": "color-fuji-fuji-800z-3.bin"
+   "file": "color-fuji-fuji-800z-3.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-800z-4",
@@ -386,7 +433,8 @@
    "brand": "Fuji",
    "film": "800Z",
    "variant": "++",
-   "file": "color-fuji-fuji-800z-4.bin"
+   "file": "color-fuji-fuji-800z-4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-astia-100-generic",
@@ -394,7 +442,8 @@
    "brand": "Fuji",
    "film": "Astia 100 Generic",
    "variant": "",
-   "file": "color-fuji-fuji-astia-100-generic.bin"
+   "file": "color-fuji-fuji-astia-100-generic.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-astia-100f",
@@ -402,7 +451,8 @@
    "brand": "Fuji",
    "film": "Astia 100F",
    "variant": "",
-   "file": "color-fuji-fuji-astia-100f.bin"
+   "file": "color-fuji-fuji-astia-100f.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-fp-100c-1",
@@ -410,7 +460,8 @@
    "brand": "Fuji",
    "film": "FP-100c",
    "variant": "−−",
-   "file": "color-fuji-fuji-fp-100c-1.bin"
+   "file": "color-fuji-fuji-fp-100c-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-2",
@@ -418,7 +469,8 @@
    "brand": "Fuji",
    "film": "FP-100c",
    "variant": "−",
-   "file": "color-fuji-fuji-fp-100c-2.bin"
+   "file": "color-fuji-fuji-fp-100c-2.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-3",
@@ -426,7 +478,8 @@
    "brand": "Fuji",
    "film": "FP-100c",
    "variant": "",
-   "file": "color-fuji-fuji-fp-100c-3.bin"
+   "file": "color-fuji-fuji-fp-100c-3.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-fp-100c-4-alt",
@@ -434,7 +487,8 @@
    "brand": "Fuji",
    "film": "FP-100c 4 Alt",
    "variant": "",
-   "file": "color-fuji-fuji-fp-100c-4-alt.bin"
+   "file": "color-fuji-fuji-fp-100c-4-alt.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-5",
@@ -442,7 +496,8 @@
    "brand": "Fuji",
    "film": "FP-100c",
    "variant": "+",
-   "file": "color-fuji-fuji-fp-100c-5.bin"
+   "file": "color-fuji-fuji-fp-100c-5.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-6",
@@ -450,7 +505,8 @@
    "brand": "Fuji",
    "film": "FP-100c",
    "variant": "++",
-   "file": "color-fuji-fuji-fp-100c-6.bin"
+   "file": "color-fuji-fuji-fp-100c-6.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-7-alt",
@@ -458,7 +514,8 @@
    "brand": "Fuji",
    "film": "FP-100c 7 ++ Alt",
    "variant": "",
-   "file": "color-fuji-fuji-fp-100c-7-alt.bin"
+   "file": "color-fuji-fuji-fp-100c-7-alt.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-8",
@@ -466,7 +523,8 @@
    "brand": "Fuji",
    "film": "FP-100c",
    "variant": "+++",
-   "file": "color-fuji-fuji-fp-100c-8.bin"
+   "file": "color-fuji-fuji-fp-100c-8.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-cool-1",
@@ -474,7 +532,8 @@
    "brand": "Fuji",
    "film": "FP-100c Cool",
    "variant": "−−",
-   "file": "color-fuji-fuji-fp-100c-cool-1.bin"
+   "file": "color-fuji-fuji-fp-100c-cool-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-cool-2",
@@ -482,7 +541,8 @@
    "brand": "Fuji",
    "film": "FP-100c Cool",
    "variant": "−",
-   "file": "color-fuji-fuji-fp-100c-cool-2.bin"
+   "file": "color-fuji-fuji-fp-100c-cool-2.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-cool-3",
@@ -490,7 +550,8 @@
    "brand": "Fuji",
    "film": "FP-100c Cool",
    "variant": "",
-   "file": "color-fuji-fuji-fp-100c-cool-3.bin"
+   "file": "color-fuji-fuji-fp-100c-cool-3.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-cool-4",
@@ -498,7 +559,8 @@
    "brand": "Fuji",
    "film": "FP-100c Cool",
    "variant": "+",
-   "file": "color-fuji-fuji-fp-100c-cool-4.bin"
+   "file": "color-fuji-fuji-fp-100c-cool-4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-cool-5",
@@ -506,7 +568,8 @@
    "brand": "Fuji",
    "film": "FP-100c Cool",
    "variant": "++",
-   "file": "color-fuji-fuji-fp-100c-cool-5.bin"
+   "file": "color-fuji-fuji-fp-100c-cool-5.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-negative-1",
@@ -514,7 +577,8 @@
    "brand": "Fuji",
    "film": "FP-100c Negative",
    "variant": "−−",
-   "file": "color-fuji-fuji-fp-100c-negative-1.bin"
+   "file": "color-fuji-fuji-fp-100c-negative-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-negative-2",
@@ -522,7 +586,8 @@
    "brand": "Fuji",
    "film": "FP-100c Negative",
    "variant": "−",
-   "file": "color-fuji-fuji-fp-100c-negative-2.bin"
+   "file": "color-fuji-fuji-fp-100c-negative-2.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-negative-3",
@@ -530,7 +595,8 @@
    "brand": "Fuji",
    "film": "FP-100c Negative",
    "variant": "",
-   "file": "color-fuji-fuji-fp-100c-negative-3.bin"
+   "file": "color-fuji-fuji-fp-100c-negative-3.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-negative-4",
@@ -538,7 +604,8 @@
    "brand": "Fuji",
    "film": "FP-100c Negative",
    "variant": "+",
-   "file": "color-fuji-fuji-fp-100c-negative-4.bin"
+   "file": "color-fuji-fuji-fp-100c-negative-4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-negative-5",
@@ -546,7 +613,8 @@
    "brand": "Fuji",
    "film": "FP-100c Negative",
    "variant": "++",
-   "file": "color-fuji-fuji-fp-100c-negative-5.bin"
+   "file": "color-fuji-fuji-fp-100c-negative-5.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-negative-6-alt",
@@ -554,7 +622,8 @@
    "brand": "Fuji",
    "film": "FP-100c Negative 6 ++ Alt",
    "variant": "",
-   "file": "color-fuji-fuji-fp-100c-negative-6-alt.bin"
+   "file": "color-fuji-fuji-fp-100c-negative-6-alt.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-fp-100c-negative-7",
@@ -562,7 +631,8 @@
    "brand": "Fuji",
    "film": "FP-100c Negative",
    "variant": "+++",
-   "file": "color-fuji-fuji-fp-100c-negative-7.bin"
+   "file": "color-fuji-fuji-fp-100c-negative-7.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-provia-100-generic",
@@ -570,7 +640,8 @@
    "brand": "Fuji",
    "film": "Provia 100 Generic",
    "variant": "",
-   "file": "color-fuji-fuji-provia-100-generic.bin"
+   "file": "color-fuji-fuji-provia-100-generic.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-provia-100f",
@@ -578,7 +649,8 @@
    "brand": "Fuji",
    "film": "Provia 100F",
    "variant": "",
-   "file": "color-fuji-fuji-provia-100f.bin"
+   "file": "color-fuji-fuji-provia-100f.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-provia-400f",
@@ -586,7 +658,8 @@
    "brand": "Fuji",
    "film": "Provia 400F",
    "variant": "",
-   "file": "color-fuji-fuji-provia-400f.bin"
+   "file": "color-fuji-fuji-provia-400f.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-provia-400x",
@@ -594,7 +667,8 @@
    "brand": "Fuji",
    "film": "Provia 400X",
    "variant": "",
-   "file": "color-fuji-fuji-provia-400x.bin"
+   "file": "color-fuji-fuji-provia-400x.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-sensia-100",
@@ -602,7 +676,8 @@
    "brand": "Fuji",
    "film": "Sensia 100",
    "variant": "",
-   "file": "color-fuji-fuji-sensia-100.bin"
+   "file": "color-fuji-fuji-sensia-100.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-100-1",
@@ -610,7 +685,8 @@
    "brand": "Fuji",
    "film": "Superia 100",
    "variant": "−",
-   "file": "color-fuji-fuji-superia-100-1.bin"
+   "file": "color-fuji-fuji-superia-100-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-100-2",
@@ -618,7 +694,8 @@
    "brand": "Fuji",
    "film": "Superia 100",
    "variant": "",
-   "file": "color-fuji-fuji-superia-100-2.bin"
+   "file": "color-fuji-fuji-superia-100-2.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-100-3",
@@ -626,7 +703,8 @@
    "brand": "Fuji",
    "film": "Superia 100",
    "variant": "+",
-   "file": "color-fuji-fuji-superia-100-3.bin"
+   "file": "color-fuji-fuji-superia-100-3.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-100-4",
@@ -634,7 +712,8 @@
    "brand": "Fuji",
    "film": "Superia 100",
    "variant": "++",
-   "file": "color-fuji-fuji-superia-100-4.bin"
+   "file": "color-fuji-fuji-superia-100-4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-1600-1",
@@ -642,7 +721,8 @@
    "brand": "Fuji",
    "film": "Superia 1600",
    "variant": "−",
-   "file": "color-fuji-fuji-superia-1600-1.bin"
+   "file": "color-fuji-fuji-superia-1600-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-1600-2",
@@ -650,7 +730,8 @@
    "brand": "Fuji",
    "film": "Superia 1600",
    "variant": "",
-   "file": "color-fuji-fuji-superia-1600-2.bin"
+   "file": "color-fuji-fuji-superia-1600-2.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-superia-1600-3",
@@ -658,7 +739,8 @@
    "brand": "Fuji",
    "film": "Superia 1600",
    "variant": "+",
-   "file": "color-fuji-fuji-superia-1600-3.bin"
+   "file": "color-fuji-fuji-superia-1600-3.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-1600-4",
@@ -666,7 +748,8 @@
    "brand": "Fuji",
    "film": "Superia 1600",
    "variant": "++",
-   "file": "color-fuji-fuji-superia-1600-4.bin"
+   "file": "color-fuji-fuji-superia-1600-4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-200-xpro",
@@ -674,7 +757,8 @@
    "brand": "Fuji",
    "film": "Superia 200 XPRO",
    "variant": "",
-   "file": "color-fuji-fuji-superia-200-xpro.bin"
+   "file": "color-fuji-fuji-superia-200-xpro.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-200",
@@ -682,7 +766,8 @@
    "brand": "Fuji",
    "film": "Superia 200",
    "variant": "",
-   "file": "color-fuji-fuji-superia-200.bin"
+   "file": "color-fuji-fuji-superia-200.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-superia-400-1",
@@ -690,7 +775,8 @@
    "brand": "Fuji",
    "film": "Superia 400",
    "variant": "−",
-   "file": "color-fuji-fuji-superia-400-1.bin"
+   "file": "color-fuji-fuji-superia-400-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-400-2",
@@ -698,7 +784,8 @@
    "brand": "Fuji",
    "film": "Superia 400",
    "variant": "",
-   "file": "color-fuji-fuji-superia-400-2.bin"
+   "file": "color-fuji-fuji-superia-400-2.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-superia-400-3",
@@ -706,7 +793,8 @@
    "brand": "Fuji",
    "film": "Superia 400",
    "variant": "+",
-   "file": "color-fuji-fuji-superia-400-3.bin"
+   "file": "color-fuji-fuji-superia-400-3.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-400-4",
@@ -714,7 +802,8 @@
    "brand": "Fuji",
    "film": "Superia 400",
    "variant": "++",
-   "file": "color-fuji-fuji-superia-400-4.bin"
+   "file": "color-fuji-fuji-superia-400-4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-800-1",
@@ -722,7 +811,8 @@
    "brand": "Fuji",
    "film": "Superia 800",
    "variant": "−",
-   "file": "color-fuji-fuji-superia-800-1.bin"
+   "file": "color-fuji-fuji-superia-800-1.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-800-2",
@@ -730,7 +820,8 @@
    "brand": "Fuji",
    "film": "Superia 800",
    "variant": "",
-   "file": "color-fuji-fuji-superia-800-2.bin"
+   "file": "color-fuji-fuji-superia-800-2.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-800-3",
@@ -738,7 +829,8 @@
    "brand": "Fuji",
    "film": "Superia 800",
    "variant": "+",
-   "file": "color-fuji-fuji-superia-800-3.bin"
+   "file": "color-fuji-fuji-superia-800-3.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-800-4",
@@ -746,7 +838,8 @@
    "brand": "Fuji",
    "film": "Superia 800",
    "variant": "++",
-   "file": "color-fuji-fuji-superia-800-4.bin"
+   "file": "color-fuji-fuji-superia-800-4.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-hg-1600",
@@ -754,7 +847,8 @@
    "brand": "Fuji",
    "film": "Superia HG 1600",
    "variant": "",
-   "file": "color-fuji-fuji-superia-hg-1600.bin"
+   "file": "color-fuji-fuji-superia-hg-1600.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-superia-reala-100",
@@ -762,7 +856,8 @@
    "brand": "Fuji",
    "film": "Superia Reala 100",
    "variant": "",
-   "file": "color-fuji-fuji-superia-reala-100.bin"
+   "file": "color-fuji-fuji-superia-reala-100.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-superia-x-tra-800",
@@ -770,7 +865,8 @@
    "brand": "Fuji",
    "film": "Superia X-Tra 800",
    "variant": "",
-   "file": "color-fuji-fuji-superia-x-tra-800.bin"
+   "file": "color-fuji-fuji-superia-x-tra-800.bin",
+   "menu": true
   },
   {
    "id": "color-fuji-fuji-velvia-100-generic",
@@ -778,7 +874,8 @@
    "brand": "Fuji",
    "film": "Velvia 100 Generic",
    "variant": "",
-   "file": "color-fuji-fuji-velvia-100-generic.bin"
+   "file": "color-fuji-fuji-velvia-100-generic.bin",
+   "menu": false
   },
   {
    "id": "color-fuji-fuji-velvia-50",
@@ -786,7 +883,18 @@
    "brand": "Fuji",
    "film": "Velvia 50",
    "variant": "",
-   "file": "color-fuji-fuji-velvia-50.bin"
+   "file": "color-fuji-fuji-velvia-50.bin",
+   "menu": true
+  },
+  {
+   "id": "ours-fuji-c200",
+   "kind": "Colour",
+   "brand": "Fuji",
+   "film": "C200",
+   "variant": "",
+   "file": "ours-fuji-c200.bin",
+   "source": "ours",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-e-100-gx-ektachrome-100",
@@ -794,7 +902,8 @@
    "brand": "Kodak",
    "film": "E-100 GX Ektachrome 100",
    "variant": "",
-   "file": "color-kodak-kodak-e-100-gx-ektachrome-100.bin"
+   "file": "color-kodak-kodak-e-100-gx-ektachrome-100.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-ektachrome-100-vs-generic",
@@ -802,7 +911,8 @@
    "brand": "Kodak",
    "film": "Ektachrome 100 VS Generic",
    "variant": "",
-   "file": "color-kodak-kodak-ektachrome-100-vs-generic.bin"
+   "file": "color-kodak-kodak-ektachrome-100-vs-generic.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-ektachrome-100-vs",
@@ -810,7 +920,8 @@
    "brand": "Kodak",
    "film": "Ektachrome 100 VS",
    "variant": "",
-   "file": "color-kodak-kodak-ektachrome-100-vs.bin"
+   "file": "color-kodak-kodak-ektachrome-100-vs.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-ektar-100",
@@ -818,7 +929,8 @@
    "brand": "Kodak",
    "film": "Ektar 100",
    "variant": "",
-   "file": "color-kodak-kodak-ektar-100.bin"
+   "file": "color-kodak-kodak-ektar-100.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-elite-100-xpro",
@@ -826,7 +938,8 @@
    "brand": "Kodak",
    "film": "Elite 100 XPRO",
    "variant": "",
-   "file": "color-kodak-kodak-elite-100-xpro.bin"
+   "file": "color-kodak-kodak-elite-100-xpro.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-elite-chrome-200",
@@ -834,7 +947,8 @@
    "brand": "Kodak",
    "film": "Elite Chrome 200",
    "variant": "",
-   "file": "color-kodak-kodak-elite-chrome-200.bin"
+   "file": "color-kodak-kodak-elite-chrome-200.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-elite-chrome-400",
@@ -842,7 +956,8 @@
    "brand": "Kodak",
    "film": "Elite Chrome 400",
    "variant": "",
-   "file": "color-kodak-kodak-elite-chrome-400.bin"
+   "file": "color-kodak-kodak-elite-chrome-400.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-elite-color-200",
@@ -850,7 +965,8 @@
    "brand": "Kodak",
    "film": "Elite Color 200",
    "variant": "",
-   "file": "color-kodak-kodak-elite-color-200.bin"
+   "file": "color-kodak-kodak-elite-color-200.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-elite-color-400",
@@ -858,7 +974,8 @@
    "brand": "Kodak",
    "film": "Elite Color 400",
    "variant": "",
-   "file": "color-kodak-kodak-elite-color-400.bin"
+   "file": "color-kodak-kodak-elite-color-400.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-elite-extracolor-100",
@@ -866,7 +983,8 @@
    "brand": "Kodak",
    "film": "Elite ExtraColor 100",
    "variant": "",
-   "file": "color-kodak-kodak-elite-extracolor-100.bin"
+   "file": "color-kodak-kodak-elite-extracolor-100.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-kodachrome-200",
@@ -874,7 +992,8 @@
    "brand": "Kodak",
    "film": "Kodachrome 200",
    "variant": "",
-   "file": "color-kodak-kodak-kodachrome-200.bin"
+   "file": "color-kodak-kodak-kodachrome-200.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-kodachrome-25",
@@ -882,7 +1001,8 @@
    "brand": "Kodak",
    "film": "Kodachrome 25",
    "variant": "",
-   "file": "color-kodak-kodak-kodachrome-25.bin"
+   "file": "color-kodak-kodak-kodachrome-25.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-kodachrome-64-generic",
@@ -890,7 +1010,8 @@
    "brand": "Kodak",
    "film": "Kodachrome 64 Generic",
    "variant": "",
-   "file": "color-kodak-kodak-kodachrome-64-generic.bin"
+   "file": "color-kodak-kodak-kodachrome-64-generic.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-kodachrome-64",
@@ -898,7 +1019,8 @@
    "brand": "Kodak",
    "film": "Kodachrome 64",
    "variant": "",
-   "file": "color-kodak-kodak-kodachrome-64.bin"
+   "file": "color-kodak-kodak-kodachrome-64.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-portra-160-1",
@@ -906,7 +1028,8 @@
    "brand": "Kodak",
    "film": "Portra 160",
    "variant": "−",
-   "file": "color-kodak-kodak-portra-160-1.bin"
+   "file": "color-kodak-kodak-portra-160-1.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-160-2",
@@ -914,7 +1037,8 @@
    "brand": "Kodak",
    "film": "Portra 160",
    "variant": "",
-   "file": "color-kodak-kodak-portra-160-2.bin"
+   "file": "color-kodak-kodak-portra-160-2.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-portra-160-3",
@@ -922,7 +1046,8 @@
    "brand": "Kodak",
    "film": "Portra 160",
    "variant": "+",
-   "file": "color-kodak-kodak-portra-160-3.bin"
+   "file": "color-kodak-kodak-portra-160-3.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-160-4",
@@ -930,7 +1055,8 @@
    "brand": "Kodak",
    "film": "Portra 160",
    "variant": "++",
-   "file": "color-kodak-kodak-portra-160-4.bin"
+   "file": "color-kodak-kodak-portra-160-4.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-160-nc-1",
@@ -938,7 +1064,8 @@
    "brand": "Kodak",
    "film": "Portra 160 NC",
    "variant": "−",
-   "file": "color-kodak-kodak-portra-160-nc-1.bin"
+   "file": "color-kodak-kodak-portra-160-nc-1.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-160-nc-2",
@@ -946,7 +1073,8 @@
    "brand": "Kodak",
    "film": "Portra 160 NC",
    "variant": "",
-   "file": "color-kodak-kodak-portra-160-nc-2.bin"
+   "file": "color-kodak-kodak-portra-160-nc-2.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-portra-160-nc-3",
@@ -954,7 +1082,8 @@
    "brand": "Kodak",
    "film": "Portra 160 NC",
    "variant": "+",
-   "file": "color-kodak-kodak-portra-160-nc-3.bin"
+   "file": "color-kodak-kodak-portra-160-nc-3.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-160-nc-4",
@@ -962,7 +1091,8 @@
    "brand": "Kodak",
    "film": "Portra 160 NC",
    "variant": "++",
-   "file": "color-kodak-kodak-portra-160-nc-4.bin"
+   "file": "color-kodak-kodak-portra-160-nc-4.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-160-vc-1",
@@ -970,7 +1100,8 @@
    "brand": "Kodak",
    "film": "Portra 160 VC",
    "variant": "−",
-   "file": "color-kodak-kodak-portra-160-vc-1.bin"
+   "file": "color-kodak-kodak-portra-160-vc-1.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-160-vc-2",
@@ -978,7 +1109,8 @@
    "brand": "Kodak",
    "film": "Portra 160 VC",
    "variant": "",
-   "file": "color-kodak-kodak-portra-160-vc-2.bin"
+   "file": "color-kodak-kodak-portra-160-vc-2.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-160-vc-3",
@@ -986,7 +1118,8 @@
    "brand": "Kodak",
    "film": "Portra 160 VC",
    "variant": "+",
-   "file": "color-kodak-kodak-portra-160-vc-3.bin"
+   "file": "color-kodak-kodak-portra-160-vc-3.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-160-vc-4",
@@ -994,7 +1127,8 @@
    "brand": "Kodak",
    "film": "Portra 160 VC",
    "variant": "++",
-   "file": "color-kodak-kodak-portra-160-vc-4.bin"
+   "file": "color-kodak-kodak-portra-160-vc-4.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-1",
@@ -1002,7 +1136,8 @@
    "brand": "Kodak",
    "film": "Portra 400",
    "variant": "−",
-   "file": "color-kodak-kodak-portra-400-1.bin"
+   "file": "color-kodak-kodak-portra-400-1.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-2",
@@ -1010,7 +1145,8 @@
    "brand": "Kodak",
    "film": "Portra 400",
    "variant": "",
-   "file": "color-kodak-kodak-portra-400-2.bin"
+   "file": "color-kodak-kodak-portra-400-2.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-portra-400-3",
@@ -1018,7 +1154,8 @@
    "brand": "Kodak",
    "film": "Portra 400",
    "variant": "+",
-   "file": "color-kodak-kodak-portra-400-3.bin"
+   "file": "color-kodak-kodak-portra-400-3.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-4",
@@ -1026,7 +1163,8 @@
    "brand": "Kodak",
    "film": "Portra 400",
    "variant": "++",
-   "file": "color-kodak-kodak-portra-400-4.bin"
+   "file": "color-kodak-kodak-portra-400-4.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-nc-1",
@@ -1034,7 +1172,8 @@
    "brand": "Kodak",
    "film": "Portra 400 NC",
    "variant": "−",
-   "file": "color-kodak-kodak-portra-400-nc-1.bin"
+   "file": "color-kodak-kodak-portra-400-nc-1.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-nc-2",
@@ -1042,7 +1181,8 @@
    "brand": "Kodak",
    "film": "Portra 400 NC",
    "variant": "",
-   "file": "color-kodak-kodak-portra-400-nc-2.bin"
+   "file": "color-kodak-kodak-portra-400-nc-2.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-portra-400-nc-3",
@@ -1050,7 +1190,8 @@
    "brand": "Kodak",
    "film": "Portra 400 NC",
    "variant": "+",
-   "file": "color-kodak-kodak-portra-400-nc-3.bin"
+   "file": "color-kodak-kodak-portra-400-nc-3.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-nc-4",
@@ -1058,7 +1199,8 @@
    "brand": "Kodak",
    "film": "Portra 400 NC",
    "variant": "++",
-   "file": "color-kodak-kodak-portra-400-nc-4.bin"
+   "file": "color-kodak-kodak-portra-400-nc-4.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-uc-1",
@@ -1066,7 +1208,8 @@
    "brand": "Kodak",
    "film": "Portra 400 UC",
    "variant": "−",
-   "file": "color-kodak-kodak-portra-400-uc-1.bin"
+   "file": "color-kodak-kodak-portra-400-uc-1.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-uc-2",
@@ -1074,7 +1217,8 @@
    "brand": "Kodak",
    "film": "Portra 400 UC",
    "variant": "",
-   "file": "color-kodak-kodak-portra-400-uc-2.bin"
+   "file": "color-kodak-kodak-portra-400-uc-2.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-uc-3",
@@ -1082,7 +1226,8 @@
    "brand": "Kodak",
    "film": "Portra 400 UC",
    "variant": "+",
-   "file": "color-kodak-kodak-portra-400-uc-3.bin"
+   "file": "color-kodak-kodak-portra-400-uc-3.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-uc-4",
@@ -1090,7 +1235,8 @@
    "brand": "Kodak",
    "film": "Portra 400 UC",
    "variant": "++",
-   "file": "color-kodak-kodak-portra-400-uc-4.bin"
+   "file": "color-kodak-kodak-portra-400-uc-4.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-vc-1",
@@ -1098,7 +1244,8 @@
    "brand": "Kodak",
    "film": "Portra 400 VC",
    "variant": "−",
-   "file": "color-kodak-kodak-portra-400-vc-1.bin"
+   "file": "color-kodak-kodak-portra-400-vc-1.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-vc-2",
@@ -1106,7 +1253,8 @@
    "brand": "Kodak",
    "film": "Portra 400 VC",
    "variant": "",
-   "file": "color-kodak-kodak-portra-400-vc-2.bin"
+   "file": "color-kodak-kodak-portra-400-vc-2.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-portra-400-vc-3",
@@ -1114,7 +1262,8 @@
    "brand": "Kodak",
    "film": "Portra 400 VC",
    "variant": "+",
-   "file": "color-kodak-kodak-portra-400-vc-3.bin"
+   "file": "color-kodak-kodak-portra-400-vc-3.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-400-vc-4",
@@ -1122,7 +1271,8 @@
    "brand": "Kodak",
    "film": "Portra 400 VC",
    "variant": "++",
-   "file": "color-kodak-kodak-portra-400-vc-4.bin"
+   "file": "color-kodak-kodak-portra-400-vc-4.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-800-1",
@@ -1130,7 +1280,8 @@
    "brand": "Kodak",
    "film": "Portra 800",
    "variant": "−",
-   "file": "color-kodak-kodak-portra-800-1.bin"
+   "file": "color-kodak-kodak-portra-800-1.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-800-2",
@@ -1138,7 +1289,8 @@
    "brand": "Kodak",
    "film": "Portra 800",
    "variant": "",
-   "file": "color-kodak-kodak-portra-800-2.bin"
+   "file": "color-kodak-kodak-portra-800-2.bin",
+   "menu": true
   },
   {
    "id": "color-kodak-kodak-portra-800-3",
@@ -1146,7 +1298,8 @@
    "brand": "Kodak",
    "film": "Portra 800",
    "variant": "+",
-   "file": "color-kodak-kodak-portra-800-3.bin"
+   "file": "color-kodak-kodak-portra-800-3.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-800-4",
@@ -1154,7 +1307,8 @@
    "brand": "Kodak",
    "film": "Portra 800",
    "variant": "++",
-   "file": "color-kodak-kodak-portra-800-4.bin"
+   "file": "color-kodak-kodak-portra-800-4.bin",
+   "menu": false
   },
   {
    "id": "color-kodak-kodak-portra-800-hc",
@@ -1162,7 +1316,38 @@
    "brand": "Kodak",
    "film": "Portra 800 HC",
    "variant": "",
-   "file": "color-kodak-kodak-portra-800-hc.bin"
+   "file": "color-kodak-kodak-portra-800-hc.bin",
+   "menu": false
+  },
+  {
+   "id": "glassmeter-kodak-gold-200",
+   "kind": "Colour",
+   "brand": "Kodak",
+   "film": "Gold 200",
+   "variant": "",
+   "file": "glassmeter-kodak-gold-200.bin",
+   "source": "GlassMeter",
+   "menu": true
+  },
+  {
+   "id": "glassmeter-kodak-ultramax-400",
+   "kind": "Colour",
+   "brand": "Kodak",
+   "film": "UltraMax 400",
+   "variant": "",
+   "file": "glassmeter-kodak-ultramax-400.bin",
+   "source": "GlassMeter",
+   "menu": true
+  },
+  {
+   "id": "glassmeter-kodak-colorplus-200",
+   "kind": "Colour",
+   "brand": "Kodak",
+   "film": "ColorPlus 200",
+   "variant": "",
+   "file": "glassmeter-kodak-colorplus-200.bin",
+   "source": "GlassMeter",
+   "menu": true
   },
   {
    "id": "color-lomography-lomography-redscale-100",
@@ -1170,7 +1355,8 @@
    "brand": "Lomography",
    "film": "Redscale 100",
    "variant": "",
-   "file": "color-lomography-lomography-redscale-100.bin"
+   "file": "color-lomography-lomography-redscale-100.bin",
+   "menu": true
   },
   {
    "id": "color-lomography-lomography-x-pro-slide-200",
@@ -1178,7 +1364,8 @@
    "brand": "Lomography",
    "film": "X-Pro Slide 200",
    "variant": "",
-   "file": "color-lomography-lomography-x-pro-slide-200.bin"
+   "file": "color-lomography-lomography-x-pro-slide-200.bin",
+   "menu": true
   },
   {
    "id": "color-polaroid-polaroid-669-1",
@@ -1186,7 +1373,8 @@
    "brand": "Polaroid",
    "film": "669",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-669-1.bin"
+   "file": "color-polaroid-polaroid-669-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-669-2",
@@ -1194,7 +1382,8 @@
    "brand": "Polaroid",
    "film": "669",
    "variant": "−",
-   "file": "color-polaroid-polaroid-669-2.bin"
+   "file": "color-polaroid-polaroid-669-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-669-3",
@@ -1202,7 +1391,8 @@
    "brand": "Polaroid",
    "film": "669",
    "variant": "",
-   "file": "color-polaroid-polaroid-669-3.bin"
+   "file": "color-polaroid-polaroid-669-3.bin",
+   "menu": true
   },
   {
    "id": "color-polaroid-polaroid-669-4",
@@ -1210,7 +1400,8 @@
    "brand": "Polaroid",
    "film": "669",
    "variant": "+",
-   "file": "color-polaroid-polaroid-669-4.bin"
+   "file": "color-polaroid-polaroid-669-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-669-5",
@@ -1218,7 +1409,8 @@
    "brand": "Polaroid",
    "film": "669",
    "variant": "++",
-   "file": "color-polaroid-polaroid-669-5.bin"
+   "file": "color-polaroid-polaroid-669-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-669-6",
@@ -1226,7 +1418,8 @@
    "brand": "Polaroid",
    "film": "669",
    "variant": "+++",
-   "file": "color-polaroid-polaroid-669-6.bin"
+   "file": "color-polaroid-polaroid-669-6.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-669-cold-1",
@@ -1234,7 +1427,8 @@
    "brand": "Polaroid",
    "film": "669 Cold",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-669-cold-1.bin"
+   "file": "color-polaroid-polaroid-669-cold-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-669-cold-2",
@@ -1242,7 +1436,8 @@
    "brand": "Polaroid",
    "film": "669 Cold",
    "variant": "−",
-   "file": "color-polaroid-polaroid-669-cold-2.bin"
+   "file": "color-polaroid-polaroid-669-cold-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-669-cold-3",
@@ -1250,7 +1445,8 @@
    "brand": "Polaroid",
    "film": "669 Cold",
    "variant": "",
-   "file": "color-polaroid-polaroid-669-cold-3.bin"
+   "file": "color-polaroid-polaroid-669-cold-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-669-cold-4",
@@ -1258,7 +1454,8 @@
    "brand": "Polaroid",
    "film": "669 Cold",
    "variant": "+",
-   "file": "color-polaroid-polaroid-669-cold-4.bin"
+   "file": "color-polaroid-polaroid-669-cold-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-1",
@@ -1266,7 +1463,8 @@
    "brand": "Polaroid",
    "film": "690",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-690-1.bin"
+   "file": "color-polaroid-polaroid-690-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-2",
@@ -1274,7 +1472,8 @@
    "brand": "Polaroid",
    "film": "690",
    "variant": "−",
-   "file": "color-polaroid-polaroid-690-2.bin"
+   "file": "color-polaroid-polaroid-690-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-3",
@@ -1282,7 +1481,8 @@
    "brand": "Polaroid",
    "film": "690",
    "variant": "",
-   "file": "color-polaroid-polaroid-690-3.bin"
+   "file": "color-polaroid-polaroid-690-3.bin",
+   "menu": true
   },
   {
    "id": "color-polaroid-polaroid-690-4",
@@ -1290,7 +1490,8 @@
    "brand": "Polaroid",
    "film": "690",
    "variant": "+",
-   "file": "color-polaroid-polaroid-690-4.bin"
+   "file": "color-polaroid-polaroid-690-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-5",
@@ -1298,7 +1499,8 @@
    "brand": "Polaroid",
    "film": "690",
    "variant": "++",
-   "file": "color-polaroid-polaroid-690-5.bin"
+   "file": "color-polaroid-polaroid-690-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-cold-1",
@@ -1306,7 +1508,8 @@
    "brand": "Polaroid",
    "film": "690 Cold",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-690-cold-1.bin"
+   "file": "color-polaroid-polaroid-690-cold-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-cold-2",
@@ -1314,7 +1517,8 @@
    "brand": "Polaroid",
    "film": "690 Cold",
    "variant": "−",
-   "file": "color-polaroid-polaroid-690-cold-2.bin"
+   "file": "color-polaroid-polaroid-690-cold-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-cold-3",
@@ -1322,7 +1526,8 @@
    "brand": "Polaroid",
    "film": "690 Cold",
    "variant": "",
-   "file": "color-polaroid-polaroid-690-cold-3.bin"
+   "file": "color-polaroid-polaroid-690-cold-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-cold-4",
@@ -1330,7 +1535,8 @@
    "brand": "Polaroid",
    "film": "690 Cold",
    "variant": "+",
-   "file": "color-polaroid-polaroid-690-cold-4.bin"
+   "file": "color-polaroid-polaroid-690-cold-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-cold-5",
@@ -1338,7 +1544,8 @@
    "brand": "Polaroid",
    "film": "690 Cold",
    "variant": "++",
-   "file": "color-polaroid-polaroid-690-cold-5.bin"
+   "file": "color-polaroid-polaroid-690-cold-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-warm-1",
@@ -1346,7 +1553,8 @@
    "brand": "Polaroid",
    "film": "690 Warm",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-690-warm-1.bin"
+   "file": "color-polaroid-polaroid-690-warm-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-warm-2",
@@ -1354,7 +1562,8 @@
    "brand": "Polaroid",
    "film": "690 Warm",
    "variant": "−",
-   "file": "color-polaroid-polaroid-690-warm-2.bin"
+   "file": "color-polaroid-polaroid-690-warm-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-warm-3",
@@ -1362,7 +1571,8 @@
    "brand": "Polaroid",
    "film": "690 Warm",
    "variant": "",
-   "file": "color-polaroid-polaroid-690-warm-3.bin"
+   "file": "color-polaroid-polaroid-690-warm-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-warm-4",
@@ -1370,7 +1580,8 @@
    "brand": "Polaroid",
    "film": "690 Warm",
    "variant": "+",
-   "file": "color-polaroid-polaroid-690-warm-4.bin"
+   "file": "color-polaroid-polaroid-690-warm-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-690-warm-5",
@@ -1378,7 +1589,8 @@
    "brand": "Polaroid",
    "film": "690 Warm",
    "variant": "++",
-   "file": "color-polaroid-polaroid-690-warm-5.bin"
+   "file": "color-polaroid-polaroid-690-warm-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-cold-1",
@@ -1386,7 +1598,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Cold",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-px-100uv-cold-1.bin"
+   "file": "color-polaroid-polaroid-px-100uv-cold-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-cold-2",
@@ -1394,7 +1607,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Cold",
    "variant": "−",
-   "file": "color-polaroid-polaroid-px-100uv-cold-2.bin"
+   "file": "color-polaroid-polaroid-px-100uv-cold-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-cold-3",
@@ -1402,7 +1616,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Cold",
    "variant": "",
-   "file": "color-polaroid-polaroid-px-100uv-cold-3.bin"
+   "file": "color-polaroid-polaroid-px-100uv-cold-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-cold-4",
@@ -1410,7 +1625,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Cold",
    "variant": "+",
-   "file": "color-polaroid-polaroid-px-100uv-cold-4.bin"
+   "file": "color-polaroid-polaroid-px-100uv-cold-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-cold-5",
@@ -1418,7 +1634,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Cold",
    "variant": "++",
-   "file": "color-polaroid-polaroid-px-100uv-cold-5.bin"
+   "file": "color-polaroid-polaroid-px-100uv-cold-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-cold-6",
@@ -1426,7 +1643,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Cold",
    "variant": "+++",
-   "file": "color-polaroid-polaroid-px-100uv-cold-6.bin"
+   "file": "color-polaroid-polaroid-px-100uv-cold-6.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-warm-1",
@@ -1434,7 +1652,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Warm",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-px-100uv-warm-1.bin"
+   "file": "color-polaroid-polaroid-px-100uv-warm-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-warm-2",
@@ -1442,7 +1661,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Warm",
    "variant": "−",
-   "file": "color-polaroid-polaroid-px-100uv-warm-2.bin"
+   "file": "color-polaroid-polaroid-px-100uv-warm-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-warm-3",
@@ -1450,7 +1670,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Warm",
    "variant": "",
-   "file": "color-polaroid-polaroid-px-100uv-warm-3.bin"
+   "file": "color-polaroid-polaroid-px-100uv-warm-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-warm-4",
@@ -1458,7 +1679,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Warm",
    "variant": "+",
-   "file": "color-polaroid-polaroid-px-100uv-warm-4.bin"
+   "file": "color-polaroid-polaroid-px-100uv-warm-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-warm-5",
@@ -1466,7 +1688,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Warm",
    "variant": "++",
-   "file": "color-polaroid-polaroid-px-100uv-warm-5.bin"
+   "file": "color-polaroid-polaroid-px-100uv-warm-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-100uv-warm-6",
@@ -1474,7 +1697,8 @@
    "brand": "Polaroid",
    "film": "PX-100UV+ Warm",
    "variant": "+++",
-   "file": "color-polaroid-polaroid-px-100uv-warm-6.bin"
+   "file": "color-polaroid-polaroid-px-100uv-warm-6.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-1",
@@ -1482,7 +1706,8 @@
    "brand": "Polaroid",
    "film": "PX-680",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-px-680-1.bin"
+   "file": "color-polaroid-polaroid-px-680-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-2",
@@ -1490,7 +1715,8 @@
    "brand": "Polaroid",
    "film": "PX-680",
    "variant": "−",
-   "file": "color-polaroid-polaroid-px-680-2.bin"
+   "file": "color-polaroid-polaroid-px-680-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-3",
@@ -1498,7 +1724,8 @@
    "brand": "Polaroid",
    "film": "PX-680",
    "variant": "",
-   "file": "color-polaroid-polaroid-px-680-3.bin"
+   "file": "color-polaroid-polaroid-px-680-3.bin",
+   "menu": true
   },
   {
    "id": "color-polaroid-polaroid-px-680-4",
@@ -1506,7 +1733,8 @@
    "brand": "Polaroid",
    "film": "PX-680",
    "variant": "+",
-   "file": "color-polaroid-polaroid-px-680-4.bin"
+   "file": "color-polaroid-polaroid-px-680-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-5",
@@ -1514,7 +1742,8 @@
    "brand": "Polaroid",
    "film": "PX-680",
    "variant": "++",
-   "file": "color-polaroid-polaroid-px-680-5.bin"
+   "file": "color-polaroid-polaroid-px-680-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-cold-1",
@@ -1522,7 +1751,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Cold",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-px-680-cold-1.bin"
+   "file": "color-polaroid-polaroid-px-680-cold-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-cold-2",
@@ -1530,7 +1760,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Cold",
    "variant": "−",
-   "file": "color-polaroid-polaroid-px-680-cold-2.bin"
+   "file": "color-polaroid-polaroid-px-680-cold-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-cold-3",
@@ -1538,7 +1769,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Cold",
    "variant": "",
-   "file": "color-polaroid-polaroid-px-680-cold-3.bin"
+   "file": "color-polaroid-polaroid-px-680-cold-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-cold-4",
@@ -1546,7 +1778,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Cold",
    "variant": "+",
-   "file": "color-polaroid-polaroid-px-680-cold-4.bin"
+   "file": "color-polaroid-polaroid-px-680-cold-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-cold-5",
@@ -1554,7 +1787,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Cold",
    "variant": "++",
-   "file": "color-polaroid-polaroid-px-680-cold-5.bin"
+   "file": "color-polaroid-polaroid-px-680-cold-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-cold-6-alt",
@@ -1562,7 +1796,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Cold 6 ++ Alt",
    "variant": "",
-   "file": "color-polaroid-polaroid-px-680-cold-6-alt.bin"
+   "file": "color-polaroid-polaroid-px-680-cold-6-alt.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-warm-1",
@@ -1570,7 +1805,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Warm",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-px-680-warm-1.bin"
+   "file": "color-polaroid-polaroid-px-680-warm-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-warm-2",
@@ -1578,7 +1814,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Warm",
    "variant": "−",
-   "file": "color-polaroid-polaroid-px-680-warm-2.bin"
+   "file": "color-polaroid-polaroid-px-680-warm-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-warm-3",
@@ -1586,7 +1823,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Warm",
    "variant": "",
-   "file": "color-polaroid-polaroid-px-680-warm-3.bin"
+   "file": "color-polaroid-polaroid-px-680-warm-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-warm-4",
@@ -1594,7 +1832,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Warm",
    "variant": "+",
-   "file": "color-polaroid-polaroid-px-680-warm-4.bin"
+   "file": "color-polaroid-polaroid-px-680-warm-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-680-warm-5",
@@ -1602,7 +1841,8 @@
    "brand": "Polaroid",
    "film": "PX-680 Warm",
    "variant": "++",
-   "file": "color-polaroid-polaroid-px-680-warm-5.bin"
+   "file": "color-polaroid-polaroid-px-680-warm-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-1",
@@ -1610,7 +1850,8 @@
    "brand": "Polaroid",
    "film": "PX-70",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-px-70-1.bin"
+   "file": "color-polaroid-polaroid-px-70-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-2",
@@ -1618,7 +1859,8 @@
    "brand": "Polaroid",
    "film": "PX-70",
    "variant": "−",
-   "file": "color-polaroid-polaroid-px-70-2.bin"
+   "file": "color-polaroid-polaroid-px-70-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-3",
@@ -1626,7 +1868,8 @@
    "brand": "Polaroid",
    "film": "PX-70",
    "variant": "",
-   "file": "color-polaroid-polaroid-px-70-3.bin"
+   "file": "color-polaroid-polaroid-px-70-3.bin",
+   "menu": true
   },
   {
    "id": "color-polaroid-polaroid-px-70-4",
@@ -1634,7 +1877,8 @@
    "brand": "Polaroid",
    "film": "PX-70",
    "variant": "+",
-   "file": "color-polaroid-polaroid-px-70-4.bin"
+   "file": "color-polaroid-polaroid-px-70-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-5",
@@ -1642,7 +1886,8 @@
    "brand": "Polaroid",
    "film": "PX-70",
    "variant": "++",
-   "file": "color-polaroid-polaroid-px-70-5.bin"
+   "file": "color-polaroid-polaroid-px-70-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-6",
@@ -1650,7 +1895,8 @@
    "brand": "Polaroid",
    "film": "PX-70",
    "variant": "+++",
-   "file": "color-polaroid-polaroid-px-70-6.bin"
+   "file": "color-polaroid-polaroid-px-70-6.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-cold-1",
@@ -1658,7 +1904,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Cold",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-px-70-cold-1.bin"
+   "file": "color-polaroid-polaroid-px-70-cold-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-cold-2",
@@ -1666,7 +1913,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Cold",
    "variant": "−",
-   "file": "color-polaroid-polaroid-px-70-cold-2.bin"
+   "file": "color-polaroid-polaroid-px-70-cold-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-cold-3",
@@ -1674,7 +1922,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Cold",
    "variant": "",
-   "file": "color-polaroid-polaroid-px-70-cold-3.bin"
+   "file": "color-polaroid-polaroid-px-70-cold-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-cold-4",
@@ -1682,7 +1931,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Cold",
    "variant": "+",
-   "file": "color-polaroid-polaroid-px-70-cold-4.bin"
+   "file": "color-polaroid-polaroid-px-70-cold-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-cold-5",
@@ -1690,7 +1940,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Cold",
    "variant": "++",
-   "file": "color-polaroid-polaroid-px-70-cold-5.bin"
+   "file": "color-polaroid-polaroid-px-70-cold-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-warm-1",
@@ -1698,7 +1949,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Warm",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-px-70-warm-1.bin"
+   "file": "color-polaroid-polaroid-px-70-warm-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-warm-2",
@@ -1706,7 +1958,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Warm",
    "variant": "−",
-   "file": "color-polaroid-polaroid-px-70-warm-2.bin"
+   "file": "color-polaroid-polaroid-px-70-warm-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-warm-3",
@@ -1714,7 +1967,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Warm",
    "variant": "",
-   "file": "color-polaroid-polaroid-px-70-warm-3.bin"
+   "file": "color-polaroid-polaroid-px-70-warm-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-warm-4",
@@ -1722,7 +1976,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Warm",
    "variant": "+",
-   "file": "color-polaroid-polaroid-px-70-warm-4.bin"
+   "file": "color-polaroid-polaroid-px-70-warm-4.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-px-70-warm-5",
@@ -1730,7 +1985,8 @@
    "brand": "Polaroid",
    "film": "PX-70 Warm",
    "variant": "++",
-   "file": "color-polaroid-polaroid-px-70-warm-5.bin"
+   "file": "color-polaroid-polaroid-px-70-warm-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-polachrome",
@@ -1738,7 +1994,8 @@
    "brand": "Polaroid",
    "film": "Polachrome",
    "variant": "",
-   "file": "color-polaroid-polaroid-polachrome.bin"
+   "file": "color-polaroid-polaroid-polachrome.bin",
+   "menu": true
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-1",
@@ -1746,7 +2003,8 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired)",
    "variant": "---",
-   "file": "color-polaroid-polaroid-time-zero-expired-1.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-2",
@@ -1754,7 +2012,8 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired)",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-time-zero-expired-2.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-3",
@@ -1762,7 +2021,8 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired)",
    "variant": "−",
-   "file": "color-polaroid-polaroid-time-zero-expired-3.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-4",
@@ -1770,7 +2030,8 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired)",
    "variant": "",
-   "file": "color-polaroid-polaroid-time-zero-expired-4.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-4.bin",
+   "menu": true
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-5",
@@ -1778,7 +2039,8 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired)",
    "variant": "+",
-   "file": "color-polaroid-polaroid-time-zero-expired-5.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-5.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-6",
@@ -1786,7 +2048,8 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired)",
    "variant": "++",
-   "file": "color-polaroid-polaroid-time-zero-expired-6.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-6.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-cold-1",
@@ -1794,7 +2057,8 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired) Cold",
    "variant": "---",
-   "file": "color-polaroid-polaroid-time-zero-expired-cold-1.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-cold-1.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-cold-2",
@@ -1802,7 +2066,8 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired) Cold",
    "variant": "−−",
-   "file": "color-polaroid-polaroid-time-zero-expired-cold-2.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-cold-2.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-cold-3",
@@ -1810,7 +2075,8 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired) Cold",
    "variant": "−",
-   "file": "color-polaroid-polaroid-time-zero-expired-cold-3.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-cold-3.bin",
+   "menu": false
   },
   {
    "id": "color-polaroid-polaroid-time-zero-expired-cold-4",
@@ -1818,7 +2084,18 @@
    "brand": "Polaroid",
    "film": "Time Zero (Expired) Cold",
    "variant": "",
-   "file": "color-polaroid-polaroid-time-zero-expired-cold-4.bin"
+   "file": "color-polaroid-polaroid-time-zero-expired-cold-4.bin",
+   "menu": false
+  },
+  {
+   "id": "glassmeter-cinestill-800t",
+   "kind": "Colour",
+   "brand": "Cinema",
+   "film": "800T Tungsten",
+   "variant": "",
+   "file": "glassmeter-cinestill-800t.bin",
+   "source": "GlassMeter",
+   "menu": true
   },
   {
    "id": "black-and-white-agfa-agfa-apx-100",
@@ -1826,7 +2103,8 @@
    "brand": "Agfa",
    "film": "APX 100",
    "variant": "",
-   "file": "black-and-white-agfa-agfa-apx-100.bin"
+   "file": "black-and-white-agfa-agfa-apx-100.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-agfa-agfa-apx-25",
@@ -1834,7 +2112,8 @@
    "brand": "Agfa",
    "film": "APX 25",
    "variant": "",
-   "file": "black-and-white-agfa-agfa-apx-25.bin"
+   "file": "black-and-white-agfa-agfa-apx-25.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-1",
@@ -1842,7 +2121,8 @@
    "brand": "Fuji",
    "film": "FP-3000b",
    "variant": "−−",
-   "file": "black-and-white-fuji-fuji-fp-3000b-1.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-1.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-2",
@@ -1850,7 +2130,8 @@
    "brand": "Fuji",
    "film": "FP-3000b",
    "variant": "−",
-   "file": "black-and-white-fuji-fuji-fp-3000b-2.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-2.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-3",
@@ -1858,7 +2139,8 @@
    "brand": "Fuji",
    "film": "FP-3000b",
    "variant": "",
-   "file": "black-and-white-fuji-fuji-fp-3000b-3.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-3.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-4",
@@ -1866,7 +2148,8 @@
    "brand": "Fuji",
    "film": "FP-3000b",
    "variant": "+",
-   "file": "black-and-white-fuji-fuji-fp-3000b-4.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-4.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-5",
@@ -1874,7 +2157,8 @@
    "brand": "Fuji",
    "film": "FP-3000b",
    "variant": "++",
-   "file": "black-and-white-fuji-fuji-fp-3000b-5.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-5.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-6",
@@ -1882,7 +2166,8 @@
    "brand": "Fuji",
    "film": "FP-3000b",
    "variant": "+++",
-   "file": "black-and-white-fuji-fuji-fp-3000b-6.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-6.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-hc",
@@ -1890,7 +2175,8 @@
    "brand": "Fuji",
    "film": "FP-3000b HC",
    "variant": "",
-   "file": "black-and-white-fuji-fuji-fp-3000b-hc.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-hc.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-negative-1",
@@ -1898,7 +2184,8 @@
    "brand": "Fuji",
    "film": "FP-3000b Negative",
    "variant": "−−",
-   "file": "black-and-white-fuji-fuji-fp-3000b-negative-1.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-negative-1.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-negative-2",
@@ -1906,7 +2193,8 @@
    "brand": "Fuji",
    "film": "FP-3000b Negative",
    "variant": "−",
-   "file": "black-and-white-fuji-fuji-fp-3000b-negative-2.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-negative-2.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-negative-3",
@@ -1914,7 +2202,8 @@
    "brand": "Fuji",
    "film": "FP-3000b Negative",
    "variant": "",
-   "file": "black-and-white-fuji-fuji-fp-3000b-negative-3.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-negative-3.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-negative-4",
@@ -1922,7 +2211,8 @@
    "brand": "Fuji",
    "film": "FP-3000b Negative",
    "variant": "+",
-   "file": "black-and-white-fuji-fuji-fp-3000b-negative-4.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-negative-4.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-negative-5",
@@ -1930,7 +2220,8 @@
    "brand": "Fuji",
    "film": "FP-3000b Negative",
    "variant": "++",
-   "file": "black-and-white-fuji-fuji-fp-3000b-negative-5.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-negative-5.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-negative-6",
@@ -1938,7 +2229,8 @@
    "brand": "Fuji",
    "film": "FP-3000b Negative",
    "variant": "+++",
-   "file": "black-and-white-fuji-fuji-fp-3000b-negative-6.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-negative-6.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-fp-3000b-negative-early",
@@ -1946,7 +2238,8 @@
    "brand": "Fuji",
    "film": "FP-3000b Negative Early",
    "variant": "",
-   "file": "black-and-white-fuji-fuji-fp-3000b-negative-early.bin"
+   "file": "black-and-white-fuji-fuji-fp-3000b-negative-early.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-neopan-1600-1",
@@ -1954,7 +2247,8 @@
    "brand": "Fuji",
    "film": "Neopan 1600",
    "variant": "−",
-   "file": "black-and-white-fuji-fuji-neopan-1600-1.bin"
+   "file": "black-and-white-fuji-fuji-neopan-1600-1.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-neopan-1600-2",
@@ -1962,7 +2256,8 @@
    "brand": "Fuji",
    "film": "Neopan 1600",
    "variant": "",
-   "file": "black-and-white-fuji-fuji-neopan-1600-2.bin"
+   "file": "black-and-white-fuji-fuji-neopan-1600-2.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-neopan-1600-3",
@@ -1970,7 +2265,8 @@
    "brand": "Fuji",
    "film": "Neopan 1600",
    "variant": "+",
-   "file": "black-and-white-fuji-fuji-neopan-1600-3.bin"
+   "file": "black-and-white-fuji-fuji-neopan-1600-3.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-neopan-1600-4",
@@ -1978,7 +2274,8 @@
    "brand": "Fuji",
    "film": "Neopan 1600",
    "variant": "++",
-   "file": "black-and-white-fuji-fuji-neopan-1600-4.bin"
+   "file": "black-and-white-fuji-fuji-neopan-1600-4.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-fuji-fuji-neopan-acros-100",
@@ -1986,7 +2283,8 @@
    "brand": "Fuji",
    "film": "Neopan Acros 100",
    "variant": "",
-   "file": "black-and-white-fuji-fuji-neopan-acros-100.bin"
+   "file": "black-and-white-fuji-fuji-neopan-acros-100.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-ilford-ilford-delta-100",
@@ -1994,7 +2292,8 @@
    "brand": "Ilford",
    "film": "Delta 100",
    "variant": "",
-   "file": "black-and-white-ilford-ilford-delta-100.bin"
+   "file": "black-and-white-ilford-ilford-delta-100.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-ilford-ilford-delta-3200-1",
@@ -2002,7 +2301,8 @@
    "brand": "Ilford",
    "film": "Delta 3200",
    "variant": "−",
-   "file": "black-and-white-ilford-ilford-delta-3200-1.bin"
+   "file": "black-and-white-ilford-ilford-delta-3200-1.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-delta-3200-2",
@@ -2010,7 +2310,8 @@
    "brand": "Ilford",
    "film": "Delta 3200",
    "variant": "",
-   "file": "black-and-white-ilford-ilford-delta-3200-2.bin"
+   "file": "black-and-white-ilford-ilford-delta-3200-2.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-ilford-ilford-delta-3200-3",
@@ -2018,7 +2319,8 @@
    "brand": "Ilford",
    "film": "Delta 3200",
    "variant": "+",
-   "file": "black-and-white-ilford-ilford-delta-3200-3.bin"
+   "file": "black-and-white-ilford-ilford-delta-3200-3.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-delta-3200-4",
@@ -2026,7 +2328,8 @@
    "brand": "Ilford",
    "film": "Delta 3200",
    "variant": "++",
-   "file": "black-and-white-ilford-ilford-delta-3200-4.bin"
+   "file": "black-and-white-ilford-ilford-delta-3200-4.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-delta-400",
@@ -2034,7 +2337,8 @@
    "brand": "Ilford",
    "film": "Delta 400",
    "variant": "",
-   "file": "black-and-white-ilford-ilford-delta-400.bin"
+   "file": "black-and-white-ilford-ilford-delta-400.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-fp4-plus-125",
@@ -2042,7 +2346,8 @@
    "brand": "Ilford",
    "film": "FP4 Plus 125",
    "variant": "",
-   "file": "black-and-white-ilford-ilford-fp4-plus-125.bin"
+   "file": "black-and-white-ilford-ilford-fp4-plus-125.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-hp5-1",
@@ -2050,7 +2355,8 @@
    "brand": "Ilford",
    "film": "HP5",
    "variant": "−",
-   "file": "black-and-white-ilford-ilford-hp5-1.bin"
+   "file": "black-and-white-ilford-ilford-hp5-1.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-hp5-2",
@@ -2058,7 +2364,8 @@
    "brand": "Ilford",
    "film": "HP5",
    "variant": "",
-   "file": "black-and-white-ilford-ilford-hp5-2.bin"
+   "file": "black-and-white-ilford-ilford-hp5-2.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-hp5-3",
@@ -2066,7 +2373,8 @@
    "brand": "Ilford",
    "film": "HP5",
    "variant": "+",
-   "file": "black-and-white-ilford-ilford-hp5-3.bin"
+   "file": "black-and-white-ilford-ilford-hp5-3.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-hp5-4",
@@ -2074,7 +2382,8 @@
    "brand": "Ilford",
    "film": "HP5",
    "variant": "++",
-   "file": "black-and-white-ilford-ilford-hp5-4.bin"
+   "file": "black-and-white-ilford-ilford-hp5-4.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-hp5-plus-400",
@@ -2082,7 +2391,8 @@
    "brand": "Ilford",
    "film": "HP5 Plus 400",
    "variant": "",
-   "file": "black-and-white-ilford-ilford-hp5-plus-400.bin"
+   "file": "black-and-white-ilford-ilford-hp5-plus-400.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-ilford-ilford-hps-800",
@@ -2090,7 +2400,8 @@
    "brand": "Ilford",
    "film": "HPS 800",
    "variant": "",
-   "file": "black-and-white-ilford-ilford-hps-800.bin"
+   "file": "black-and-white-ilford-ilford-hps-800.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-ilford-ilford-pan-f-plus-50",
@@ -2098,7 +2409,8 @@
    "brand": "Ilford",
    "film": "Pan F Plus 50",
    "variant": "",
-   "file": "black-and-white-ilford-ilford-pan-f-plus-50.bin"
+   "file": "black-and-white-ilford-ilford-pan-f-plus-50.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-ilford-ilford-xp2",
@@ -2106,7 +2418,8 @@
    "brand": "Ilford",
    "film": "XP2",
    "variant": "",
-   "file": "black-and-white-ilford-ilford-xp2.bin"
+   "file": "black-and-white-ilford-ilford-xp2.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-kodak-kodak-bw-400-cn",
@@ -2114,7 +2427,8 @@
    "brand": "Kodak",
    "film": "BW 400 CN",
    "variant": "",
-   "file": "black-and-white-kodak-kodak-bw-400-cn.bin"
+   "file": "black-and-white-kodak-kodak-bw-400-cn.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-kodak-kodak-hie-hs-infra",
@@ -2122,7 +2436,8 @@
    "brand": "Kodak",
    "film": "HIE (HS Infra)",
    "variant": "",
-   "file": "black-and-white-kodak-kodak-hie-hs-infra.bin"
+   "file": "black-and-white-kodak-kodak-hie-hs-infra.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-kodak-kodak-t-max-100",
@@ -2130,7 +2445,8 @@
    "brand": "Kodak",
    "film": "T-Max 100",
    "variant": "",
-   "file": "black-and-white-kodak-kodak-t-max-100.bin"
+   "file": "black-and-white-kodak-kodak-t-max-100.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-kodak-kodak-t-max-400",
@@ -2138,7 +2454,8 @@
    "brand": "Kodak",
    "film": "T-Max 400",
    "variant": "",
-   "file": "black-and-white-kodak-kodak-t-max-400.bin"
+   "file": "black-and-white-kodak-kodak-t-max-400.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-kodak-kodak-tmax-3200-1",
@@ -2146,7 +2463,8 @@
    "brand": "Kodak",
    "film": "TMAX 3200",
    "variant": "−",
-   "file": "black-and-white-kodak-kodak-tmax-3200-1.bin"
+   "file": "black-and-white-kodak-kodak-tmax-3200-1.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-kodak-kodak-tmax-3200-2",
@@ -2154,7 +2472,8 @@
    "brand": "Kodak",
    "film": "TMAX 3200",
    "variant": "",
-   "file": "black-and-white-kodak-kodak-tmax-3200-2.bin"
+   "file": "black-and-white-kodak-kodak-tmax-3200-2.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-kodak-kodak-tmax-3200-3-alt",
@@ -2162,7 +2481,8 @@
    "brand": "Kodak",
    "film": "TMAX 3200 3 Alt",
    "variant": "",
-   "file": "black-and-white-kodak-kodak-tmax-3200-3-alt.bin"
+   "file": "black-and-white-kodak-kodak-tmax-3200-3-alt.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-kodak-kodak-tmax-3200-4",
@@ -2170,7 +2490,8 @@
    "brand": "Kodak",
    "film": "TMAX 3200",
    "variant": "+",
-   "file": "black-and-white-kodak-kodak-tmax-3200-4.bin"
+   "file": "black-and-white-kodak-kodak-tmax-3200-4.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-kodak-kodak-tmax-3200-5",
@@ -2178,7 +2499,8 @@
    "brand": "Kodak",
    "film": "TMAX 3200",
    "variant": "++",
-   "file": "black-and-white-kodak-kodak-tmax-3200-5.bin"
+   "file": "black-and-white-kodak-kodak-tmax-3200-5.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-kodak-kodak-tri-x-400-1",
@@ -2186,7 +2508,8 @@
    "brand": "Kodak",
    "film": "TRI-X 400",
    "variant": "−",
-   "file": "black-and-white-kodak-kodak-tri-x-400-1.bin"
+   "file": "black-and-white-kodak-kodak-tri-x-400-1.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-kodak-kodak-tri-x-400-2",
@@ -2194,7 +2517,8 @@
    "brand": "Kodak",
    "film": "TRI-X 400",
    "variant": "",
-   "file": "black-and-white-kodak-kodak-tri-x-400-2.bin"
+   "file": "black-and-white-kodak-kodak-tri-x-400-2.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-kodak-kodak-tri-x-400-3-alt",
@@ -2202,7 +2526,8 @@
    "brand": "Kodak",
    "film": "TRI-X 400 3 Alt",
    "variant": "",
-   "file": "black-and-white-kodak-kodak-tri-x-400-3-alt.bin"
+   "file": "black-and-white-kodak-kodak-tri-x-400-3-alt.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-kodak-kodak-tri-x-400-4",
@@ -2210,7 +2535,8 @@
    "brand": "Kodak",
    "film": "TRI-X 400",
    "variant": "+",
-   "file": "black-and-white-kodak-kodak-tri-x-400-4.bin"
+   "file": "black-and-white-kodak-kodak-tri-x-400-4.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-kodak-kodak-tri-x-400-5",
@@ -2218,7 +2544,8 @@
    "brand": "Kodak",
    "film": "TRI-X 400",
    "variant": "++",
-   "file": "black-and-white-kodak-kodak-tri-x-400-5.bin"
+   "file": "black-and-white-kodak-kodak-tri-x-400-5.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-664",
@@ -2226,7 +2553,8 @@
    "brand": "Polaroid",
    "film": "664",
    "variant": "",
-   "file": "black-and-white-polaroid-polaroid-664.bin"
+   "file": "black-and-white-polaroid-polaroid-664.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-665-1",
@@ -2234,7 +2562,8 @@
    "brand": "Polaroid",
    "film": "665",
    "variant": "−−",
-   "file": "black-and-white-polaroid-polaroid-665-1.bin"
+   "file": "black-and-white-polaroid-polaroid-665-1.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-665-2",
@@ -2242,7 +2571,8 @@
    "brand": "Polaroid",
    "film": "665",
    "variant": "−",
-   "file": "black-and-white-polaroid-polaroid-665-2.bin"
+   "file": "black-and-white-polaroid-polaroid-665-2.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-665-3",
@@ -2250,7 +2580,8 @@
    "brand": "Polaroid",
    "film": "665",
    "variant": "",
-   "file": "black-and-white-polaroid-polaroid-665-3.bin"
+   "file": "black-and-white-polaroid-polaroid-665-3.bin",
+   "menu": true
   },
   {
    "id": "black-and-white-polaroid-polaroid-665-4",
@@ -2258,7 +2589,8 @@
    "brand": "Polaroid",
    "film": "665",
    "variant": "+",
-   "file": "black-and-white-polaroid-polaroid-665-4.bin"
+   "file": "black-and-white-polaroid-polaroid-665-4.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-665-5",
@@ -2266,7 +2598,8 @@
    "brand": "Polaroid",
    "film": "665",
    "variant": "++",
-   "file": "black-and-white-polaroid-polaroid-665-5.bin"
+   "file": "black-and-white-polaroid-polaroid-665-5.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-665-negative-1",
@@ -2274,7 +2607,8 @@
    "brand": "Polaroid",
    "film": "665 Negative",
    "variant": "−",
-   "file": "black-and-white-polaroid-polaroid-665-negative-1.bin"
+   "file": "black-and-white-polaroid-polaroid-665-negative-1.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-665-negative-2",
@@ -2282,7 +2616,8 @@
    "brand": "Polaroid",
    "film": "665 Negative",
    "variant": "",
-   "file": "black-and-white-polaroid-polaroid-665-negative-2.bin"
+   "file": "black-and-white-polaroid-polaroid-665-negative-2.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-665-negative-3",
@@ -2290,7 +2625,8 @@
    "brand": "Polaroid",
    "film": "665 Negative",
    "variant": "+",
-   "file": "black-and-white-polaroid-polaroid-665-negative-3.bin"
+   "file": "black-and-white-polaroid-polaroid-665-negative-3.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-665-negative-hc",
@@ -2298,7 +2634,8 @@
    "brand": "Polaroid",
    "film": "665 Negative HC",
    "variant": "",
-   "file": "black-and-white-polaroid-polaroid-665-negative-hc.bin"
+   "file": "black-and-white-polaroid-polaroid-665-negative-hc.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-667",
@@ -2306,7 +2643,8 @@
    "brand": "Polaroid",
    "film": "667",
    "variant": "",
-   "file": "black-and-white-polaroid-polaroid-667.bin"
+   "file": "black-and-white-polaroid-polaroid-667.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-polaroid-polaroid-672",
@@ -2314,7 +2652,8 @@
    "brand": "Polaroid",
    "film": "672",
    "variant": "",
-   "file": "black-and-white-polaroid-polaroid-672.bin"
+   "file": "black-and-white-polaroid-polaroid-672.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-rollei-rollei-ir-400",
@@ -2322,7 +2661,8 @@
    "brand": "Rollei",
    "film": "IR 400",
    "variant": "",
-   "file": "black-and-white-rollei-rollei-ir-400.bin"
+   "file": "black-and-white-rollei-rollei-ir-400.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-rollei-rollei-ortho-25",
@@ -2330,7 +2670,8 @@
    "brand": "Rollei",
    "film": "Ortho 25",
    "variant": "",
-   "file": "black-and-white-rollei-rollei-ortho-25.bin"
+   "file": "black-and-white-rollei-rollei-ortho-25.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-rollei-rollei-retro-100-tonal",
@@ -2338,7 +2679,8 @@
    "brand": "Rollei",
    "film": "Retro 100 Tonal",
    "variant": "",
-   "file": "black-and-white-rollei-rollei-retro-100-tonal.bin"
+   "file": "black-and-white-rollei-rollei-retro-100-tonal.bin",
+   "menu": false
   },
   {
    "id": "black-and-white-rollei-rollei-retro-80s",
@@ -2346,7 +2688,8 @@
    "brand": "Rollei",
    "film": "Retro 80s",
    "variant": "",
-   "file": "black-and-white-rollei-rollei-retro-80s.bin"
+   "file": "black-and-white-rollei-rollei-retro-80s.bin",
+   "menu": true
   }
  ]
 }

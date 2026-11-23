@@ -13,7 +13,7 @@ export const onFilmsChange = (fn) => listeners.add(fn);
 const tell = (what) => listeners.forEach((fn) => fn(what)); // ("list": the list came in; "table": a film's table did)
 
 // [{ id, kind, brand, film, variant, name }]
-export const listFilms = () => list;
+export const listFilms = () => list.filter((f) => f.menu !== false); // (the 50 picked, 2026-11-23; the rest still open)
 export const filmsCredit = () => credit;
 export const filmInfo = (id) => list.find((f) => f.id === id) || null;
 

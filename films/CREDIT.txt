@@ -1,0 +1,9 @@
+Film tables: the RawTherapee Film Simulation collection (2015-09-20) by Pat David, Pavlov Dmitry and Michael Ezra,
+licensed CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Converted from HaldCLUT to 33-point tables
+(33^3 x 3 bytes, red changing fastest) by ../references-shared/film-luts/convert.py; the converted tables are CC BY-SA 4.0 too.
+The brand names only say which film stock each one approximates; no brand made or endorses them.
+
+Gold 200, UltraMax 400, ColorPlus 200 and 800T Tungsten (glassmeter-*.bin): film simulations from GlassMeter by Glass
+Works (glass-works.ai), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), from
+github.com/TrondW/glassmeter-film-looks (luts/cube-srgb-33), converted unchanged to the same 33-point tables.
+Fuji C200 (ours-fuji-c200.bin) is our own, made from the Superia 200 table.

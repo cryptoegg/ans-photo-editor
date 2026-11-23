@@ -77,7 +77,48 @@ function lookTable(id) {
   baked.set(id, out);
   return out;
 }
-const layersOf = (id) => FILM_LOOKS[id] || FILM_LAYERS;
+// Each film its own texture (2026-11-23, Tom: the films felt the same apart from their colours), worked out from what
+// the film is, the same as the Lyric Visualiser's (ans-visual-text-generator/js/effects/film.js), so a film looks the
+// same in both apps. Grain from its speed (50 very fine … 3200 coarse); slide films crisper with less glow; instant
+// films soft, darker corners, more glow, each photo a little different; black and white grey grain and a white glow;
+// infrared a big bloom; expired uneven; Lomography / cross-processed heavy corners; the Creative looks colour only.
+// Our own looks keep their written numbers.
+const LAYERS = new Map();
+function layersOf(id) {
+  if (FILM_LOOKS[id]) return FILM_LOOKS[id];
+  if (LAYERS.has(id)) return LAYERS.get(id);
+  const f = filmInfo(id);
+  if (!f) return FILM_LAYERS;
+  const name = `${f.film} ${f.variant}`.toLowerCase(), bw = f.kind !== "Colour";
+  if (f.brand === "Creative") { const out = { soften: 0, vignette: 0, wobble: 0 }; LAYERS.set(id, out); return out; }
+  const iso = Number((name.match(/(?:^|\D)(25|50|64|80|100|125|160|200|400|664|665|667|669|672|690|800|1600|3000|3200)(?:\D|$)/) || [])[1]) || 200;
+  const speed = Math.min(3200, iso > 600 && iso < 700 ? 100 : iso); // (Polaroid's numbers are names, not speeds)
+  const stops = Math.log2(speed / 50); // 0 (ISO 50) … 6 (ISO 3200)
+  const slide = /velvia|provia|astia|sensia|ektachrome|e-100|kodachrome|elite chrome|polachrome|slide/.test(name);
+  const instant = f.brand === "Polaroid" || /fp-/.test(name);
+  const infra = /infra|hie| ir /.test(` ${name} `);
+  const expired = /expired/.test(name);
+  const lomo = f.brand === "Lomography" || /xpro|redscale/.test(name);
+  const tungsten = /800t|tungsten/.test(name); // (cinema film without its anti-halation layer: red halos round lights)
+  const L = {
+    soften: slide ? 0.3 : instant ? 0.85 : 0.5,
+    vignette: lomo ? 0.38 : expired ? 0.36 : instant ? 0.3 : slide ? 0.24 : 0.18,
+    wobble: expired ? 1 : instant ? 0.8 : 0.5,
+    glow: {
+      amount: infra ? 62 : tungsten ? 45 : bw ? 18 : slide ? 20 : instant ? 38 : 30,
+      size: infra ? 75 : tungsten ? 55 : instant ? 55 : 45,
+      highlights: infra ? 60 : tungsten ? 78 : 72,
+      colour: bw || infra ? "#f2f2f2" : tungsten ? "#ff3a1a" : instant ? "#ff8a4a" : "#ff6a2a"
+    },
+    grain: {
+      amount: Math.round(Math.min(34, (slide ? 5 : 7) + stops * (bw ? 4.5 : 3.6) + (expired ? 6 : 0) + (instant ? 3 : 0))),
+      size: Math.round(Math.min(9, 2 + stops * (bw ? 1.1 : 0.9))),
+      colour: bw ? 0 : slide ? 8 : 15
+    }
+  };
+  LAYERS.set(id, L);
+  return L;
+}
 
 // Soften, the table, Fade and the corners, in one pass
 const RECIPE = `

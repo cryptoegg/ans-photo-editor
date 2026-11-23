@@ -528,7 +528,7 @@ function buildFilters() {
   });
   body.append(grid);
   if (show === "starred" && !shown.length) body.append(note("No starred filters yet"));
-  if (show === "film" && filmsCredit()) body.append(el("p", { className: "film-credit", textContent: `Film looks: ${filmsCredit()}, CC BY-SA 4.0` }));
+  if (show === "film" && filmsCredit()) body.append(el("p", { className: "film-credit", textContent: `Film looks: ${filmsCredit()}` }));
   // (swatches drawn one at a time, so the panel opens at once)
   if (!item || !getPicture(item.mediaId)) return;
   const next = () => { if (job !== swatchJob || !queue.length) return; Promise.resolve(queue.shift()()).then(() => setTimeout(next, 0)); };
