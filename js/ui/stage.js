@@ -96,7 +96,7 @@ export function initStage() {
     const picked = pickedBox(item, f);
     if (picked && zoneAt(picked.box, p) === "rotate") { setAngle(picked, 0); changed("project"); commit(); return; }
     const hit = textAt(ctx, item, f.w, f.h, p.x, p.y);
-    if (hit) { pick("text", hit.id); changed("view"); document.dispatchEvent(new CustomEvent("focus-text")); }
+    if (hit) { pick("text", hit.id); changed("view"); if (hit.kind !== "shape") document.dispatchEvent(new CustomEvent("focus-text")); }
   });
 }
 
@@ -149,6 +149,7 @@ function layerAt(item, f, p) {
   }
   const all = layersOf(item);
   for (let i = all.length - 1; i >= 0; i--) {
+    if (all[i].hidden || all[i].locked) continue; // (hidden or locked in Layers: not picked on the canvas)
     const lb = layerBox(item, all[i], f);
     if (lb && onBox(lb.box, p.x, p.y) && (onSlide || (state.photoPicked && currentLayer() === all[i]))) return { layer: all[i] };
   }
@@ -271,7 +272,8 @@ function down(e) {
   if (spaceHeld && e.button === 0) { startPan(e); return; } // (the hand: Space + drag moves the view)
   if (maskDown(e, f, p)) return; // (a mask's handle: it moves, js/ui/masks.js)
   if (brushDown(e, f, p)) return; // (a touch-up brush in hand: it paints, js/ui/brush.js)
-  const picked = pickedBox(item, f);
+  const found = pickedBox(item, f);
+  const picked = found && !(found.layer || found.text || {}).locked ? found : null; // (locked: picked in Layers, but it doesn't move)
   const zone = picked ? zoneAt(picked.box, p, picked.edges) : null;
   if (e.button === 2) return; // (right-click: the menu picks what's under it)
   if (picked && zone && zone !== "inside") { startDrag(picked, zone, p, f); return; }
@@ -325,7 +327,11 @@ function startDrag(picked, zone, p, f) {
   const item = currentItem();
   hovering = true;
   const layer = picked.layer || item;
-  drag = { kind: picked.kind, text: picked.text, layer, rect: picked.rect || { x: 0, y: 0, w: f.w, h: f.h }, zone, f, start: p, box: { ...picked.box }, whole: picked.whole, pic: picked.pic, crop: { ...layer.crop, trim: { ...trimOf(layer.crop) } }, textStart: picked.text ? { ...picked.text } : null, moved: false };
+  // (the others in its group, from Layers, move with it)
+  const g = (picked.text || layer).group;
+  const mates = !g ? [] : [...layersOf(item).filter((l) => l.group === g && l !== layer && !l.locked).map((l) => ({ layer: l, x: l.crop.x, y: l.crop.y, rect: layerFrame(item, l, f.w, f.h) || { w: f.w, h: f.h } })),
+    ...item.texts.filter((x) => x.group === g && x !== picked.text && !x.locked).map((x) => ({ text: x, x: x.x, y: x.y }))];
+  drag = { mates, kind: picked.kind, text: picked.text, layer, rect: picked.rect || { x: 0, y: 0, w: f.w, h: f.h }, zone, f, start: p, box: { ...picked.box }, whole: picked.whole, pic: picked.pic, crop: { ...layer.crop, trim: { ...trimOf(layer.crop) } }, textStart: picked.text ? { ...picked.text } : null, moved: false };
   if (zone === "rotate") drag.from = Math.atan2(p.y - picked.box.cy, p.x - picked.box.cx);
   canvas.style.cursor = zone === "inside" ? "grabbing" : zone === "rotate" ? ROTATE_CURSOR : canvas.style.cursor;
 }
@@ -370,6 +376,10 @@ function move(e) {
     const cx = moved.cx + snap.dx, cy = moved.cy + snap.dy;
     if (drag.kind === "text") { t.x = cx / f.w; t.y = cy / f.h; }
     else { crop.x = drag.crop.x + (cx - box.cx) / rect.w; crop.y = drag.crop.y + (cy - box.cy) / rect.h; } // (the part that shows follows)
+    (drag.mates || []).forEach((m) => {
+      if (m.text) { m.text.x = m.x + (cx - box.cx) / f.w; m.text.y = m.y + (cy - box.cy) / f.h; }
+      else { m.layer.crop.x = m.x + (cx - box.cx) / m.rect.w; m.layer.crop.y = m.y + (cy - box.cy) / m.rect.h; }
+    });
   } else if (["l", "r", "t", "b"].includes(zone)) {
     // A side: trim the photo there (Canva's side handles), dragged in or back out to the photo's own edge
     const [du, dv] = turn(dx, dy, -box.rotation);
@@ -386,7 +396,7 @@ function move(e) {
     const sx = zone.endsWith("r") ? 1 : -1, sy = zone.startsWith("b") ? 1 : -1;
     const fx = Math.max(0.02, (box.w + 2 * sx * dx) / box.w), fy = Math.max(0.02, (box.h + 2 * sy * dy) / box.h);
     const even = Math.abs(fx - 1) > Math.abs(fy - 1) ? fx : fy;
-    if (drag.kind === "text") t.size = Math.min(0.8, Math.max(0.01, drag.textStart.size * even));
+    if (drag.kind === "text") t.size = Math.min(t.kind === "shape" ? 2 : 0.8, Math.max(0.005, drag.textStart.size * even));
     else if (crop.lockRatio !== false) crop.zoom = Math.min(12, Math.max(0.03, drag.crop.zoom * even));
     else {
       crop.zoom = Math.min(12, Math.max(0.03, drag.crop.zoom * fy));

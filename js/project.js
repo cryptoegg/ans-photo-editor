@@ -192,7 +192,7 @@ export function tidyProject(p) {
       style: { ...styleDefaults(), ...(l.style || {}) }
     }));
     item.background = item.background || BACKGROUND;
-    item.texts = (Array.isArray(item.texts) ? item.texts : []).map((t) => ({ ...TEXT_DEFAULTS(), ...t }));
+    item.texts = (Array.isArray(item.texts) ? item.texts : []).map((t) => (t.kind === "shape" ? t : { ...TEXT_DEFAULTS(), ...t })); // (shapes keep their own fields)
   });
   return p;
 }

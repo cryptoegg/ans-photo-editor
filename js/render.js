@@ -188,6 +188,7 @@ export function drawItem(ctx, item, W, H, options = {}) {
   layersOf(item).forEach((layer, i) => {
     const rect = cells ? cells[i] : { x: 0, y: 0, w: W, h: H };
     if (!rect) return; // (more layers than cells: the rest wait off the grid)
+    if (layer.hidden) return; // (its eye shut in Layers)
     const pic = getPicture(layer.mediaId);
     if (!pic) return;
     const bare = before === true || before === layer;
@@ -195,7 +196,7 @@ export function drawItem(ctx, item, W, H, options = {}) {
       : bare ? (quality === "full" ? pic.full : pic.preview) : lookedPicture(layer, quality, seed);
     if (picture) drawLayer(ctx, item, layer, picture, rect, grid);
   });
-  if (texts) item.texts.forEach((t) => drawText(ctx, t, W, H));
+  if (texts) item.texts.forEach((t) => { if (!t.hidden) drawText(ctx, t, W, H); });
   ctx.restore();
 }
 
@@ -223,6 +224,11 @@ export const TEXT_STYLES = {
 // Where a text's lines go (frame W x H): its font, lines, size and box (frame pixels; the box
 // unturned, about its middle cx / cy, turned by `rotation`)
 export function layoutText(ctx, t, W, H) {
+  if (t.kind === "shape") {
+    // (a shape: its box is size × the slide's height tall and aspect × that wide)
+    const h = Math.max(2, t.size * H), w = Math.max(2, h * (t.aspect || 1)), cx = t.x * W, cy = t.y * H;
+    return { shape: true, px: h, lines: [], widths: [], lineH: h, textW: w, textH: h, padX: 0, padY: 0, cx, cy, width: w, height: h, left: cx - w / 2, top: cy - h / 2, rotation: t.rotation || 0 };
+  }
   const px = Math.max(4, t.size * H);
   const font = `${t.weight || 400} ${px}px ${fontCss(t.font)}`;
   ctx.save();
@@ -255,8 +261,48 @@ function linePlaces(t, L) {
   });
 }
 
+// ---- Shapes (Tom, 2026-11-23, as Canva's elements): they live with the captions (item.texts, kind "shape"), so they're
+// picked, moved, sized and turned the same way, and listed in Layers. { shape, x, y, size, aspect, fill ("none" = no
+// fill), outline (0 - 20: % of the shorter side), outlineColour, radius (a rectangle's corners, 0 - 50 %), opacity, rotation }
+export const SHAPE_KINDS = [
+  ["rect", "Rectangle"], ["circle", "Circle"], ["triangle", "Triangle"], ["diamond", "Diamond"], ["hexagon", "Hexagon"],
+  ["star", "Star"], ["heart", "Heart"], ["arch", "Arch"], ["line", "Line"], ["arrow", "Arrow"]
+];
+export const SHAPE_DEFAULTS = () => ({ kind: "shape", shape: "rect", x: 0.5, y: 0.5, size: 0.25, aspect: 1, fill: "#ffffff", outline: 0, outlineColour: "#111111", radius: 0, opacity: 1, rotation: 0 });
+function drawShape(ctx, t, L) {
+  const w = L.width, h = L.height, side = Math.min(w, h);
+  ctx.save();
+  ctx.translate(L.cx, L.cy);
+  if (L.rotation) ctx.rotate((L.rotation * Math.PI) / 180);
+  ctx.globalAlpha *= t.opacity ?? 1;
+  const fill = t.fill && t.fill !== "none" ? t.fill : null;
+  const line = Math.max(0, Number(t.outline) || 0) / 100 * side;
+  if (t.shape === "line" || t.shape === "arrow") {
+    // (a line runs the box's length; its thickness is the box's height, an arrow's shaft a third of it)
+    const colour = fill || t.outlineColour || "#111111";
+    ctx.fillStyle = colour;
+    if (t.shape === "line") { ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, h / 2); ctx.fill(); }
+    else {
+      const head = Math.min(w * 0.45, h * 1.2), shaft = h / 3;
+      ctx.beginPath();
+      ctx.moveTo(-w / 2, -shaft / 2); ctx.lineTo(w / 2 - head, -shaft / 2); ctx.lineTo(w / 2 - head, -h / 2); ctx.lineTo(w / 2, 0);
+      ctx.lineTo(w / 2 - head, h / 2); ctx.lineTo(w / 2 - head, shaft / 2); ctx.lineTo(-w / 2, shaft / 2); ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+    return;
+  }
+  // (the outline sits inside the box, so a frame never grows past it)
+  const inset = line / 2;
+  shapePath(ctx, t.shape, -w / 2 + inset, -h / 2 + inset, w - line, h - line, (t.radius || 0) / 100 * side);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (line) { ctx.lineWidth = line; ctx.lineJoin = "round"; ctx.strokeStyle = t.outlineColour || "#111111"; ctx.stroke(); }
+  ctx.restore();
+}
+
 export function drawText(ctx, t, W, H) {
   const L = layoutText(ctx, t, W, H);
+  if (L.shape) { drawShape(ctx, t, L); return; }
   ctx.save();
   ctx.translate(L.cx, L.cy);
   if (L.rotation) ctx.rotate((L.rotation * Math.PI) / 180);
@@ -311,6 +357,7 @@ export const textBox = (L) => ({ cx: L.cx, cy: L.cy, w: L.width, h: L.height, ro
 // The text under a point (frame pixels), topmost first, or null
 export function textAt(ctx, item, W, H, x, y) {
   for (let i = item.texts.length - 1; i >= 0; i--) {
+    if (item.texts[i].hidden || item.texts[i].locked) continue; // (hidden or locked in Layers: not picked on the canvas)
     const L = layoutText(ctx, item.texts[i], W, H);
     if (onBox(textBox(L), x, y, Math.max(6, L.px * 0.15))) return item.texts[i];
   }

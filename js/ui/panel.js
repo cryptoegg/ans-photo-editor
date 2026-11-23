@@ -19,7 +19,7 @@ import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, 
 import { presetSwatch, presetSwatchKept, effectSwatch } from '../looks.js';
 import { listFilms, loadFilm, filmsCredit } from '../effects/filmTables.js';
 import { getPicture } from '../media.js';
-import { TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS, PHOTO_SHAPES, photoBox, trimOf } from '../render.js';
+import { SHAPE_KINDS, SHAPE_DEFAULTS, TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS, PHOTO_SHAPES, photoBox, trimOf } from '../render.js';
 import { moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
 import { showMenu } from './menu.js';
 import { toast } from './toast.js';
@@ -97,6 +97,32 @@ function layerLabel(item, i) {
   return isVideo(item) ? (i === 0 ? "Video" : `Photo ${i}`) : `Photo ${i + 1}`;
 }
 
+// Rows picked with ⌘ / Shift in Layers (for Group), by id
+const layerPicks = new Set();
+// Each group's name on this slide: Group 1, Group 2… in the order they first appear
+function groupNamesOf(slide) {
+  const names = new Map();
+  [...layersOf(slide), ...slide.texts].forEach((x) => { if (x.group && !names.has(x.group)) names.set(x.group, `Group ${names.size + 1}`); });
+  return names;
+}
+// Rename a row in place: its name becomes a box; Enter or leaving it keeps the name (empty: back to its own)
+function renameRow(span, thing, fallback) {
+  const input = el("input", { className: "layer-rename", value: thing.name || fallback });
+  span.replaceWith(input);
+  input.focus(); input.select();
+  let done = false;
+  const finish = (keepIt) => {
+    if (done) return; done = true;
+    const v = input.value.trim();
+    if (keepIt) { if (v && v !== fallback) thing.name = v; else delete thing.name; }
+    changed("project"); if (keepIt) commit();
+  };
+  input.onkeydown = (e) => { e.stopPropagation(); if (e.key === "Enter") finish(true); if (e.key === "Escape") finish(false); };
+  input.onblur = () => finish(true);
+  input.onclick = (e) => e.stopPropagation();
+}
+const shapeLabel = (t) => (SHAPE_KINDS.find(([k]) => k === t.shape) || [, "Shape"])[1];
+
 function buildLayersBox() {
   const box = document.getElementById("layers-box");
   const slide = currentItem();
@@ -111,23 +137,78 @@ function buildLayersBox() {
   plus.title = "Another photo on this slide";
   // (Layers folds up and down like Light, Colour and the rest: Tom, 2026-11-18)
   const open = !openCards.has("layers:shut");
-  const name = el("button", { className: "fold-name layers-fold", title: "Show / hide the layers" }, el("span", { className: "fold-arrow" }), el("span", { textContent: "Layers" }), el("span", { className: "mc-n", textContent: String(layersOf(slide).length) }));
+  const name = el("button", { className: "fold-name layers-fold", title: "Show / hide the layers" }, el("span", { className: "fold-arrow" }), el("span", { textContent: "Layers" }), el("span", { className: "mc-n", textContent: String(layersOf(slide).length + slide.texts.length) }));
   name.onclick = () => { if (open) openCards.add("layers:shut"); else openCards.delete("layers:shut"); changed("view"); };
   box.classList.toggle("open", open);
   box.append(el("div", { className: "layers-head" }, name, plus));
   if (!open) return;
 
-  const list = el("div", { className: "layer-list" });
   const all = layersOf(slide);
   const picked = currentLayer();
   const cells = isGrid(slide) ? LAYOUTS[slide.layout.kind].cells.length : Infinity;
+  // (Tom, 2026-11-23, as Photoshop's: each row has an eye (hide) and a lock (it stays put on the canvas); double-click its
+  // name to rename it; ⌘- or Shift-click rows to pick several, then Group: a group moves together on the canvas.
+  // Captions and shapes are listed above the photos, as they're drawn over them.)
+  const groupNames = groupNamesOf(slide);
+  const rowParts = (thing, label, pickIt) => {
+    const eye = el("button", { type: "button", className: "lr-btn lr-eye" + (thing.hidden ? " off" : ""), title: thing.hidden ? "Show" : "Hide", ariaLabel: thing.hidden ? "Show" : "Hide",
+      onclick: (e) => { e.stopPropagation(); thing.hidden = !thing.hidden || undefined; if (!thing.hidden) delete thing.hidden; changed("project"); commit(); } });
+    const lock = el("button", { type: "button", className: "lr-btn lr-lock" + (thing.locked ? " on" : ""), title: thing.locked ? "Unlock" : "Lock: it stays put on the canvas", ariaLabel: thing.locked ? "Unlock" : "Lock",
+      onclick: (e) => { e.stopPropagation(); if (thing.locked) delete thing.locked; else thing.locked = true; changed("project"); commit(); } });
+    const name = el("span", { className: "layer-name", textContent: thing.name || label, title: "Double-click to rename" });
+    name.ondblclick = (e) => { e.stopPropagation(); renameRow(name, thing, label); };
+    const tag = thing.group ? el("span", { className: "layer-group", textContent: groupNames.get(thing.group), title: "In a group: they move together (right-click: Ungroup)" }) : "";
+    return { eye, lock, name, tag };
+  };
+  const key = (thing) => thing.id;
+  const sel = layerPicks;
+  for (const k of [...sel]) if (![...all, ...slide.texts].some((x) => key(x) === k)) sel.delete(k);
+  const pickRow = (e, thing, plain) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) { if (sel.has(key(thing))) sel.delete(key(thing)); else sel.add(key(thing)); changed("view"); return true; }
+    sel.clear();
+    plain();
+    return false;
+  };
+  const ungroupMenu = (e, thing) => {
+    if (!thing.group) return false;
+    const g = thing.group;
+    showMenu(e, [{ label: "Ungroup", action: () => { [...all, ...slide.texts].forEach((x) => { if (x.group === g) delete x.group; }); changed("project"); commit(); } }]);
+    return true;
+  };
+
+  // Captions and shapes (top of the list = on top)
+  if (slide.texts.length) {
+    const tl = el("div", { className: "layer-list" });
+    slide.texts.map((t, i) => ({ t, i })).reverse().forEach(({ t, i }) => {
+      const shape = t.kind === "shape";
+      const label = shape ? shapeLabel(t) : (String(t.content || "").split("\n")[0].trim().slice(0, 24) || "Caption");
+      const { eye, lock, name, tag } = rowParts(t, label);
+      const icon = el("span", { className: "layer-thumb layer-icon" + (shape ? " shape" : " text"), textContent: shape ? "" : "T" });
+      if (shape) icon.style.setProperty("--fill", t.fill || "#ffffff");
+      const row = el("div", { className: "layer-row" + (state.textId === t.id ? " on" : "") + (sel.has(t.id) ? " sel" : "") + (t.hidden ? " hidden-row" : "") },
+        eye, icon, name, tag, el("span", { className: "spacer" }), lock);
+      const up = button("↑", (e) => { e.stopPropagation(); slide.texts.splice(i, 1); slide.texts.splice(i + 1, 0, t); changed("project"); commit(); }, "btn ghost small");
+      const down = button("↓", (e) => { e.stopPropagation(); slide.texts.splice(i, 1); slide.texts.splice(i - 1, 0, t); changed("project"); commit(); }, "btn ghost small");
+      const del = button("✕", (e) => { e.stopPropagation(); slide.texts.splice(i, 1); if (state.textId === t.id) state.textId = null; changed("project"); commit(); }, "btn ghost small");
+      up.disabled = i === slide.texts.length - 1; down.disabled = i === 0;
+      up.title = "Bring forward"; down.title = "Send back"; del.title = shape ? "Delete this shape" : "Delete this caption";
+      row.append(up, down, del);
+      row.onclick = (e) => pickRow(e, t, () => { state.textId = t.id; state.photoPicked = false; state.layerId = null; changed("view"); });
+      row.addEventListener("contextmenu", (e) => { if (ungroupMenu(e, t)) e.preventDefault(); });
+      tl.append(row);
+    });
+    box.append(tl);
+  }
+
+  const list = el("div", { className: "layer-list" });
   all.map((layer, i) => ({ layer, i })).reverse().forEach(({ layer, i }) => {
     const pic = getPicture(layer.mediaId);
     const thumb = el("canvas", { width: 60, height: 60, className: "layer-thumb" });
     if (pic) { const src = pic.preview, s = Math.min(src.width, src.height); thumb.getContext("2d").drawImage(src, (src.width - s) / 2, (src.height - s) / 2, s, s, 0, 0, 60, 60); }
-    const row = el("div", { className: "layer-row" + (state.photoPicked && layer === picked ? " on" : "") + (i >= cells ? " off" : "") },
-      thumb, el("span", { className: "layer-name", textContent: `${nameOf(i)}${i >= cells ? " (no cell)" : ""}` }), el("span", { className: "spacer" }),
-      el("span", { className: "layer-where", textContent: all.length > 1 ? (i === 0 ? "Bottom" : i === all.length - 1 ? "Top" : "") : "" }));
+    const { eye, lock, name, tag } = rowParts(layer, `${nameOf(i)}${i >= cells ? " (no cell)" : ""}`);
+    const row = el("div", { className: "layer-row" + (state.photoPicked && layer === picked ? " on" : "") + (sel.has(layer.id) ? " sel" : "") + (i >= cells ? " off" : "") + (layer.hidden ? " hidden-row" : "") },
+      eye, thumb, name, tag, el("span", { className: "spacer" }),
+      el("span", { className: "layer-where", textContent: all.length > 1 ? (i === 0 ? "Bottom" : i === all.length - 1 ? "Top" : "") : "" }), lock);
     const up = button("↑", (e) => { e.stopPropagation(); moveLayer(layer, 1); }, "btn ghost small");
     const down = button("↓", (e) => { e.stopPropagation(); moveLayer(layer, -1); }, "btn ghost small");
     const del = button("✕", (e) => { e.stopPropagation(); removeLayer(layer); }, "btn ghost small");
@@ -139,7 +220,7 @@ function buildLayersBox() {
     del.title = "Take this photo off the slide";
     del.disabled = all.length === 1 || (vid && i === 0);
     row.append(up, down, del);
-    row.onclick = () => { if (dragged) return; state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view"); };
+    row.onclick = (e) => { if (dragged) return; pickRow(e, layer, () => { state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view"); }); };
     row.addEventListener("contextmenu", (e) => {
       if (vid && i === 0) return;
       state.photoPicked = true; state.textId = null; state.layerId = layer === slide ? null : layer.id; changed("view");
@@ -148,6 +229,7 @@ function buildLayersBox() {
         ? { label: "Bring background back", action: () => restoreBackground(layer) }
         : { label: "Remove background", action: () => removeBackground(layer) });
       if (all.length > 1) entries.push({ label: "Remove from slide", action: () => removeLayer(layer) });
+      if (layer.group) entries.push({ label: "Ungroup", action: () => { const g = layer.group; [...all, ...slide.texts].forEach((x) => { if (x.group === g) delete x.group; }); changed("project"); commit(); } });
       showMenu(e, entries);
     });
     row.title = "Drag up or down to change the order";
@@ -155,6 +237,15 @@ function buildLayersBox() {
     row.addEventListener("pointerdown", (e) => dragRow(e, row, list, all));
     list.append(row);
   });
+  // (several picked: Group them, or Ungroup)
+  if (sel.size > 1) {
+    const chosen = [...all, ...slide.texts].filter((x) => sel.has(x.id));
+    const bar = el("div", { className: "layer-sel-bar" },
+      el("span", { textContent: `${chosen.length} picked` }), el("span", { className: "spacer" }),
+      button("Group", () => { const g = newId("g"); chosen.forEach((x) => { x.group = g; }); sel.clear(); changed("project"); commit(); }, "btn small"),
+      button("Ungroup", () => { chosen.forEach((x) => { delete x.group; }); sel.clear(); changed("project"); commit(); }, "btn small"));
+    box.append(bar);
+  }
   box.append(list);
   // (the picked photo's opacity and blend: Edit → Opacity, Tom 2026-11-23)
   if (isGrid(slide)) {
@@ -304,7 +395,7 @@ function build() {
   const layer = currentLayer();
   // (only once something's picked on the canvas: a photo or a caption; nothing picked, no title: Tom, 2026-11-23)
   document.querySelector("#panel .ed-title").textContent = !slide ? ""
-    : caption ? "Caption"
+    : caption ? (caption.kind === "shape" ? "Shape" : "Caption")
     : state.photoPicked || state.layerId ? layerLabel(slide, layersOf(slide).indexOf(layer))
     : "";
 
@@ -355,6 +446,7 @@ export function buildLibrary(host, lib) {
     if (box.hidden) withBody(host, buildTools);
   } else if (lib === "effects") withBody(host, buildEffectsLibrary);
   else if (lib === "captions") withBody(host, buildText, "add");
+  else if (lib === "shapes") withBody(host, buildShapes);
   host.querySelectorAll('input[type="range"]').forEach(fillTrack);
   pairSliders(host);
 }
@@ -1156,10 +1248,11 @@ function buildText(part = "add") {
   const styles = Object.keys(TEXT_STYLES);
   body.append(button("New Text Overlay", add(styles[0]), "btn primary wide"));
   body.append(el("div", { className: "row text-styles" }, ...styles.slice(1).map((k) => button(TEXT_STYLES[k].label, add(k)))));
-  if (!item.texts.length) return;
+  const words = item.texts.filter((t) => t.kind !== "shape");
+  if (!words.length) return;
 
   const list = el("div", { className: "text-list" });
-  item.texts.forEach((t) => {
+  words.forEach((t) => {
     const row = el("div", { className: "text-row" + (t.id === state.textId ? " on" : "") }, el("span", { textContent: t.content.split("\n")[0] || "(empty)" }));
     row.onclick = () => { state.textId = t.id; changed("view"); };
     list.append(row);
@@ -1167,10 +1260,83 @@ function buildText(part = "add") {
   body.append(list);
 }
 
+// ---- Shapes (Tom, 2026-11-23): the library on the left adds one (or a frame, or a sticker); a picked shape's settings
+// are on the right (shapeSettings)
+const STICKERS = ["✨", "❤️", "⭐", "🔥", "👉", "🎵", "📍", "✅", "💬", "⚡"];
+const SHAPE_ICON = (shape) => {
+  const d = { line: '<path d="M3 12h18" stroke-width="3" stroke-linecap="round"/>', arrow: '<path d="M3 12h15M13 6l6 6-6 6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' }[shape];
+  return d ? svgIcon(d) : SHAPE_ICONS[shape];
+};
+function buildShapes() {
+  const item = currentItem();
+  if (!item) return;
+  const add = (extra) => {
+    const t = { id: newId("t"), ...SHAPE_DEFAULTS(), ...extra };
+    t.x /= item.span; // (on a panorama: in the first square)
+    item.texts.push(t);
+    state.textId = t.id; state.photoPicked = false; state.layerId = null;
+    changed("project");
+    commit();
+  };
+  const tiles = el("div", { className: "shape-tiles" });
+  SHAPE_KINDS.forEach(([shape, label]) => tiles.append(el("button", {
+    type: "button", className: "shape-tile", title: label, ariaLabel: label,
+    style: `--i: url("data:image/svg+xml,${encodeURIComponent(SHAPE_ICON(shape))}")`,
+    onclick: () => add(shape === "line" ? { shape, aspect: 40, size: 0.012 } : shape === "arrow" ? { shape, aspect: 4, size: 0.08 } : { shape })
+  })));
+  tiles.append(el("button", { type: "button", className: "shape-tile frame", title: "Frame: an outline round the slide", ariaLabel: "Frame",
+    onclick: () => { const a = aspectOf(activeSet(state.project).ratio); add({ shape: "rect", fill: "none", outline: 3, outlineColour: "#ffffff", size: 0.94, aspect: (a - 0.06) / 0.94, name: "Frame" }); } })); // (round the first square, a margin of 3 % of its height)
+  body.append(el("div", { className: "tools-head", textContent: "Shapes" }), tiles);
+  const stickers = el("div", { className: "sticker-tiles" });
+  STICKERS.forEach((s) => stickers.append(el("button", { type: "button", className: "sticker-tile", textContent: s, title: "Add this sticker",
+    onclick: () => {
+      const t = { id: newId("t"), ...TEXT_STYLES.title, content: s, size: 0.12, stroke: 0, name: "Sticker" };
+      delete t.label;
+      t.x /= item.span;
+      item.texts.push(t);
+      state.textId = t.id; state.photoPicked = false; state.layerId = null;
+      changed("project"); commit();
+    } })));
+  body.append(el("div", { className: "tools-head", textContent: "Stickers" }), stickers);
+}
+// The picked shape's settings (on the right)
+function shapeSettings(item, t) {
+  const live = () => changed("look");
+  const done = () => { changed("project"); commit(); };
+  const kind = el("select", { className: "select" });
+  SHAPE_KINDS.forEach(([k, l]) => kind.append(el("option", { value: k, textContent: l, selected: k === t.shape })));
+  kind.onchange = () => { t.shape = kind.value; done(); };
+  body.append(el("div", { className: "row" }, el("span", { textContent: "Shape" }), kind));
+  const lineLike = t.shape === "line" || t.shape === "arrow";
+  const fillOn = t.fill && t.fill !== "none";
+  const fill = el("input", { type: "color", value: fillOn ? t.fill : "#ffffff" });
+  fill.oninput = () => { t.fill = fill.value; live(); };
+  fill.onchange = done;
+  const noFill = el("input", { type: "checkbox", checked: fillOn });
+  noFill.onchange = () => { t.fill = noFill.checked ? fill.value : "none"; if (!noFill.checked && !t.outline) t.outline = 3; done(); };
+  body.append(el("div", { className: "row" }, el("span", { textContent: lineLike ? "Colour" : "Fill" }), fill, el("span", { className: "spacer" }),
+    lineLike ? "" : el("label", { className: "check-row" }, noFill, el("span", { textContent: "Filled" }))));
+  if (!lineLike) {
+    body.append(slider({ label: "Outline", min: 0, max: 20, step: 0.5, targets: [t], get: (x) => x.outline || 0, set: (x, v) => { x.outline = v; }, onCommit: () => {} }));
+    const oc = el("input", { type: "color", value: t.outlineColour || "#111111" });
+    oc.oninput = () => { t.outlineColour = oc.value; live(); };
+    oc.onchange = done;
+    body.append(el("div", { className: "row" }, el("span", { textContent: "Outline colour" }), oc));
+    if (t.shape === "rect") body.append(slider({ label: "Corners", min: 0, max: 50, unit: "%", targets: [t], get: (x) => x.radius || 0, set: (x, v) => { x.radius = v; }, onCommit: () => {} }));
+  }
+  body.append(slider({ label: "Size", min: 0.5, max: 200, step: 0.5, targets: [t], get: (x) => x.size * 100, set: (x, v) => { x.size = v / 100; }, onCommit: () => {} }));
+  body.append(slider({ label: lineLike ? "Length" : "Width", min: 5, max: 4000, step: 1, unit: "%", targets: [t], get: (x) => Math.round((x.aspect || 1) * 100), set: (x, v) => { x.aspect = v / 100; }, onCommit: () => {} }));
+  body.append(slider({ label: "Opacity", min: 0, max: 100, unit: "%", reset: 100, targets: [t], get: (x) => (x.opacity ?? 1) * 100, set: (x, v) => { x.opacity = v / 100; }, onCommit: () => {} }));
+  body.append(slider({ label: "Angle", min: -180, max: 180, step: 0.5, unit: "°", targets: [t], get: (x) => x.rotation || 0, set: (x, v) => { x.rotation = v; }, onCommit: () => {} }));
+  body.append(el("div", { className: "row" },
+    button("Delete shape", () => { item.texts = item.texts.filter((x) => x !== t); state.textId = null; done(); }, "btn ghost small")));
+}
+
 // The picked caption's settings (on the right)
 function captionSettings(item) {
   const t = item.texts.find((x) => x.id === state.textId);
   if (!t) return;
+  if (t.kind === "shape") return shapeSettings(item, t);
   const live = () => changed("look");
   const done = () => { changed("project"); commit(); };
 
