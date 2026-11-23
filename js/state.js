@@ -31,6 +31,48 @@ let redoStack = [];
 // The record as text, for undo steps (without its "last changed" time, which isn't an edit)
 const snap = (p) => JSON.stringify(p, (key, value) => (key === "updated" ? undefined : value));
 let lastSaved = snap(state.project); // the record as of the last commit
+// History (Tom, 2026-11-23, as Photoshop's): every step named by what it changed; each undo / redo entry is { json, label, time }
+let nowLabel = "Opened", nowTime = Date.now();
+const NAMES = [
+  [/\.preset$|\.strength$/, "Filter"], [/look\.chain/, "Effects"], [/look\.light/, "Light"], [/look\.(colour|curves|grade|hsl|lut)/, "Colour"],
+  [/look\.skin/, "Skin"], [/masks/, "Mask"], [/retouch/, "Touch-up"], [/cutout/, "Background removed"], [/crop\.(x|y)$/, "Move"],
+  [/crop\.(zoom|stretch)/, "Size"], [/crop\.rotation/, "Turn"], [/crop\.(trim|flip)/, "Crop"], [/crop\.(vertical|horizontal)/, "Perspective"], [/crop/, "Crop"],
+  [/style\.(opacity|blend)/, "Opacity"], [/style/, "Photo style"], [/texts.*\.(x|y)$/, "Move"], [/texts.*\.(size|aspect)$/, "Size"],
+  [/texts.*\.rotation$/, "Turn"], [/texts.*\.content$/, "Text"], [/texts.*\.hidden$|\.hidden$/, "Hide / show"], [/\.locked$/, "Lock"],
+  [/\.name$/, "Rename"], [/\.group$/, "Group"], [/texts/, "Caption / shape"], [/layers/, "Layers"], [/background$/, "Background"],
+  [/set\.ratio/, "Shape of the set"], [/set\.items$/, "Slides"], [/span/, "Panorama"], [/name$/, "Name"]
+];
+function firstDiff(a, b, path = "") {
+  if (a === b) return null;
+  if (typeof a !== "object" || typeof b !== "object" || !a || !b) return path;
+  if (Array.isArray(a) && Array.isArray(b) && a.length !== b.length) return path;
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) { const d = firstDiff(a[k], b[k], `${path}.${k}`); if (d !== null) return d; }
+  return null;
+}
+function describe(before, after) {
+  try {
+    const A = JSON.parse(before), B = JSON.parse(after);
+    const path = firstDiff(A, B) || ""; // (e.g. .set.items.0.look.light.exposure)
+    if (/texts$/.test(path)) {
+      // (a caption or shape added or deleted: which)
+      const at = (o) => path.split(".").slice(1).reduce((x, k) => (x ? x[k] : x), o) || [];
+      const a = at(A), b = at(B), more = b.length > a.length;
+      const t = (more ? b.find((x) => !a.some((y) => y.id === x.id)) : a.find((x) => !b.some((y) => y.id === x.id))) || {};
+      return `${more ? "New" : "Deleted"} ${t.kind === "shape" ? "shape" : "caption"}`;
+    }
+    return (NAMES.find(([re]) => re.test(path)) || [, "Change"])[1];
+  } catch (err) { return "Change"; }
+}
+// [{ label, time, now }] oldest first, the one showing marked now
+export function historyList() {
+  return [...undoStack.map((e) => ({ label: e.label, time: e.time })), { label: nowLabel, time: nowTime, now: true }, ...[...redoStack].reverse().map((e) => ({ label: e.label, time: e.time }))];
+}
+// Go to step i of historyList(): undo or redo until it's showing
+export function historyGo(i) {
+  const at = undoStack.length;
+  if (i < at) for (let k = 0; k < at - i; k++) undo();
+  else for (let k = 0; k < i - at; k++) redo();
+}
 
 export const onChange = (fn) => listeners.add(fn);
 
@@ -52,9 +94,10 @@ export const selectedItems = () => items().filter((i) => state.selected.has(i.id
 export function commit() {
   const now = snap(state.project);
   if (now === lastSaved) return;
-  undoStack.push(lastSaved);
+  undoStack.push({ json: lastSaved, label: nowLabel, time: nowTime });
   if (undoStack.length > UNDO_KEPT) undoStack.shift();
   redoStack = [];
+  nowLabel = describe(lastSaved, now); nowTime = Date.now();
   lastSaved = now;
   state.project.updated = Date.now();
   changed("commit");
@@ -66,13 +109,17 @@ export const canRedo = () => redoStack.length > 0;
 export function undo() {
   commit(); // (anything half-done becomes its own step first)
   if (!undoStack.length) return;
-  redoStack.push(lastSaved);
-  restore(undoStack.pop());
+  redoStack.push({ json: lastSaved, label: nowLabel, time: nowTime });
+  const e = undoStack.pop();
+  nowLabel = e.label; nowTime = e.time;
+  restore(e.json);
 }
 export function redo() {
   if (!redoStack.length) return;
-  undoStack.push(lastSaved);
-  restore(redoStack.pop());
+  undoStack.push({ json: lastSaved, label: nowLabel, time: nowTime });
+  const e = redoStack.pop();
+  nowLabel = e.label; nowTime = e.time;
+  restore(e.json);
 }
 function restore(json) {
   lastSaved = json;
@@ -88,6 +135,7 @@ export function openProject(p) {
   state.project = tidyProject(clone(p));
   undoStack = [];
   redoStack = [];
+  nowLabel = "Opened"; nowTime = Date.now();
   lastSaved = snap(state.project);
   state.selected = new Set();
   state.current = null;

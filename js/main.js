@@ -11,7 +11,7 @@ import { openPost } from './ui/post.js';
 import { maskIdsOf } from './cutout.js';
 import { toolIcons } from './ui/brush.js';
 import './ui/tips.js';
-import { state, changed, onChange, commit, undo, redo, canUndo, canRedo, openProject, currentItem, select, selectAll, items, selectedItems } from './state.js';
+import { state, changed, onChange, commit, undo, redo, canUndo, canRedo, historyList, historyGo, openProject, currentItem, select, selectAll, items, selectedItems } from './state.js';
 import { newProject, slides as slideList, firstSlideOf, allLists, slideCount } from './project.js';
 import { saveProject, loadProject } from './store.js';
 import { loadPicture, warmHeicReader } from './media.js';
@@ -217,6 +217,12 @@ function wireTopBar() {
   $("btn-phone").onclick = () => setView(state.view === "phone" ? "edit" : "phone"); // (one button, on / off, as the Lyric Visualiser's)
   $("btn-undo").onclick = undo;
   $("btn-redo").onclick = redo;
+  // History (Tom, 2026-11-23, as Photoshop's): every step, newest at the top; click one to go back (or forward) to it
+  $("btn-history").onclick = (e) => {
+    const list = historyList();
+    const when = (t) => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    showMenu(e, list.map((h, i) => ({ label: `${h.now ? "● " : ""}${h.label}`, keys: when(h.time), action: () => historyGo(i) })).reverse(), { above: e.currentTarget });
+  };
   $("btn-export").onclick = openExport;
 }
 
