@@ -185,6 +185,12 @@ export function drawItem(ctx, item, W, H, options = {}) {
   ctx.fillRect(0, 0, W, H);
   const grid = !!LAYOUTS[item.layout && item.layout.kind];
   const cells = grid ? cellRects(item, W, H) : null;
+  // Photo inside the words (Tom, 2026-11-23): with a caption set to it, the photos show only through its letters, on the
+  // slide's background; the other captions and shapes are drawn as usual over them
+  const inside = texts ? item.texts.filter((t) => t.photoFill && !t.hidden && t.kind !== "shape") : [];
+  const into = inside.length ? (() => { const m = ctx.getTransform(), k = Math.max(1, Math.hypot(m.a, m.b)); const c = document.createElement("canvas"); c.width = Math.ceil(W * k); c.height = Math.ceil(H * k); const g = c.getContext("2d"); g.scale(k, k); return { c, g }; })() : null;
+  const main = ctx;
+  if (into) ctx = into.g;
   layersOf(item).forEach((layer, i) => {
     const rect = cells ? cells[i] : { x: 0, y: 0, w: W, h: H };
     if (!rect) return; // (more layers than cells: the rest wait off the grid)
@@ -196,7 +202,19 @@ export function drawItem(ctx, item, W, H, options = {}) {
       : bare ? (quality === "full" ? pic.full : pic.preview) : lookedPicture(layer, quality, seed);
     if (picture) drawLayer(ctx, item, layer, picture, rect, grid);
   });
-  if (texts) item.texts.forEach((t) => { if (!t.hidden) drawText(ctx, t, W, H); });
+  if (into) {
+    ctx = main;
+    const mask = document.createElement("canvas");
+    mask.width = into.c.width; mask.height = into.c.height;
+    const mg = mask.getContext("2d");
+    mg.scale(into.c.width / W, into.c.height / H);
+    inside.forEach((t) => paintText(mg, { ...t, bubble: "none", stroke: 0, colour: "#000", gradient: null }, layoutText(mg, t, W, H)));
+    into.g.setTransform(1, 0, 0, 1, 0, 0);
+    into.g.globalCompositeOperation = "destination-in";
+    into.g.drawImage(mask, 0, 0);
+    ctx.drawImage(into.c, 0, 0, W, H);
+  }
+  if (texts) item.texts.forEach((t) => { if (!t.hidden && !(t.photoFill && t.kind !== "shape")) drawText(ctx, t, W, H); });
   ctx.restore();
 }
 
@@ -300,15 +318,46 @@ function drawShape(ctx, t, L) {
   ctx.restore();
 }
 
+// Text effects (Tom, 2026-11-23, as Photoshop's layer styles / Canva's): shadow { on, colour, blur, distance }, glow { on,
+// colour, size }, gradient { on, colour } (from the text's colour to this one, top to bottom), curve (-100 - 100: an arc
+// up or down). With a shadow or glow the words are drawn on their own first, then laid on with it, so the outline and
+// the fill share one shadow.
+const fxOn = (t) => (t.shadow && t.shadow.on) || (t.glow && t.glow.on);
 export function drawText(ctx, t, W, H) {
   const L = layoutText(ctx, t, W, H);
   if (L.shape) { drawShape(ctx, t, L); return; }
+  if (!fxOn(t)) { paintText(ctx, t, L); return; }
+  const m = ctx.getTransform(), k = Math.max(1, Math.hypot(m.a, m.b));
+  const off = document.createElement("canvas");
+  off.width = Math.ceil(W * k); off.height = Math.ceil(H * k);
+  const g = off.getContext("2d");
+  g.scale(k, k);
+  paintText(g, t, L);
+  const side = Math.min(W, H);
+  ctx.save();
+  if (t.glow && t.glow.on) {
+    ctx.shadowColor = t.glow.colour || "#ffffff";
+    ctx.shadowBlur = (t.glow.size ?? 30) / 100 * side * 0.08 * k;
+    for (let i = 0; i < 2; i++) ctx.drawImage(off, 0, 0, W, H); // (twice: a fuller glow)
+  }
+  if (t.shadow && t.shadow.on) {
+    const d = (t.shadow.distance ?? 30) / 100 * side * 0.03 * k;
+    ctx.shadowColor = t.shadow.colour || "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = (t.shadow.blur ?? 30) / 100 * side * 0.05 * k;
+    ctx.shadowOffsetX = d * 0.7; ctx.shadowOffsetY = d;
+  } else ctx.shadowColor = "transparent";
+  ctx.drawImage(off, 0, 0, W, H);
+  ctx.restore();
+}
+
+function paintText(ctx, t, L) {
   ctx.save();
   ctx.translate(L.cx, L.cy);
   if (L.rotation) ctx.rotate((L.rotation * Math.PI) / 180);
   ctx.translate(-L.width / 2, -L.height / 2); // (now 0, 0 is the box's top-left)
   const places = linePlaces(t, L);
-  if (t.bubble === "lines") {
+  const curve = Math.max(-100, Math.min(100, Number(t.curve) || 0));
+  if (t.bubble === "lines" && !curve) {
     // A background round each line's own words, hugging the shape of the text
     ctx.fillStyle = t.bubbleColour;
     const r = L.px * 0.22;
@@ -318,7 +367,7 @@ export function drawText(ctx, t, W, H) {
       ctx.roundRect(p.x - L.padX, L.padY + i * L.lineH - L.px * 0.04, p.drawn + L.padX * 2, L.lineH + L.px * 0.08, r);
       ctx.fill();
     });
-  } else if (t.bubble && t.bubble !== "none") {
+  } else if (t.bubble && t.bubble !== "none" && t.bubble !== "lines") {
     const r = t.bubble === "pill" ? L.height / 2 : t.bubble === "rounded" || t.bubble === "outline" ? L.px * 0.3 : 0;
     ctx.beginPath();
     ctx.roundRect(0, 0, L.width, L.height, r);
@@ -328,14 +377,36 @@ export function drawText(ctx, t, W, H) {
   ctx.font = L.font;
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
+  // (a gradient runs from the text's colour at the top of the words to the second colour at the bottom)
+  const gradient = (y0, y1) => { const gr = ctx.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, t.colour); gr.addColorStop(1, t.gradient.colour || "#ff3d7f"); return gr; };
+  const graded = !!(t.gradient && t.gradient.on);
+  let fill = graded ? gradient(L.padY, L.padY + L.textH) : t.colour;
   const stroke = Math.max(0, Number(t.stroke) || 0) / 100 * L.px * 2; // (half of it falls inside the letters)
   const paint = (text, x, y) => {
     if (stroke) { ctx.lineJoin = "round"; ctx.miterLimit = 2; ctx.lineWidth = stroke; ctx.strokeStyle = t.strokeColour; ctx.strokeText(text, x, y); }
-    ctx.fillStyle = t.colour;
+    ctx.fillStyle = fill;
     ctx.fillText(text, x, y);
   };
   places.forEach((p, i) => {
     const y = L.padY + L.lineH * (i + 0.5);
+    if (curve) {
+      // Curved: each letter along an arc through the line's middle (up = a rainbow, down = a smile)
+      const theta = (Math.abs(curve) / 100) * Math.PI, R = Math.max(1, p.drawn / theta), dir = curve > 0 ? 1 : -1;
+      const chars = [...p.line], widths = chars.map((c) => ctx.measureText(c).width);
+      let run = -p.drawn / 2;
+      const mid = p.x + p.drawn / 2;
+      chars.forEach((c, j) => {
+        const a = (run + widths[j] / 2) / R;
+        ctx.save();
+        ctx.translate(mid + R * Math.sin(a), y + dir * R * (1 - Math.cos(a)));
+        ctx.rotate(dir * a);
+        if (graded) fill = gradient(-L.px / 2, L.px / 2); // (each letter turned on its own: its own top to bottom)
+        paint(c, -widths[j] / 2, 0);
+        ctx.restore();
+        run += widths[j];
+      });
+      return;
+    }
     if (!p.justified) { paint(p.line, p.x, y); return; }
     // Justify: the words spread so the line runs the full width (the last line stays as it is)
     const words = p.line.trim().split(/\s+/);

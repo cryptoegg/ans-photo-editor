@@ -1423,6 +1423,25 @@ function captionSettings(item) {
   body.append(el("div", { className: "row" }, el("span", { textContent: "Behind" }), bubble, bubbleColour));
   body.append(slider({ label: "Angle", min: -180, max: 180, step: 0.5, unit: "°", targets: [t], get: (x) => x.rotation || 0, set: (x, v) => { x.rotation = v; }, onCommit: () => {} }));
 
+  // Effects (Tom, 2026-11-23): shadow, glow, a gradient, a curve, and the photo showing through the words
+  body.append(slider({ label: "Curve", min: -100, max: 100, step: 1, reset: 0, targets: [t], get: (x) => x.curve || 0, set: (x, v) => { x.curve = v; }, onCommit: () => {} }));
+  const fxRow = (key, label, start, sliders) => {
+    const now = t[key] && t[key].on;
+    const tick = el("input", { type: "checkbox", checked: !!now });
+    tick.onchange = () => { t[key] = { ...start, ...(t[key] || {}), on: tick.checked }; done(); };
+    const colour = el("input", { type: "color", value: (t[key] && t[key].colour) || start.colour });
+    colour.oninput = () => { t[key] = { ...start, ...(t[key] || {}), on: true, colour: colour.value }; tick.checked = true; live(); };
+    colour.onchange = done;
+    body.append(el("div", { className: "row" }, el("label", { className: "check-row" }, tick, el("span", { textContent: label })), el("span", { className: "spacer" }), colour));
+    if (now) sliders.forEach(([k, l]) => body.append(slider({ label: l, min: 0, max: 100, step: 1, targets: [t], get: (x) => x[key][k] ?? start[k], set: (x, v) => { x[key][k] = v; }, onCommit: () => {} })));
+  };
+  fxRow("shadow", "Shadow", { colour: "#000000", blur: 30, distance: 30 }, [["blur", "Blur"], ["distance", "Distance"]]);
+  fxRow("glow", "Glow", { colour: "#ffffff", size: 30 }, [["size", "Glow size"]]);
+  fxRow("gradient", "Gradient", { colour: "#ff3d7f" }, []);
+  const inside = el("input", { type: "checkbox", checked: !!t.photoFill });
+  inside.onchange = () => { if (inside.checked) t.photoFill = true; else delete t.photoFill; done(); };
+  body.append(el("div", { className: "row" }, el("label", { className: "check-row", title: "The photos show only through these words, on the slide's background colour" }, inside, el("span", { textContent: "Photo inside the words" }))));
+
   body.append(el("div", { className: "row" },
     button("Centre it", () => { t.x = (Math.floor(t.x * item.span) + 0.5) / item.span; t.y = 0.5; done(); }),
     button("Delete text", () => { item.texts = item.texts.filter((x) => x !== t); state.textId = null; done(); }, "btn ghost small")));
