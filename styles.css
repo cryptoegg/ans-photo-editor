@@ -1094,3 +1094,8 @@ body.strip-folded .tool-row .strip-fold::before { top: 9px; }
 .sticker-tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .sticker-tile { aspect-ratio: 1; border: 1px solid var(--ctl-line); border-radius: var(--ctl-r); background: transparent; font-size: 22px; line-height: 1; cursor: pointer; }
 .sticker-tile:hover { background: var(--raised); }
+/* (Align: six icons for the picked photo, caption or shape, under Layers) */
+.panel .align-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin: 8px 0 2px; }
+.panel .align-row .ti { position: relative; height: var(--ctl-h); border: 1px solid var(--ctl-line); border-radius: var(--ctl-r); background: transparent; color: var(--muted-strong); cursor: pointer; }
+.panel .align-row .ti::before { content: ""; position: absolute; inset: 0; margin: auto; width: 16px; height: 16px; background: currentColor; -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat; }
+.panel .align-row .ti:hover { color: var(--text); background: var(--raised); }

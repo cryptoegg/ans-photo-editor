@@ -19,7 +19,7 @@ import { myFilters, getFilter, filterName, freshChain, newEffect, saveMyFilter, 
 import { presetSwatch, presetSwatchKept, effectSwatch } from '../looks.js';
 import { listFilms, loadFilm, filmsCredit } from '../effects/filmTables.js';
 import { getPicture } from '../media.js';
-import { SHAPE_KINDS, SHAPE_DEFAULTS, TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS, PHOTO_SHAPES, photoBox, trimOf } from '../render.js';
+import { SHAPE_KINDS, SHAPE_DEFAULTS, layoutText, shownBox, TEXT_STYLES, FONTS, fillCrop, fitCrop, layerFrame, BLENDS, PHOTO_SHAPES, photoBox, trimOf } from '../render.js';
 import { moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
 import { showMenu } from './menu.js';
 import { toast } from './toast.js';
@@ -400,6 +400,7 @@ function build() {
     : "";
 
   buildLayersBox();
+  alignRow(slide, caption);
   // (a mask just picked in Tools: its settings are in Edit)
   if (state.maskId && state.maskId !== maskSeen && rightTab === "effects") rightTab = "edit";
   maskSeen = state.maskId;
@@ -1258,6 +1259,49 @@ function buildText(part = "add") {
     list.append(row);
   });
   body.append(list);
+}
+
+// ---- Align (Tom, 2026-11-23, as Photoshop's / Canva's): the picked photo, caption or shape lined up to the left, middle or
+// right of its slide (on a panorama, the square it's mostly on), or its top, middle or bottom. Its turned outline counts.
+const ALIGNS = [
+  ["left", "Align left", '<path d="M4 3v18"/><rect x="7" y="6" width="12" height="4" rx="1"/><rect x="7" y="14" width="8" height="4" rx="1"/>'],
+  ["centre", "Centre across", '<path d="M12 3v18"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="7" y="14" width="10" height="4" rx="1"/>'],
+  ["right", "Align right", '<path d="M20 3v18"/><rect x="5" y="6" width="12" height="4" rx="1"/><rect x="9" y="14" width="8" height="4" rx="1"/>'],
+  ["top", "Align top", '<path d="M3 4h18"/><rect x="6" y="7" width="4" height="12" rx="1"/><rect x="14" y="7" width="4" height="8" rx="1"/>'],
+  ["middle", "Centre up and down", '<path d="M3 12h18"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="7" width="4" height="10" rx="1"/>'],
+  ["bottom", "Align bottom", '<path d="M3 20h18"/><rect x="6" y="5" width="4" height="12" rx="1"/><rect x="14" y="9" width="4" height="8" rx="1"/>']
+];
+const scratch = document.createElement("canvas").getContext("2d");
+function alignRow(slide, caption) {
+  document.querySelectorAll("#panel .align-row").forEach((x) => x.remove());
+  const layer = !caption && state.photoPicked ? currentLayer() : null;
+  if (!slide || (!caption && !layer) || (layer && isGrid(slide))) return;
+  const row = el("div", { className: "align-row" });
+  ALIGNS.forEach(([how, label, d]) => row.append(el("button", { type: "button", className: "ti", title: label, ariaLabel: label,
+    style: `--i: url("data:image/svg+xml,${encodeURIComponent(svgIcon(d))}")`, onclick: () => alignTo(slide, caption, layer, how) })));
+  document.getElementById("layers-box").after(row);
+}
+function alignTo(slide, t, layer, how) {
+  const H = 1000, pw = H * aspectOf(activeSet(state.project).ratio), W = pw * slide.span;
+  let box, rect = { x: 0, y: 0, w: W, h: H };
+  if (t) { const L = layoutText(scratch, t, W, H); box = { cx: L.cx, cy: L.cy, w: L.width, h: L.height, rotation: L.rotation }; }
+  else {
+    const pic = getPicture(layer.mediaId);
+    if (!pic) return;
+    rect = layerFrame(slide, layer, W, H) || rect;
+    const b = shownBox(layer.crop, pic.width, pic.height, rect.w, rect.h);
+    box = { ...b, cx: b.cx + rect.x, cy: b.cy + rect.y };
+  }
+  const a = ((box.rotation || 0) * Math.PI) / 180, c = Math.abs(Math.cos(a)), sn = Math.abs(Math.sin(a));
+  const ex = (box.w * c + box.h * sn) / 2, ey = (box.w * sn + box.h * c) / 2; // (half the turned outline's width and height)
+  const piece = Math.max(0, Math.min(slide.span - 1, Math.floor(box.cx / pw))), x0 = piece * pw;
+  let cx = box.cx, cy = box.cy;
+  if (how === "left") cx = x0 + ex; else if (how === "centre") cx = x0 + pw / 2; else if (how === "right") cx = x0 + pw - ex;
+  if (how === "top") cy = ey; else if (how === "middle") cy = H / 2; else if (how === "bottom") cy = H - ey;
+  if (t) { t.x = cx / W; t.y = cy / H; }
+  else { layer.crop.x += (cx - box.cx) / rect.w; layer.crop.y += (cy - box.cy) / rect.h; }
+  changed("project");
+  commit();
 }
 
 // ---- Shapes (Tom, 2026-11-23): the library on the left adds one (or a frame, or a sticker); a picked shape's settings
