@@ -120,11 +120,14 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   - **Align** (`alignRow` under Layers): left, centre, right, top, middle, bottom of the slide for the picked photo,
     caption or shape (its turned outline).
   - **Eyedropper** (`js/ui/dropper.js`): a pipette beside every colour box (the browser's EyeDropper; Chrome / Edge).
-  - **History** (the clock in the tools row): every step named by what it changed (`describe` in state.js), newest first;
-    click one to jump to it (`historyGo`).
+  - **History** (its own rail tab under Shapes, Tom 2026-11-25; `buildHistory` in panel.js): every step named by what it
+    changed and on which slide (`describe` in state.js: "Light · Slide 1", "Pixelate · Slide 2"), newest first, undone
+    ones faded. Click one to jump to it (`historyGo`, one move). ✕ on a row takes out just that step and keeps everything
+    after it (`removeStep`: what it changed is put back wherever nothing later changed it again, lists matched by id),
+    as a step of its own ("Took out: …").
   - **Straighten and perspective** (Crop): Straighten = drag along a line that should be level or upright; Vertical /
     Horizontal = `crop.keystone { v, h }`, a warp in `keystoned` (looks.js) before the look.
-  - **Caption effects**: Curve (letters on an arc), Shadow, Glow, Gradient, and Photo inside the words (`photoFill`: the
+  - **Caption effects**: Curve (letters on an arc, ±200 = a full circle; the box grows to hold it), Shadow, Glow, Gradient, and Photo inside the words (`photoFill`: the
     slide's photos show only through those letters, `drawItem` in render.js).
 - **Notes** (`js/ui/toast.js`, Tom, 2026-11-18): a small dark bar at the top of the canvas, only for what can't be seen
   (a file that won't open, a full set, where an export went). No "done · Undo" notes: `toast(text, undoAction)` shows nothing.
@@ -198,7 +201,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   needed; `splitPanorama` is kept in actions.js but nothing calls it)) · Undo / Redo · the canvas bar (`#canvas-bar`: the tools, ‹ Slide 1 of 7 ›, the shape, − Fit +, guides,
   snapping, background, Before; hidden in Phone view and on an empty project) · "7 of 20" at the right.
 - **The side columns** (Tom, 2026-11-23, as the Lyric Visualiser's): a see-through rail down the left edge, on the window's
-  grey (`#rail`: Media · Filters · Effects · Tools · Captions · Shapes; `state.lib`) opens its library in the column beside it (`js/ui/mediaColumn.js`; Filters, Tools and
+  grey (`#rail`: Media · Filters · Effects · Tools · Captions · Shapes · History; `state.lib`) opens its library in the column beside it (`js/ui/mediaColumn.js`; Filters, Tools and
   Captions drawn by `buildLibrary` in panel.js: the presets row and the filter grid, Remove background and the brushes,
   New Text Overlay and the slide's captions; Effects = every effect as a tile drawn on the photo (`effectSwatch` in
   looks.js), a click puts it on the picked photo (`addEffect`) and opens it on the right); the open one again folds the

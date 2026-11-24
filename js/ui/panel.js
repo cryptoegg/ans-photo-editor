@@ -4,7 +4,7 @@
 // several slides at once says so in a note with Undo.
 import { removeBackground, restoreBackground, cutoutStatus } from '../cutout.js';
 import { brush, setBrush, setTool, clearTouchUps, brushStatus, cloneHasSource, sizeToSlider, sliderToSize, toolIcons, fxInHand, rememberFx, effectBrush } from './brush.js';
-import { state, changed, commit, undo, currentItem, currentLayer, selectedItems, select, selectAll, onChange, items } from '../state.js';
+import { state, changed, commit, undo, historyList, historyGo, removeStep, currentItem, currentLayer, selectedItems, select, selectAll, onChange, items } from '../state.js';
 import { newItem, slideLabel, LIGHT_DEFAULTS, COLOUR_DEFAULTS, partDefaults, newId, cropDefaults, activeSet, aspectOf, isVideo, LAYOUTS, layersOf, isGrid } from '../project.js';
 import { PRESETS } from '../effects/presets.js';
 import { getEffect, EFFECTS, effectOrder } from '../effects/registry.js';
@@ -432,6 +432,7 @@ function build() {
 // A library on the left (js/ui/mediaColumn.js asks for it): Filters (the presets row, then the grid), Tools (Remove
 // background and the brushes, for the picked photo), Captions (new captions and the slide's list of them)
 export function buildLibrary(host, lib) {
+  if (lib === "history") { buildHistory(host); return; }
   const all = items().length;
   if (!all) { host.append(note("Add photos first")); return; }
   if (lib === "filters") {
@@ -1324,6 +1325,26 @@ const SHAPE_ICON = (shape) => {
   const d = { line: '<path d="M3 12h18" stroke-width="3" stroke-linecap="round"/>', arrow: '<path d="M3 12h15M13 6l6 6-6 6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' }[shape];
   return d ? svgIcon(d) : SHAPE_ICONS[shape];
 };
+// History (Tom, 2026-11-25, its own tab under Shapes): every step, newest at the top, the one showing marked. Click a
+// step to go back (or forward) to it; ✕ takes just that step out and keeps everything done after it (removeStep in
+// state.js), say a pixelation made 50 changes ago.
+function buildHistory(host) {
+  const list = historyList(), at = list.findIndex((h) => h.now);
+  const when = (t) => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const box = el("div", { className: "history-list" });
+  list.map((h, i) => [h, i]).reverse().forEach(([h, i]) => {
+    const row = el("div", { className: "history-row" + (h.now ? " now" : "") + (i > at ? " undone" : ""), title: i > at ? "Undone: click to bring it back" : "Go back to here" });
+    row.append(el("span", { className: "h-name", textContent: h.label }), el("span", { className: "h-time", textContent: when(h.time) }));
+    row.onclick = () => historyGo(i);
+    if (i >= 1 && i <= at) {
+      row.append(el("button", { type: "button", className: "lr-btn h-out", textContent: "✕", title: "Take out just this step, keep everything after it",
+        onclick: (e) => { e.stopPropagation(); const kept = removeStep(i); if (kept > 0) toast("Part of it was changed again later, so that part stays"); } }));
+    } else row.append(el("span", { className: "h-out-gap" }));
+    box.append(row);
+  });
+  host.append(box);
+}
+
 function buildShapes() {
   const item = currentItem();
   if (!item) return;
@@ -1430,7 +1451,7 @@ function captionSettings(item) {
   body.append(slider({ label: "Angle", min: -180, max: 180, step: 0.5, unit: "°", targets: [t], get: (x) => x.rotation || 0, set: (x, v) => { x.rotation = v; }, onCommit: () => {} }));
 
   // Effects (Tom, 2026-11-23): shadow, glow, a gradient, a curve, and the photo showing through the words
-  body.append(slider({ label: "Curve", min: -100, max: 100, step: 1, reset: 0, targets: [t], get: (x) => x.curve || 0, set: (x, v) => { x.curve = v; }, onCommit: () => {} }));
+  body.append(slider({ label: "Curve", min: -200, max: 200, step: 1, reset: 0, targets: [t], get: (x) => x.curve || 0, set: (x, v) => { x.curve = v; }, onCommit: () => {} }));
   const fxRow = (key, label, start, sliders) => {
     const now = t[key] && t[key].on;
     const tick = el("input", { type: "checkbox", checked: !!now });

@@ -260,9 +260,18 @@ export function layoutText(ctx, t, W, H) {
   const bubble = t.bubble && t.bubble !== "none";
   const padX = bubble ? px * (t.bubble === "pill" ? 0.75 : t.bubble === "lines" ? 0.3 : 0.45) : 0;
   const padY = bubble ? px * (t.bubble === "lines" ? 0.06 : 0.3) : 0;
-  const width = textW + padX * 2, height = textH + padY * 2;
+  let width = textW + padX * 2, height = textH + padY * 2;
+  // (curved, Tom 2026-11-25: up to a full circle at ±200; the box grows to hold the arc, so picking it matches)
+  const curve = Math.max(-200, Math.min(200, Number(t.curve) || 0));
+  let arc = 0;
+  if (curve) {
+    const theta = (Math.abs(curve) / 100) * Math.PI, R = Math.max(1, textW / theta);
+    arc = theta >= Math.PI ? 2 * R : R * (1 - Math.cos(theta / 2));
+    width = Math.max(width, (theta >= Math.PI ? 2 * R : 2 * R * Math.sin(theta / 2)) + px * 1.2 + padX * 2);
+    height += arc;
+  }
   const cx = t.x * W, cy = t.y * H;
-  return { font, px, lines, widths, space, lineH, textW, textH, padX, padY, cx, cy, width, height, left: cx - width / 2, top: cy - height / 2, rotation: t.rotation || 0 };
+  return { font, px, lines, widths, space, lineH, textW, textH, padX, padY, cx, cy, width, height, arc, left: cx - width / 2, top: cy - height / 2, rotation: t.rotation || 0 };
 }
 
 // Where each line starts and how wide it's drawn (box pixels, from the box's left)
@@ -319,8 +328,8 @@ function drawShape(ctx, t, L) {
 }
 
 // Text effects (Tom, 2026-11-23, as Photoshop's layer styles / Canva's): shadow { on, colour, blur, distance }, glow { on,
-// colour, size }, gradient { on, colour } (from the text's colour to this one, top to bottom), curve (-100 - 100: an arc
-// up or down). With a shadow or glow the words are drawn on their own first, then laid on with it, so the outline and
+// colour, size }, gradient { on, colour } (from the text's colour to this one, top to bottom), curve (-200 - 200: an arc
+// up or down, ±100 a half circle, ±200 a full one). With a shadow or glow the words are drawn on their own first, then laid on with it, so the outline and
 // the fill share one shadow.
 const fxOn = (t) => (t.shadow && t.shadow.on) || (t.glow && t.glow.on);
 export function drawText(ctx, t, W, H) {
@@ -356,7 +365,7 @@ function paintText(ctx, t, L) {
   if (L.rotation) ctx.rotate((L.rotation * Math.PI) / 180);
   ctx.translate(-L.width / 2, -L.height / 2); // (now 0, 0 is the box's top-left)
   const places = linePlaces(t, L);
-  const curve = Math.max(-100, Math.min(100, Number(t.curve) || 0));
+  const curve = Math.max(-200, Math.min(200, Number(t.curve) || 0));
   if (t.bubble === "lines" && !curve) {
     // A background round each line's own words, hugging the shape of the text
     ctx.fillStyle = t.bubbleColour;
@@ -388,13 +397,13 @@ function paintText(ctx, t, L) {
     ctx.fillText(text, x, y);
   };
   places.forEach((p, i) => {
-    const y = L.padY + L.lineH * (i + 0.5);
+    const y = L.padY + L.lineH * (i + 0.5) + (curve < 0 ? L.arc : 0); // (the arc grows away from the line: room for it)
     if (curve) {
       // Curved: each letter along an arc through the line's middle (up = a rainbow, down = a smile)
       const theta = (Math.abs(curve) / 100) * Math.PI, R = Math.max(1, p.drawn / theta), dir = curve > 0 ? 1 : -1;
       const chars = [...p.line], widths = chars.map((c) => ctx.measureText(c).width);
       let run = -p.drawn / 2;
-      const mid = p.x + p.drawn / 2;
+      const mid = L.width / 2;
       chars.forEach((c, j) => {
         const a = (run + widths[j] / 2) / R;
         ctx.save();

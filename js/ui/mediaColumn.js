@@ -53,7 +53,7 @@ function mediaList() {
 
 const usedOn = (item, mediaId) => layersOf(item).some((l) => l.mediaId === mediaId);
 
-const LIBS = { media: "Media", filters: "Filters", effects: "Effects", tools: "Tools", captions: "Captions", shapes: "Shapes" };
+const LIBS = { media: "Media", filters: "Filters", effects: "Effects", tools: "Tools", captions: "Captions", shapes: "Shapes", history: "History" };
 let shownLib = null;
 
 function build() {

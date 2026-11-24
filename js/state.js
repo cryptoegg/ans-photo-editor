@@ -60,18 +60,89 @@ function describe(before, after) {
       const t = (more ? b.find((x) => !a.some((y) => y.id === x.id)) : a.find((x) => !b.some((y) => y.id === x.id))) || {};
       return `${more ? "New" : "Deleted"} ${t.kind === "shape" ? "shape" : "caption"}`;
     }
-    return (NAMES.find(([re]) => re.test(path)) || [, "Change"])[1];
+    let name = (NAMES.find(([re]) => re.test(path)) || [, "Change"])[1];
+    if (/masks$/.test(path)) {
+      // (a mask added: by its effect if it carries one, "Pixelate", else its kind, "Wand mask")
+      const at = (o) => path.split(".").slice(1).reduce((x, k) => (x ? x[k] : x), o) || [];
+      const a = at(A), b = at(B), m = b.find((x) => !a.some((y) => y.id === x.id));
+      if (m) name = m.effect ? cap(m.effect.type || m.effect.id || "Effect") : `${cap(m.kind || "")} mask`.trim();
+      else if (b.length < a.length) name = "Mask removed";
+    }
+    const slide = path.match(/^\.set\.items\.(\d+)\./);
+    return slide && activeSet(A).items.length > 1 ? `${name} · Slide ${Number(slide[1]) + 1}` : name;
   } catch (err) { return "Change"; }
 }
+const cap = (x) => String(x).charAt(0).toUpperCase() + String(x).slice(1);
+
+// Take out one step and keep everything after it (Tom, 2026-11-25: pixelate something, make 50 changes elsewhere, then
+// take the pixelation back out). What that step changed is put back as it was before it, wherever nothing later
+// changed the same thing again; lists of things with ids (slides, layers, masks, captions, effects) are matched by id,
+// so a later step that moved them about doesn't matter. Becomes a step of its own (so it can be undone). Returns how
+// many parts of it were left because a later step changed them too.
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const byId = (x) => Array.isArray(x) && x.length > 0 && x.every((e) => e && typeof e === "object" && "id" in e);
+function putBack(A, B, C, kept) {
+  if (same(A, B)) return C;
+  if ((byId(A) || byId(B)) && Array.isArray(A || []) && Array.isArray(B || []) && Array.isArray(C)) {
+    const a = A || [], b = B || [];
+    let out = C.filter((c) => !(b.some((x) => x.id === c.id) && !a.some((x) => x.id === c.id))); // (added by the step: out)
+    out = out.map((c) => { const x = a.find((e) => e.id === c.id), y = b.find((e) => e.id === c.id); return x && y ? putBack(x, y, c, kept) : c; });
+    a.forEach((x, i) => { if (!b.some((y) => y.id === x.id) && !out.some((c) => c.id === x.id)) out.splice(Math.min(i, out.length), 0, clone(x)); }); // (taken out by it: back)
+    return out;
+  }
+  if (A && B && C && typeof A === "object" && typeof B === "object" && typeof C === "object" && !Array.isArray(A) && !Array.isArray(B) && !Array.isArray(C)) {
+    const out = { ...C };
+    for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) {
+      const v = putBack(A[k], B[k], C[k], kept);
+      if (v === undefined) delete out[k]; else out[k] = v;
+    }
+    return out;
+  }
+  if (same(C, B)) return A === undefined ? undefined : clone(A);
+  kept.n++;
+  return C;
+}
+export function removeStep(i) {
+  const at = undoStack.length;
+  if (i < 1 || i > at) return -1; // (the opening state and steps already undone can't be taken out)
+  commit();
+  const last = undoStack.length;
+  const before = JSON.parse(undoStack[i - 1].json), after = JSON.parse(i === last ? lastSaved : undoStack[i].json);
+  const label = historyList()[i].label;
+  const kept = { n: 0 };
+  const now = putBack(before, after, JSON.parse(lastSaved), kept);
+  state.project = tidyProject(now);
+  tidySelection();
+  changed("project");
+  nextLabel = `Took out: ${label}`;
+  commit();
+  return kept.n;
+}
+let nextLabel = null;
 // [{ label, time, now }] oldest first, the one showing marked now
 export function historyList() {
   return [...undoStack.map((e) => ({ label: e.label, time: e.time })), { label: nowLabel, time: nowTime, now: true }, ...[...redoStack].reverse().map((e) => ({ label: e.label, time: e.time }))];
 }
 // Go to step i of historyList(): undo or redo until it's showing
+// (one move, Tom 2026-11-25: the steps passed over change stacks without being shown one by one, so nothing in between
+// can slip in a step of its own and lose the redo list)
 export function historyGo(i) {
+  commit();
   const at = undoStack.length;
-  if (i < at) for (let k = 0; k < at - i; k++) undo();
-  else for (let k = 0; k < i - at; k++) redo();
+  if (i === at || i < 0 || i >= historyList().length) return;
+  const here = { json: lastSaved, label: nowLabel, time: nowTime };
+  let e;
+  if (i < at) {
+    redoStack.push(here);
+    for (let k = at - 1; k > i; k--) redoStack.push(undoStack.pop());
+    e = undoStack.pop();
+  } else {
+    undoStack.push(here);
+    for (let k = at + 1; k < i; k++) undoStack.push(redoStack.pop());
+    e = redoStack.pop();
+  }
+  nowLabel = e.label; nowTime = e.time;
+  restore(e.json);
 }
 
 export const onChange = (fn) => listeners.add(fn);
@@ -97,7 +168,7 @@ export function commit() {
   undoStack.push({ json: lastSaved, label: nowLabel, time: nowTime });
   if (undoStack.length > UNDO_KEPT) undoStack.shift();
   redoStack = [];
-  nowLabel = describe(lastSaved, now); nowTime = Date.now();
+  nowLabel = nextLabel || describe(lastSaved, now); nowTime = Date.now(); nextLabel = null;
   lastSaved = now;
   state.project.updated = Date.now();
   changed("commit");
