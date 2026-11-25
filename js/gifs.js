@@ -10,7 +10,7 @@
 import { dbGet, dbPut } from './store.js';
 import { newId } from './project.js';
 
-export const GIPHY_KEY = "";
+export const GIPHY_KEY = "njWapRvpB8IpyJugYMNnyYR5yWmJqvvn"; // (Tom's app "A New Song Photo Editor" on developers.giphy.com, 2026-11-25)
 const keyNow = () => { try { return localStorage.getItem("ans_photo_giphy_key") || GIPHY_KEY; } catch { return GIPHY_KEY; } };
 export const giphyReady = () => !!keyNow();
 
