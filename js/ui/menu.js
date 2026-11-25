@@ -1,4 +1,4 @@
-// A right-click menu at the pointer: showMenu(e, [{ label, keys, extra, on, action }]). One at a time; a
+// A right-click menu at the pointer: showMenu(e, [{ icon, label, keys, extra, on, action }]). One at a time; a
 // click anywhere else, Escape or scrolling closes it. extra: an element after the label (e.g. app icons); on: lit.
 // opts.above: an element the menu opens above (a button in a bar at the bottom).
 let open = null;
@@ -7,8 +7,9 @@ export function showMenu(e, entries, opts = {}) {
   e.preventDefault();
   closeMenu();
   const menu = Object.assign(document.createElement("div"), { className: "popover context-menu" });
-  entries.forEach(({ label, keys, extra, on, action }) => {
+  entries.forEach(({ icon, label, keys, extra, on, action }) => {
     const row = Object.assign(document.createElement("div"), { className: "menu-item" + (on ? " on" : "") });
+    if (icon) row.append(icon); // (an element before the label, e.g. a ratio's shape)
     row.append(Object.assign(document.createElement("span"), { textContent: label }));
     if (extra) row.append(extra);
     if (keys) row.append(Object.assign(document.createElement("span"), { className: "meta", textContent: keys }));

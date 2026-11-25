@@ -112,7 +112,7 @@ function refresh(what) {
     b.title = [`${label}${fit.ok ? (fit.framed ? `: takes ${p.set.ratio}, shown inside its tall screen` : `: takes ${p.set.ratio}`) : ""}`, ...fit.notes].join(" · ");
   });
   const shape = $("ratio-select");
-  if (shape.dataset.ratio !== p.set.ratio) { shape.dataset.ratio = p.set.ratio; shape.replaceChildren(p.set.ratio, appIcons(p.set.ratio)); }
+  if (shape.dataset.ratio !== p.set.ratio) { shape.dataset.ratio = p.set.ratio; shape.replaceChildren(ratioIcon(p.set.ratio), p.set.ratio, appIcons(p.set.ratio)); }
   if (state.phonePlatform !== p.stage) state.phonePlatform = p.stage;
   // Feed | Profile in the top bar is faint while editing (as in the Lyric Visualiser)
   document.body.classList.toggle("phone-on", state.view === "phone");
@@ -120,6 +120,19 @@ function refresh(what) {
   showCanvasBar();
   $("edit-view").hidden = state.view !== "edit";
   $("phone-view").hidden = state.view !== "phone";
+}
+
+// A ratio's shape (Tom, 2026-11-25): a small outlined box that shape, in the ratio menu and on its button
+function ratioIcon(r) {
+  const [a, b] = r.split(":").map(Number), k = a / b, S = 14;
+  const box = document.createElement("span");
+  box.className = "ratio-icon";
+  box.style.width = `${Math.round(k >= 1 ? S : S * k)}px`;
+  box.style.height = `${Math.round(k >= 1 ? S / k : S)}px`;
+  const slot = document.createElement("span"); // (each the same width, so the names line up)
+  slot.className = "ratio-slot";
+  slot.append(box);
+  return slot;
 }
 
 // The next / previous slide on the canvas (← →, and ‹ › in the canvas bar)
@@ -203,7 +216,7 @@ function wireTopBar() {
   // (the iPhone photo reader loaded once the app has settled, so the first iPhone photo doesn't wait for it)
   setTimeout(() => (window.requestIdleCallback || setTimeout)(() => warmHeicReader()), 3000);
   // The shape menu: each shape with the icons of the apps that take it
-  $("ratio-select").addEventListener("click", (e) => showMenu(e, SHAPES.map((r) => ({ label: r, extra: appIcons(r), on: r === state.project.set.ratio, action: () => setRatio(r) })), { above: e.currentTarget }));
+  $("ratio-select").addEventListener("click", (e) => showMenu(e, SHAPES.map((r) => ({ icon: ratioIcon(r), label: r, extra: appIcons(r), on: r === state.project.set.ratio, action: () => setRatio(r) })), { above: e.currentTarget }));
   // The canvas bar's ‹ ›, the background colour (the slides chosen), Before (held)
   $("btn-slide-prev").onclick = () => stepSlide(-1);
   $("btn-slide-next").onclick = () => stepSlide(1);
