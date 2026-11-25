@@ -9,6 +9,7 @@
 // Exporting again replaces the numbered files. Other browsers (and app-embedded ones, whose folder picker never
 // opens): one zip download.
 import { maskIdsOf } from './cutout.js';
+import { gifsReady } from './gifs.js';
 import { drawSlides } from './render.js';
 import { activeSet, aspectOf, isVideo } from './project.js';
 import { videoSlideToMp4 } from './video/mp4.js';
@@ -37,7 +38,8 @@ export async function makeExports(project, scale, progress = () => {}) {
   let done = 0;
   const w = 1080 * scale, h = sh.height * scale;
   const out = [];
-  for (const slide of drawSlides(sh.set, w, h, { quality: "full", seed: project.seed })) {
+  await gifsReady(sh.set.items);
+  for (const slide of drawSlides(sh.set, w, h, { quality: "full", seed: project.seed, time: 0 })) { // (a GIF on a photo: its first frame)
     if (isVideo(slide.item)) {
       const even = (n) => Math.round(n / 2) * 2; // (H.264 wants even sizes)
       out.push(await videoSlideToMp4(slide.item, even(w), even(h), project.seed, (f) => progress((done + f * 10) / total)));

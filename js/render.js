@@ -3,6 +3,7 @@
 // export all draw through here, so what you see is what's exported.
 import { lookedPicture, lookedFrame } from './looks.js';
 import { getPicture } from './media.js';
+import { gifFrame, gifClock } from './gifs.js';
 import { LAYOUTS, layersOf } from './project.js';
 
 // ---- Where the photo sits in a frame W x H (free, like the lyric app's pictures)
@@ -177,6 +178,7 @@ function drawLayer(ctx, item, layer, picture, rect, grid) {
 // video's frame for this moment, a canvas the video's size: playing, exporting; else its still)
 export function drawItem(ctx, item, W, H, options = {}) {
   const { quality = "preview", before = false, texts = true, seed = 0, frame = null, frameLooked = false } = options;
+  const time = options.time ?? gifClock(); // (where a GIF is in its loop: the screen's clock, or an export's own time)
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, W, H);
@@ -214,7 +216,7 @@ export function drawItem(ctx, item, W, H, options = {}) {
     into.g.drawImage(mask, 0, 0);
     ctx.drawImage(into.c, 0, 0, W, H);
   }
-  if (texts) item.texts.forEach((t) => { if (!t.hidden && !(t.photoFill && t.kind !== "shape")) drawText(ctx, t, W, H); });
+  if (texts) item.texts.forEach((t) => { if (!t.hidden && !(t.photoFill && t.kind !== "shape")) drawText(ctx, t, W, H, time); });
   ctx.restore();
 }
 
@@ -242,7 +244,7 @@ export const TEXT_STYLES = {
 // Where a text's lines go (frame W x H): its font, lines, size and box (frame pixels; the box
 // unturned, about its middle cx / cy, turned by `rotation`)
 export function layoutText(ctx, t, W, H) {
-  if (t.kind === "shape") {
+  if (t.kind === "shape" || t.kind === "gif") {
     // (a shape: its box is size × the slide's height tall and aspect × that wide)
     const h = Math.max(2, t.size * H), w = Math.max(2, h * (t.aspect || 1)), cx = t.x * W, cy = t.y * H;
     return { shape: true, px: h, lines: [], widths: [], lineH: h, textW: w, textH: h, padX: 0, padY: 0, cx, cy, width: w, height: h, left: cx - w / 2, top: cy - h / 2, rotation: t.rotation || 0 };
@@ -286,6 +288,19 @@ function linePlaces(t, L) {
       : L.padX;
     return { line, x, drawn, justified };
   });
+}
+
+// A GIF (js/gifs.js): the frame showing at `time`, in its box
+function drawGif(ctx, t, L, time) {
+  const image = gifFrame(t, time);
+  if (!image) return;
+  ctx.save();
+  ctx.translate(L.cx, L.cy);
+  if (L.rotation) ctx.rotate((L.rotation * Math.PI) / 180);
+  if (t.flip) ctx.scale(-1, 1);
+  ctx.globalAlpha *= t.opacity ?? 1;
+  ctx.drawImage(image, -L.width / 2, -L.height / 2, L.width, L.height);
+  ctx.restore();
 }
 
 // ---- Shapes (Tom, 2026-11-23, as Canva's elements): they live with the captions (item.texts, kind "shape"), so they're
@@ -332,9 +347,9 @@ function drawShape(ctx, t, L) {
 // up or down, ±100 a half circle, ±200 a full one). With a shadow or glow the words are drawn on their own first, then laid on with it, so the outline and
 // the fill share one shadow.
 const fxOn = (t) => (t.shadow && t.shadow.on) || (t.glow && t.glow.on);
-export function drawText(ctx, t, W, H) {
+export function drawText(ctx, t, W, H, time = 0) {
   const L = layoutText(ctx, t, W, H);
-  if (L.shape) { drawShape(ctx, t, L); return; }
+  if (L.shape) { if (t.kind === "gif") drawGif(ctx, t, L, time); else drawShape(ctx, t, L); return; }
   if (!fxOn(t)) { paintText(ctx, t, L); return; }
   const m = ctx.getTransform(), k = Math.max(1, Math.hypot(m.a, m.b));
   const off = document.createElement("canvas");

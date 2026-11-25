@@ -129,4 +129,4 @@ export function restoreBackground(layer) {
 
 // Every mask a project uses (to load with its photos, save in its folder, export)
 // (and the touch-ups' pictures, js/ui/brush.js, and the masks' pictures, js/masks.js)
-export const maskIdsOf = (layers) => layers.flatMap((l) => [...((l && l.masks) || []).map((m) => m.maskId), l && l.cutout && l.cutout.maskId, l && l.retouch && l.retouch.patchId, ...((l && l.retouch && l.retouch.tiles) || []).map((t) => t.id)]).filter(Boolean);
+export const maskIdsOf = (layers) => layers.flatMap((l) => [...((l && l.texts) || []).filter((t) => t.kind === "gif").map((t) => t.mediaId), ...((l && l.masks) || []).map((m) => m.maskId), l && l.cutout && l.cutout.maskId, l && l.retouch && l.retouch.patchId, ...((l && l.retouch && l.retouch.tiles) || []).map((t) => t.id)]).filter(Boolean);

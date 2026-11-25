@@ -127,6 +127,14 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
     as a step of its own ("Took out: …").
   - **Straighten and perspective** (Crop): Straighten = drag along a line that should be level or upright; Vertical /
     Horizontal = `crop.keystone { v, h }`, a warp in `keystoned` (looks.js) before the look.
+  - **GIFs** (Tom, 2026-11-25; rail tab GIFs, `buildGifs` in panel.js, `js/gifs.js`): GIPHY search (Stickers | GIFs,
+    trending with no words, rating pg-13, "Powered by GIPHY" under it as its terms ask) or Add a GIF file (.gif / .webp).
+    The file is kept in the media store (kind "gif"); a GIF is an `item.texts` entry with `kind: "gif"` (mediaId, size,
+    aspect, rotation, opacity, speed, flip; `gifSettings`), so it picks, moves and lists like a shape. Frames read with
+    the browser's ImageDecoder (else its first frame, still). It plays on screen (stage.js redraws ~30 a second while
+    one shows), plays along a video slide's MP4 (`time` in drawItem's options), and a photo slide's JPEG gets its first
+    frame. The key: `GIPHY_KEY` in gifs.js (localStorage `ans_photo_giphy_key` overrides, for tests); a free key is
+    100 searches an hour, more needs GIPHY's production key.
   - **Caption effects**: Curve (letters on an arc, ±200 = a full circle; the box grows to hold it), Shadow, Glow, Gradient, and Photo inside the words (`photoFill`: the
     slide's photos show only through those letters, `drawItem` in render.js).
 - **Notes** (`js/ui/toast.js`, Tom, 2026-11-18): a small dark bar at the top of the canvas, only for what can't be seen
@@ -201,7 +209,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   needed; `splitPanorama` is kept in actions.js but nothing calls it)) · Undo / Redo · the canvas bar (`#canvas-bar`: the tools, ‹ Slide 1 of 7 ›, the shape, − Fit +, guides,
   snapping, background, Before; hidden in Phone view and on an empty project) · "7 of 20" at the right.
 - **The side columns** (Tom, 2026-11-23, as the Lyric Visualiser's): a see-through rail down the left edge, on the window's
-  grey (`#rail`: Media · Filters · Effects · Tools · Captions · Shapes · History; `state.lib`) opens its library in the column beside it (`js/ui/mediaColumn.js`; Filters, Tools and
+  grey (`#rail`: Media · Filters · Effects · Tools · Captions · Shapes · GIFs · History; `state.lib`) opens its library in the column beside it (`js/ui/mediaColumn.js`; Filters, Tools and
   Captions drawn by `buildLibrary` in panel.js: the presets row and the filter grid, Remove background and the brushes,
   New Text Overlay and the slide's captions; Effects = every effect as a tile drawn on the photo (`effectSwatch` in
   looks.js), a click puts it on the picked photo (`addEffect`) and opens it on the right); the open one again folds the

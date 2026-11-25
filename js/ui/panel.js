@@ -23,6 +23,7 @@ import { SHAPE_KINDS, SHAPE_DEFAULTS, layoutText, shownBox, TEXT_STYLES, FONTS, 
 import { moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
 import { showMenu } from './menu.js';
 import { toast } from './toast.js';
+import { giphyReady, searchGiphy, keepGif, keepGifFile } from '../gifs.js';
 import { ask } from './dialogs.js';
 
 const undoAction = { label: "Undo", run: () => undo() };
@@ -180,10 +181,10 @@ function buildLayersBox() {
   if (slide.texts.length) {
     const tl = el("div", { className: "layer-list" });
     slide.texts.map((t, i) => ({ t, i })).reverse().forEach(({ t, i }) => {
-      const shape = t.kind === "shape";
-      const label = shape ? shapeLabel(t) : (String(t.content || "").split("\n")[0].trim().slice(0, 24) || "Caption");
+      const shape = t.kind === "shape", gif = t.kind === "gif";
+      const label = gif ? (t.name || "GIF") : shape ? shapeLabel(t) : (String(t.content || "").split("\n")[0].trim().slice(0, 24) || "Caption");
       const { eye, lock, name, tag } = rowParts(t, label);
-      const icon = el("span", { className: "layer-thumb layer-icon" + (shape ? " shape" : " text"), textContent: shape ? "" : "T" });
+      const icon = el("span", { className: "layer-thumb layer-icon" + (gif ? " gif" : shape ? " shape" : " text"), textContent: gif ? "GIF" : shape ? "" : "T" });
       if (shape) icon.style.setProperty("--fill", t.fill || "#ffffff");
       const row = el("div", { className: "layer-row" + (state.textId === t.id ? " on" : "") + (sel.has(t.id) ? " sel" : "") + (t.hidden ? " hidden-row" : "") },
         eye, icon, name, tag, el("span", { className: "spacer" }), lock);
@@ -191,7 +192,7 @@ function buildLayersBox() {
       const down = button("↓", (e) => { e.stopPropagation(); slide.texts.splice(i, 1); slide.texts.splice(i - 1, 0, t); changed("project"); commit(); }, "btn ghost small");
       const del = button("✕", (e) => { e.stopPropagation(); slide.texts.splice(i, 1); if (state.textId === t.id) state.textId = null; changed("project"); commit(); }, "btn ghost small");
       up.disabled = i === slide.texts.length - 1; down.disabled = i === 0;
-      up.title = "Bring forward"; down.title = "Send back"; del.title = shape ? "Delete this shape" : "Delete this caption";
+      up.title = "Bring forward"; down.title = "Send back"; del.title = gif ? "Delete this GIF" : shape ? "Delete this shape" : "Delete this caption";
       row.append(up, down, del);
       row.onclick = (e) => pickRow(e, t, () => { state.textId = t.id; state.photoPicked = false; state.layerId = null; changed("view"); });
       row.addEventListener("contextmenu", (e) => { if (ungroupMenu(e, t)) e.preventDefault(); });
@@ -395,7 +396,7 @@ function build() {
   const layer = currentLayer();
   // (only once something's picked on the canvas: a photo or a caption; nothing picked, no title: Tom, 2026-11-23)
   document.querySelector("#panel .ed-title").textContent = !slide ? ""
-    : caption ? (caption.kind === "shape" ? "Shape" : "Caption")
+    : caption ? (caption.kind === "shape" ? "Shape" : caption.kind === "gif" ? "GIF" : "Caption")
     : state.photoPicked || state.layerId ? layerLabel(slide, layersOf(slide).indexOf(layer))
     : "";
 
@@ -449,6 +450,7 @@ export function buildLibrary(host, lib) {
   } else if (lib === "effects") withBody(host, buildEffectsLibrary);
   else if (lib === "captions") withBody(host, buildText, "add");
   else if (lib === "shapes") withBody(host, buildShapes);
+  else if (lib === "gifs") withBody(host, buildGifs);
   host.querySelectorAll('input[type="range"]').forEach(fillTrack);
   pairSliders(host);
 }
@@ -1263,7 +1265,7 @@ function buildText(part = "add") {
   const styles = Object.keys(TEXT_STYLES);
   body.append(button("New Text Overlay", add(styles[0]), "btn primary wide"));
   body.append(el("div", { className: "row text-styles" }, ...styles.slice(1).map((k) => button(TEXT_STYLES[k].label, add(k)))));
-  const words = item.texts.filter((t) => t.kind !== "shape");
+  const words = item.texts.filter((t) => t.kind !== "shape" && t.kind !== "gif");
   if (!words.length) return;
 
   const list = el("div", { className: "text-list" });
@@ -1410,11 +1412,99 @@ function shapeSettings(item, t) {
     button("Delete shape", () => { item.texts = item.texts.filter((x) => x !== t); state.textId = null; done(); }, "btn ghost small")));
 }
 
+// A picked GIF's settings (on the right)
+function gifSettings(item, t) {
+  const done = () => { changed("project"); commit(); };
+  body.append(slider({ label: "Size", min: 2, max: 200, step: 0.5, targets: [t], get: (x) => x.size * 100, set: (x, v) => { x.size = v / 100; }, onCommit: () => {} }));
+  body.append(slider({ label: "Speed", min: 25, max: 300, step: 5, unit: "%", reset: 100, targets: [t], get: (x) => (x.speed || 1) * 100, set: (x, v) => { x.speed = v / 100; }, onCommit: () => {} }));
+  body.append(slider({ label: "Opacity", min: 0, max: 100, unit: "%", reset: 100, targets: [t], get: (x) => (x.opacity ?? 1) * 100, set: (x, v) => { x.opacity = v / 100; }, onCommit: () => {} }));
+  body.append(slider({ label: "Angle", min: -180, max: 180, step: 0.5, unit: "°", targets: [t], get: (x) => x.rotation || 0, set: (x, v) => { x.rotation = v; }, onCommit: () => {} }));
+  const flip = el("input", { type: "checkbox", checked: !!t.flip });
+  flip.onchange = () => { t.flip = flip.checked; done(); };
+  body.append(el("div", { className: "row" }, el("label", { className: "check-row" }, flip, el("span", { textContent: "Flip" })), el("span", { className: "spacer" }),
+    button("Delete GIF", () => { item.texts = item.texts.filter((x) => x !== t); state.textId = null; done(); }, "btn ghost small")));
+}
+
+// ---- GIFs (Tom, 2026-11-25): GIPHY's stickers and GIFs (js/gifs.js). A search box, Stickers | GIFs, then the results
+// (what's trending with no words); a click puts one on the slide. Your own .gif / .webp from Add a GIF file.
+const gifSearch = { words: "", type: "stickers", results: null, busy: false, error: "", asked: "" };
+function buildGifs() {
+  const item = currentItem();
+  if (!item) return;
+  if (!giphyReady()) { body.append(note("GIF search is switched off for now")); }
+  const box = el("input", { type: "search", className: "gif-search", placeholder: "Search GIPHY", value: gifSearch.words });
+  let wait = 0;
+  box.oninput = () => { gifSearch.words = box.value; clearTimeout(wait); wait = setTimeout(run, 450); };
+  box.onkeydown = (e) => { if (e.key === "Enter") { clearTimeout(wait); run(); } e.stopPropagation(); };
+  const seg = el("div", { className: "segmented wide" });
+  [["stickers", "Stickers"], ["gifs", "GIFs"]].forEach(([k, label]) => seg.append(el("button", {
+    type: "button", className: k === gifSearch.type ? "on" : "", textContent: label,
+    onclick: () => { gifSearch.type = k; seg.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.textContent === label)); run(); }
+  })));
+  const grid = el("div", { className: "gif-grid" });
+  const own = el("input", { type: "file", accept: "image/gif,image/webp", hidden: true });
+  own.onchange = async () => {
+    const f = own.files && own.files[0];
+    if (!f) return;
+    const g = await keepGifFile(f, state.project.id);
+    place({ mediaId: g.id, name: g.name || f.name.replace(/\.[^.]+$/, ""), aspect: g.width / g.height });
+  };
+  const foot = el("div", { className: "gif-foot" },
+    button("Add a GIF file", () => own.click()), el("span", { className: "spacer" }),
+    el("span", { className: "giphy-mark", textContent: "Powered by GIPHY" }));
+  body.append(box, seg, grid, foot, own);
+
+  function place(extra) {
+    const slide = currentItem();
+    if (!slide) return;
+    const t = { id: newId("t"), kind: "gif", x: 0.5 / slide.span, y: 0.5, size: 0.3, aspect: 1, rotation: 0, opacity: 1, speed: 1, ...extra };
+    slide.texts.push(t);
+    state.textId = t.id; state.photoPicked = false; state.layerId = null;
+    changed("project");
+    commit();
+  }
+  function show() {
+    grid.replaceChildren();
+    if (gifSearch.error) { grid.append(note(gifSearch.error)); return; }
+    if (!gifSearch.results) { if (gifSearch.busy) grid.append(note("Loading…")); return; }
+    if (!gifSearch.results.length) { grid.append(note("Nothing found")); return; }
+    gifSearch.results.forEach((g) => {
+      const tile = el("button", { type: "button", className: "gif-tile" + (gifSearch.type === "stickers" ? " sticker" : ""), title: g.title });
+      tile.append(el("img", { src: g.preview, alt: g.title, loading: "lazy" }));
+      tile.onclick = async () => {
+        if (tile.classList.contains("busy")) return;
+        tile.classList.add("busy");
+        try {
+          const id = await keepGif(g, state.project.id);
+          place({ mediaId: id, giphyId: g.id, name: g.title.replace(/\s+(GIF|Sticker)( by .*)?$/i, "").slice(0, 40) || "GIF", aspect: g.width / g.height });
+        } catch (err) { toast(err.message || "The GIF couldn't be added"); }
+        tile.classList.remove("busy");
+      };
+      grid.append(tile);
+    });
+  }
+  async function run() {
+    if (!giphyReady()) return;
+    const asked = `${gifSearch.type}|${gifSearch.words.trim()}`;
+    gifSearch.asked = asked; gifSearch.busy = true; gifSearch.error = ""; gifSearch.results = null;
+    show();
+    try {
+      const results = await searchGiphy(gifSearch.words, gifSearch.type);
+      if (gifSearch.asked !== asked) return;
+      gifSearch.results = results;
+    } catch (err) { if (gifSearch.asked === asked) gifSearch.error = err.message || "GIPHY didn't answer"; }
+    gifSearch.busy = false;
+    if (grid.isConnected) show();
+  }
+  if (gifSearch.results === null && !gifSearch.busy && !gifSearch.error) run(); else show();
+}
+
 // The picked caption's settings (on the right)
 function captionSettings(item) {
   const t = item.texts.find((x) => x.id === state.textId);
   if (!t) return;
   if (t.kind === "shape") return shapeSettings(item, t);
+  if (t.kind === "gif") return gifSettings(item, t);
   const live = () => changed("look");
   const done = () => { changed("project"); commit(); };
 

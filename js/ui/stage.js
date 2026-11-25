@@ -20,6 +20,7 @@ import { brushReady, brushDown, brushMove, brushUp, brushLeave, drawBrush, showB
 import { maskDown, maskMove, maskUp, drawMasks } from './masks.js';
 import { initVideoBar, videoFrame, spaceMovedView } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
+import { movingGifs, onGifsChange } from '../gifs.js';
 import { uiColour, onSkinChange } from './skin.js';
 import { duplicateLayer, removeLayer } from '../actions.js';
 
@@ -96,7 +97,7 @@ export function initStage() {
     const picked = pickedBox(item, f);
     if (picked && zoneAt(picked.box, p) === "rotate") { setAngle(picked, 0); changed("project"); commit(); return; }
     const hit = textAt(ctx, item, f.w, f.h, p.x, p.y);
-    if (hit) { pick("text", hit.id); changed("view"); if (hit.kind !== "shape") document.dispatchEvent(new CustomEvent("focus-text")); }
+    if (hit) { pick("text", hit.id); changed("view"); if (hit.kind !== "shape" && hit.kind !== "gif") document.dispatchEvent(new CustomEvent("focus-text")); }
   });
 }
 
@@ -404,7 +405,7 @@ function move(e) {
     const sx = zone.endsWith("r") ? 1 : -1, sy = zone.startsWith("b") ? 1 : -1;
     const fx = Math.max(0.02, (box.w + 2 * sx * dx) / box.w), fy = Math.max(0.02, (box.h + 2 * sy * dy) / box.h);
     const even = Math.abs(fx - 1) > Math.abs(fy - 1) ? fx : fy;
-    if (drag.kind === "text") t.size = Math.min(t.kind === "shape" ? 2 : 0.8, Math.max(0.005, drag.textStart.size * even));
+    if (drag.kind === "text") t.size = Math.min(t.kind === "shape" || t.kind === "gif" ? 2 : 0.8, Math.max(0.005, drag.textStart.size * even));
     else if (crop.lockRatio !== false) crop.zoom = Math.min(12, Math.max(0.03, drag.crop.zoom * even));
     else {
       crop.zoom = Math.min(12, Math.max(0.03, drag.crop.zoom * fy));
@@ -492,7 +493,8 @@ function wheel(e) {
 
 // ---- Drawing
 
-let queued = false;
+let queued = false, gifTimer = 0;
+onGifsChange(() => draw());
 export function draw() {
   if (queued) return;
   queued = true;
@@ -512,6 +514,9 @@ function paint() {
   document.getElementById("empty-state").hidden = items().length > 0;
   document.getElementById("btn-before").classList.toggle("on", !!state.before);
   if (!item) return;
+  // (a GIF on the slide plays: the slide's drawn again about 30 times a second while one's showing)
+  clearTimeout(gifTimer);
+  if (movingGifs(item) && state.view === "edit" && !document.hidden) gifTimer = setTimeout(draw, 33);
   const pic = getPicture(item.mediaId);
   if (!pic) { loadPicture(item.mediaId).then(draw); return; }
   layersOf(item).forEach((l) => { if (!getPicture(l.mediaId)) loadPicture(l.mediaId).then(draw); }); // (the other layers' photos)

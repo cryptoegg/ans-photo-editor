@@ -6,6 +6,7 @@
 import { openClip } from './clipReader.js';
 import { pickSupportedConfig, videoBitrateFor } from './codecs.js';
 import { drawItem } from '../render.js';
+import { gifsReady } from '../gifs.js';
 import { getPicture } from '../media.js';
 
 const FPS = 30;
@@ -36,6 +37,7 @@ export async function videoSlideToMp4(item, width, height, seed, progress = () =
   const pic = getPicture(item.mediaId);
   if (!pic || pic.kind !== "video") throw new Error("The video is missing");
   const start = item.trim.start, length = Math.max(0.1, item.trim.end - item.trim.start);
+  await gifsReady([item]);
   const frames = makeFrameSource(pic, await openClip(pic.blob));
   const audio = item.muted ? null : await clipAudio(pic.blob, start, length);
   try {
@@ -43,7 +45,7 @@ export async function videoSlideToMp4(item, width, height, seed, progress = () =
       width, height, length, audio,
       drawFrame: async (ctx, t) => {
         const frame = await frames.at(start + t);
-        drawItem(ctx, item, width, height, { quality: "full", seed, frame });
+        drawItem(ctx, item, width, height, { quality: "full", seed, frame, time: t }); // (GIFs play along with the clip)
       },
       onProgress: progress
     });
