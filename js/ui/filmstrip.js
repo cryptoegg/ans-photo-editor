@@ -78,7 +78,8 @@ function build() {
     el.append(num);
     if (isEdited(item)) el.append(Object.assign(document.createElement("span"), { className: "dot", title: "Edited" }));
     if (isVideo(item)) el.append(Object.assign(document.createElement("span"), { className: "vid", textContent: clock(item.trim.end - item.trim.start) }));
-    el.addEventListener("click", (e) => select(item.id, e.shiftKey ? "range" : e.metaKey || e.ctrlKey ? "toggle" : "one"));
+    // (a slide clicked here: nothing on the canvas stays picked, so ⌘D / Duplicate / Delete act on the slides: Tom, 2026-11-26)
+    el.addEventListener("click", (e) => { state.photoPicked = false; state.textId = null; state.layerId = null; select(item.id, e.shiftKey ? "range" : e.metaKey || e.ctrlKey ? "toggle" : "one"); });
     el.addEventListener("dragstart", (e) => {
       dragIds = state.selected.has(item.id) ? set.items.filter((i) => state.selected.has(i.id)).map((i) => i.id) : [item.id];
       e.dataTransfer.effectAllowed = "move";

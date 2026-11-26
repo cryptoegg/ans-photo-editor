@@ -286,8 +286,6 @@ function buildToolsBox() {
   box.hidden = false;
   // (Tom, 2026-11-18: its own tab, between Adjust and Crop, so no fold of its own)
   box.classList.add("open");
-  // Remove background (js/cutout.js): the picked photo's cut-out, on / off; the model downloads the first time
-  box.append(cutoutRow(picked));
   // The brushes (js/ui/brush.js): picked here, painted on the canvas; Esc or a second click puts one down.
   // Right-click the photo with one in hand for the same settings at the pointer.
   const cutOn = !!(picked.cutout && picked.cutout.on);
@@ -296,7 +294,10 @@ function buildToolsBox() {
   const icons = toolIcons("ti");
   icons.className = "tool-icons";
   box.append(icons);
-  if (fxInHand()) box.append(...effectBrushControls(pickedMask(), true)); // (the Effect brush: its effect, Add / Erase, size)
+  // Remove background (js/cutout.js), under the tools (Tom, 2026-11-26): the picked photo's cut-out, on / off
+  box.append(cutoutRow(picked));
+  // (the Effect brush: what it paints, Add / Erase and its size; the effect's own settings are in Effects on the right)
+  if (fxInHand()) box.append(...effectBrushControls(pickedMask(), true, false));
   else if (state.tool && state.tool !== "mask") { // (the Mask brush's settings are with the picked mask, in Edit)
     box.append(brushSliders());
     if (state.tool === "edge" || state.tool === "clone") {
@@ -407,7 +408,8 @@ function build() {
   buildLayersBox();
   alignRow(slide, caption);
   // (a mask just picked in Tools: its settings are in Edit)
-  if (state.maskId && state.maskId !== maskSeen && rightTab === "effects") rightTab = "edit";
+  // (Tom, 2026-11-26: an Effect brush's mask in Effects, the others in Edit)
+  if (state.maskId && state.maskId !== maskSeen) { const pm = pickedMask(); rightTab = pm && pm.effect ? "effects" : "edit"; }
   maskSeen = state.maskId;
   const mode = caption ? "caption" : rightTab;
   const scroll = mode === shownTab ? body.scrollTop : 0; // (switching between a caption and a photo starts at the top)
@@ -419,7 +421,7 @@ function build() {
   else {
     // Edit | Effects (Tom, 2026-11-23, as a clip's in the Lyric Visualiser): Edit = Crop, Light, Skin, Colour, Masks,
     // Background; Effects = the filter and the effects on this photo, Add effect (the Effects library on the left too)
-    const on = effectsOn(lookItem()).filter((e) => fxOf(lookItem(), e.type).on !== false).length;
+    const on = effectsOn(lookItem()).filter((e) => fxOf(lookItem(), e.type).on !== false).length + ((layerNow() && layerNow().masks) || []).filter((m) => m.effect && m.on).length;
     const tabs = el("div", { className: "segmented wide right-tabs" },
       el("button", { className: rightTab === "edit" ? "on" : "", textContent: "Edit", onclick: () => setRightTab("edit") }),
       el("button", { className: rightTab === "effects" ? "on" : "", textContent: on ? `Effects (${on})` : "Effects", onclick: () => setRightTab("effects") }));
@@ -848,6 +850,19 @@ function buildEffectsTab() {
     };
     body.append(foldCard({ key: `fx:${effect.type}`, name: effect.label, tick, quick, off: !on, onReset: resetTo(effect.type), onRemove: remove, build: controlsOf(effect) }));
   });
+  // Painted effects (Tom, 2026-11-26): each Effect brush stroke set on this photo, its effect's settings here
+  const layer = layerNow();
+  ((layer && layer.masks) || []).filter((m) => m.effect).forEach((m) => {
+    const key = `fxmask:${m.id}`;
+    if (m.id === state.maskId && shownFxMask !== m.id) { shownFxMask = m.id; openCards.add(key); }
+    const tick = el("input", { type: "checkbox", checked: !!m.on, title: "Switch this painted effect on / off" });
+    tick.onchange = () => { m.on = tick.checked; done(); };
+    body.append(foldCard({ key, name: `${maskName(layer, m)} · painted`, tick, off: !m.on, build: (inner) => {
+      const paint = state.tool === "mask" && state.maskId === m.id;
+      inner.append(el("div", { className: "row" }, el("button", { type: "button", className: "mask-btn" + (paint ? " lit" : ""), textContent: paint ? "Painting" : "Paint more", title: "Paint more of this effect on (Esc puts the brush down)", onclick: () => { if (state.maskId !== m.id) pickMask(m.id); setTool(paint ? null : "mask"); } })));
+      inner.append(...effectBrushControls(m));
+    }, onRemove: () => removeMask(layer, m.id) }));
+  });
   const add = button("Add effect", (e) => {
     const have = new Set(effectsOn(item).map((x) => x.type));
     showMenu(e, addable().filter((x) => !have.has(x.type)).map((x) => ({ label: x.label, action: () => addEffect(x.type) })), { above: e.currentTarget });
@@ -972,7 +987,7 @@ function buildAdjust() {
 const HIDDEN_FX_KEYS = ["speed", "wander", "phone", "movement", "start", "end", "drift"];
 // (fresh: the Tools fold's menu: a different effect starts a new brush when this one has been painted, so what's painted
 // keeps its effect; in Masks the menu changes the picked one's)
-function effectBrushControls(m, fresh = false) {
+function effectBrushControls(m, fresh = false, withSettings = true) {
   const out = [];
   if (tidyEffect(m.effect) !== m.effect) m.effect = tidyEffect(m.effect); // (an effect since taken off the list)
   const pick = el("select", { className: "select", title: "The effect this brush paints" });
@@ -988,7 +1003,7 @@ function effectBrushControls(m, fresh = false) {
   const sliders = (fx.controls || []).filter((c) => !c.kind && !HIDDEN_FX_KEYS.includes(c.key)).map((c) => slider({
     label: c.label.replace(/\s*\(.*\)$/, ""), min: c.min, max: c.max, step: c.step || 1, targets: [m], get: (x) => Number(now(x)[c.key]) || 0, set: (x, v) => { x.effect.settings[c.key] = v; }
   }));
-  out.push(...sliders);
+  if (withSettings) out.push(...sliders);
   out.push(el("div", { className: "row" }, segmented([{ value: "paint", label: "Add" }, { value: "erase", label: "Erase" }], brush.mask, (v) => { setBrush("mask", v); if (state.tool !== "mask") setTool("mask"); })));
   out.push(brushSliders("Brush size"));
   return out;
@@ -1021,10 +1036,10 @@ function masksList(layer) {
   return box;
 }
 // The picked mask's settings (Edit, first, open as it's picked)
-let shownMask = null, maskSeen = null;
+let shownMask = null, maskSeen = null, shownFxMask = null;
 function maskCard() {
   const layer = layerNow(), m = !sample && pickedMask();
-  if (!m || !layer) { shownMask = null; return null; }
+  if (!m || !layer || m.effect) { shownMask = null; return null; } // (an Effect brush's: in Effects)
   const key = `mask:${m.id}`;
   if (shownMask !== m.id) { shownMask = m.id; openCards.add(key); }
   return foldCard({ key, name: `Mask · ${maskName(layer, m)}`, build: (inner) => {

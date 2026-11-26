@@ -64,8 +64,8 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   exported. Not for videos. Checked in Nov 2026: the smaller models (BiRefNet lite, BEN2) hit graphics-card limits, MODNet
   isn't good enough, and imgly / ISNet (AGPL) and BRIA RMBG (non-commercial) aren't allowed on a paid site. Later: an
   edge brush, and the desktop app shipping the model inside.
-- **Tools** (Tom, 2026-11-18): its own Editor tab between Adjust and Crop (`state.tab` "tools"; `buildToolsBox` in panel.js, shown under Layers on that tab only; picking a brush anywhere opens it) for the picked photo: Remove
-  background, then three brushes (`js/ui/brush.js`, painted on the canvas through stage.js; `state.tool`), covering
+- **Tools** (Tom, 2026-11-18): its own Editor tab between Adjust and Crop (`state.tab` "tools"; `buildToolsBox` in panel.js, shown under Layers on that tab only; picking a brush anywhere opens it) for the picked photo: the brushes as icons, Remove
+  background under them (Tom, 2026-11-26); the brushes (`js/ui/brush.js`, painted on the canvas through stage.js; `state.tool`), covering
   Photoshop's healing tools with no mode pickers:
   - **Remove**: paint over anything; on letting go it's rebuilt (it flashes red / white until it's done). Small strokes: Content-Aware (PatchMatch, onion-peel
     start, `js/fill-worker.js`, no AI). Strokes over a tenth of the photo across: the AI fill, LaMa (Carve/LaMa-ONNX,
@@ -97,7 +97,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   out Tiles, Low poly and Glow), worked out on the whole photo and laid on through the painted mask (looks.js). Picking
   another effect in the Tools fold starts a new brush once this one is painted (one part pixelated, another crumpled);
   in Adjust → Masks the menu changes the picked one's effect. New effects for it in js/effects/ ("Break up"): pixelate,
-  shards, crumple, stripes. Settings (`effectBrushControls` in panel.js) in the Tools fold while in hand and in Adjust → Masks.
+  shards, crumple, stripes. In hand, the Tools column shows just the effect, Add / Erase and the brush size; its settings are on the right under Edit | Effects, a "Pixelate · painted" card per effect mask (tick, Paint more, the sliders; `buildEffectsTab`), which opens as it's picked (Tom, 2026-11-26: not under Edit too).
   No red overlay for it: the effect shows as it's painted.
 - **Masks** (Tom, 2026-11-18, like Lightroom's): fixes on part of a photo. In Tools (Tom, 2026-11-23: under the brushes, `masksList` in panel.js): Brush · Gradient (was Fade, renamed 2026-11-23) · Subject (Round taken off the menu 2026-11-23; old Round masks still work),
   then a row per mask (Invert, On / Off, ✕); the picked one's Light and Colour sliders are first in Edit on the right (`maskCard`, "Mask · Gradient 1", open as it's picked) (Round: Feather too). The record
@@ -136,7 +136,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
     frame. The key: `GIPHY_KEY` in gifs.js (localStorage `ans_photo_giphy_key` overrides, for tests); a free key is
     100 searches an hour, more needs GIPHY's production key.
   - **Duplicate** (Tom, 2026-11-26): ⌘D and the Duplicate button copy what's picked on the canvas (a photo, caption,
-    shape or GIF: `duplicatePicked` in actions.js), else the picked slides. **Option-drag** (as a clip in a DAW) drags a
+    shape or GIF: `duplicatePicked` in actions.js), else the picked slides (a click on a slide in the strip drops the canvas pick, so ⌘D there copies the whole slide). **Option-drag** (as a clip in a DAW) drags a
     copy away and leaves the original (stage.js `down`: a quiet copy, one step with the drag; Option-click alone, none).
   - **Auto-crop to the subject** (Tom, 2026-11-26): Crop → Fit | Fill | Subject (`js/autocrop.js`). The Remove background
     model finds the subject; the photo is zoomed so it's 4/5 of the frame's height (at most 9/10 of its width), centred,
