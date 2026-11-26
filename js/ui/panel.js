@@ -23,6 +23,10 @@ import { SHAPE_KINDS, SHAPE_DEFAULTS, layoutText, shownBox, TEXT_STYLES, FONTS, 
 import { moveLayer, placeLayer, removeLayer, duplicateLayer } from '../actions.js';
 import { showMenu } from './menu.js';
 import { toast } from './toast.js';
+import { cropToSubject } from '../autocrop.js';
+import { loadBrand, brandNow, brandArtist, brandLogos, addLogo, removeLogo } from '../brand.js';
+import { useFont } from '../fonts.js';
+import { dbGet } from '../store.js';
 import { giphyReady, searchGiphy, keepGif, keepGifFile } from '../gifs.js';
 import { ask } from './dialogs.js';
 
@@ -184,7 +188,7 @@ function buildLayersBox() {
       const shape = t.kind === "shape", gif = t.kind === "gif";
       const label = gif ? (t.name || "GIF") : shape ? shapeLabel(t) : (String(t.content || "").split("\n")[0].trim().slice(0, 24) || "Caption");
       const { eye, lock, name, tag } = rowParts(t, label);
-      const icon = el("span", { className: "layer-thumb layer-icon" + (gif ? " gif" : shape ? " shape" : " text"), textContent: gif ? "GIF" : shape ? "" : "T" });
+      const icon = el("span", { className: "layer-thumb layer-icon" + (gif ? " gif" : shape ? " shape" : " text"), textContent: gif ? (t.logo ? "Logo" : "GIF") : shape ? "" : "T" });
       if (shape) icon.style.setProperty("--fill", t.fill || "#ffffff");
       const row = el("div", { className: "layer-row" + (state.textId === t.id ? " on" : "") + (sel.has(t.id) ? " sel" : "") + (t.hidden ? " hidden-row" : "") },
         eye, icon, name, tag, el("span", { className: "spacer" }), lock);
@@ -396,7 +400,7 @@ function build() {
   const layer = currentLayer();
   // (only once something's picked on the canvas: a photo or a caption; nothing picked, no title: Tom, 2026-11-23)
   document.querySelector("#panel .ed-title").textContent = !slide ? ""
-    : caption ? (caption.kind === "shape" ? "Shape" : caption.kind === "gif" ? "GIF" : "Caption")
+    : caption ? (caption.kind === "shape" ? "Shape" : caption.kind === "gif" ? (caption.logo ? "Logo" : "GIF") : "Caption")
     : state.photoPicked || state.layerId ? layerLabel(slide, layersOf(slide).indexOf(layer))
     : "";
 
@@ -451,6 +455,7 @@ export function buildLibrary(host, lib) {
   else if (lib === "captions") withBody(host, buildText, "add");
   else if (lib === "shapes") withBody(host, buildShapes);
   else if (lib === "gifs") withBody(host, buildGifs);
+  else if (lib === "brand") withBody(host, buildBrand);
   host.querySelectorAll('input[type="range"]').forEach(fillTrack);
   pairSliders(host);
 }
@@ -1190,7 +1195,17 @@ function buildCrop() {
   const inGrid = isGrid(slide);
   const fitFill = el("div", { className: "segmented wide" },
     el("button", { textContent: "Fit", title: "The whole photo, on the background", onclick: act(() => { if (pic) { delete item.crop.trim; fitCrop(item.crop, pic.width, pic.height, frame().w, frame().h); } }) }),
-    el("button", { textContent: "Fill", title: "The photo covers the slide", onclick: act(() => { if (pic) { delete item.crop.trim; fillCrop(item.crop, pic.width, pic.height, frame().w, frame().h); } }) }));
+    el("button", { textContent: "Fill", title: "The photo covers the slide", onclick: act(() => { if (pic) { delete item.crop.trim; fillCrop(item.crop, pic.width, pic.height, frame().w, frame().h); } }) }),
+    // (Tom, 2026-11-26) Subject: framed round the person (js/autocrop.js); with several slides picked in the strip, each one's own photo
+    el("button", { textContent: cutoutStatus.busy ? "Finding…" : "Subject", disabled: cutoutStatus.busy || !pic || pic.kind === "video", title: "Frame the person: the photo zoomed and centred on them",
+      onclick: async () => {
+        const chosen = selectedItems().filter((s) => !isVideo(s));
+        const jobs = chosen.length > 1 ? chosen.map((s) => [s, s, { w: s.span * aspectOf(activeSet(state.project).ratio), h: 1 }]) : [[slide, item, frame()]];
+        let moved = 0;
+        for (const [, layer, f] of jobs) if (await cropToSubject(layer, f.w, f.h)) moved++;
+        if (moved) { changed("project"); commit(); }
+        if (moved < jobs.length) toast(jobs.length > 1 ? `No subject found on ${jobs.length - moved} of ${jobs.length} slides` : "No subject found in this photo");
+      } }));
   body.append(fitFill);
   // The photo's shape (Tom, 2026-11-18): it fills the part that shows (the side handles on the canvas trim it)
   if (!inGrid && item.style) {
@@ -1416,13 +1431,92 @@ function shapeSettings(item, t) {
 function gifSettings(item, t) {
   const done = () => { changed("project"); commit(); };
   body.append(slider({ label: "Size", min: 2, max: 200, step: 0.5, targets: [t], get: (x) => x.size * 100, set: (x, v) => { x.size = v / 100; }, onCommit: () => {} }));
-  body.append(slider({ label: "Speed", min: 25, max: 300, step: 5, unit: "%", reset: 100, targets: [t], get: (x) => (x.speed || 1) * 100, set: (x, v) => { x.speed = v / 100; }, onCommit: () => {} }));
+  if (!t.logo) body.append(slider({ label: "Speed", min: 25, max: 300, step: 5, unit: "%", reset: 100, targets: [t], get: (x) => (x.speed || 1) * 100, set: (x, v) => { x.speed = v / 100; }, onCommit: () => {} }));
   body.append(slider({ label: "Opacity", min: 0, max: 100, unit: "%", reset: 100, targets: [t], get: (x) => (x.opacity ?? 1) * 100, set: (x, v) => { x.opacity = v / 100; }, onCommit: () => {} }));
   body.append(slider({ label: "Angle", min: -180, max: 180, step: 0.5, unit: "°", targets: [t], get: (x) => x.rotation || 0, set: (x, v) => { x.rotation = v; }, onCommit: () => {} }));
   const flip = el("input", { type: "checkbox", checked: !!t.flip });
   flip.onchange = () => { t.flip = flip.checked; done(); };
   body.append(el("div", { className: "row" }, el("label", { className: "check-row" }, flip, el("span", { textContent: "Flip" })), el("span", { className: "spacer" }),
-    button("Delete GIF", () => { item.texts = item.texts.filter((x) => x !== t); state.textId = null; done(); }, "btn ghost small")));
+    button(t.logo ? "Delete logo" : "Delete GIF", () => { item.texts = item.texts.filter((x) => x !== t); state.textId = null; done(); }, "btn ghost small")));
+}
+
+// ---- Brand kit (Tom, 2026-11-26; js/brand.js): the artist's colours and fonts from their Visual Profile, and their
+// logos. A colour goes on what's picked (a caption's words, a shape's fill), else the slide's background; a font on the
+// picked caption, else a new caption in it; a logo onto the slide.
+let brandPick = null, logosShown = null;
+function buildBrand() {
+  const item = currentItem();
+  if (!item) return;
+  const kit = brandNow();
+  if (!kit || kit.artist !== brandArtist()) { body.append(note("Loading…")); loadBrand().then(() => changed("view")); return; }
+  const looks = kit.looks;
+  const look = looks.find((l) => l.id === brandPick) || looks[0];
+  if (looks.length > 1) {
+    const sel = el("select", { className: "select" });
+    looks.forEach((l) => sel.append(el("option", { value: l.id, textContent: l.name, selected: l === look })));
+    sel.onchange = () => { brandPick = sel.value; changed("view"); };
+    body.append(el("div", { className: "row" }, el("span", { textContent: "Visual Profile" }), sel));
+  }
+  const picked = item.texts.find((x) => x.id === state.textId);
+  const done = () => { changed("project"); commit(); };
+  if (!look) {
+    body.append(note("No Visual Profile yet"));
+    if (kit.artist) body.append(el("p", { className: "note" }, el("a", { href: `/identity/lookbook/?artist=${encodeURIComponent(kit.artist)}`, textContent: "Make one in Identity" })));
+  } else {
+    body.append(title("Colours"));
+    const sw = el("div", { className: "brand-swatches" });
+    look.colours.forEach((c) => sw.append(el("button", {
+      type: "button", className: "brand-swatch", style: `--c: ${c.hex}`, title: `${c.name} ${c.hex}`, ariaLabel: c.name,
+      onclick: () => {
+        const t = item.texts.find((x) => x.id === state.textId);
+        if (t && t.kind === "shape") t.fill = c.hex;
+        else if (t && t.kind !== "gif") t.colour = c.hex;
+        else item.background = c.hex;
+        done();
+      }
+    })));
+    if (!look.colours.length) sw.append(note("No colours yet"));
+    body.append(sw);
+    body.append(title("Fonts"));
+    look.fonts.forEach((f) => {
+      useFont(f.family, f.url);
+      body.append(el("button", {
+        type: "button", className: "brand-font", title: picked && !picked.kind ? `Use ${f.label} for this caption` : `New caption in ${f.label}`,
+        onclick: () => {
+          const t = item.texts.find((x) => x.id === state.textId);
+          if (t && !t.kind) { t.font = f.family; t.fontLabel = f.label; if (f.url) t.fontUrl = f.url; else delete t.fontUrl; done(); return; }
+          const { label, ...style } = TEXT_STYLES.title;
+          const n = { ...style, id: newId("t"), content: f.role === "display" ? kit.name || "Your title" : "Your text", size: f.role === "display" ? 0.1 : 0.05, font: f.family, fontLabel: f.label, ...(f.url ? { fontUrl: f.url } : {}), x: 0.5 / item.span };
+          item.texts.push(n);
+          state.textId = n.id; state.photoPicked = false; state.layerId = null;
+          done();
+        }
+      }, el("span", { className: "bf-sample", style: `font-family: "${f.family}", Helvetica, sans-serif`, textContent: f.label }), el("span", { className: "bf-role", textContent: f.name })));
+    });
+  }
+  body.append(title("Logos"));
+  const grid = el("div", { className: "brand-logos" });
+  const own = el("input", { type: "file", accept: "image/png,image/webp,image/jpeg", hidden: true });
+  own.onchange = async () => { const f = own.files && own.files[0]; if (f) { logosShown = await addLogo(f); changed("view"); } };
+  const draw = (list) => {
+    grid.replaceChildren();
+    list.forEach((l) => {
+      const tile = el("button", { type: "button", className: "gif-tile sticker brand-logo", title: `Put ${l.name} on the slide` });
+      dbGet("media", l.mediaId).then((m) => { if (m) tile.append(el("img", { src: URL.createObjectURL(m.blob), alt: l.name })); });
+      tile.onclick = () => {
+        const n = { id: newId("t"), kind: "gif", logo: true, mediaId: l.mediaId, name: l.name || "Logo", x: 0.5 / item.span, y: 0.86, size: 0.12, aspect: l.width / l.height, rotation: 0, opacity: 1, speed: 1 };
+        item.texts.push(n);
+        state.textId = n.id; state.photoPicked = false; state.layerId = null;
+        done();
+      };
+      const x = el("span", { className: "brand-logo-x", textContent: "✕", title: "Take out of the brand kit" });
+      x.onclick = async (e) => { e.stopPropagation(); logosShown = await removeLogo(l.mediaId); changed("view"); };
+      tile.append(x);
+      grid.append(tile);
+    });
+  };
+  if (logosShown) draw(logosShown); else brandLogos().then((l) => { logosShown = l; draw(l); });
+  body.append(grid, el("div", { className: "row" }, button("Add logo", () => own.click())), own);
 }
 
 // ---- GIFs (Tom, 2026-11-25): GIPHY's stickers and GIFs (js/gifs.js). A search box, Stickers | GIFs, then the results
@@ -1515,6 +1609,7 @@ function captionSettings(item) {
   body.append(content);
 
   const font = el("select", { className: "select" });
+  if (t.font && !FONTS.some((f) => f.id === t.font)) font.append(el("option", { value: t.font, textContent: t.fontLabel || t.font, selected: true })); // (a brand font)
   FONTS.forEach((f) => font.append(el("option", { value: f.id, textContent: f.id, selected: f.id === t.font })));
   font.onchange = () => { t.font = font.value; document.fonts && document.fonts.load(`20px "${font.value}"`).then(live); done(); };
   body.append(el("div", { className: "row" }, font, segmented([{ value: 400, label: "Regular" }, { value: 700, label: "Bold" }], t.weight >= 600 ? 700 : 400, (v) => { t.weight = v; done(); })));

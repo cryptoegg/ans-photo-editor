@@ -327,23 +327,49 @@ export function placeLayer(layer, to) {
 // A copy of a photo on the slide, just above it (⌘D or right-click → Duplicate on a picked photo);
 // free, it sits a little down and right of the original so both show
 // (false: nothing to copy, e.g. a video slide's video)
-export function duplicateLayer(layer = currentLayer()) {
+// (quiet, Tom 2026-11-26: Option-drag's copy, exactly where it was, no step of its own: the drag makes the step)
+export function duplicateLayer(layer = currentLayer(), { quiet = false } = {}) {
   const item = currentItem();
   if (!item || !layer || (layer === item && isVideo(item))) return false;
   const copy = { id: newId("l"), kind: "photo", ...Object.fromEntries(LAYER_KEYS.filter((k) => layer[k] !== undefined).map((k) => [k, clone(layer[k])])) };
   if (!isGrid(item)) {
     item.layout.kind = "free";
-    copy.crop.x += 0.04;
-    copy.crop.y += 0.04;
+    if (!quiet) { copy.crop.x += 0.04; copy.crop.y += 0.04; }
   }
   item.layers.splice(layersOf(item).indexOf(layer), 0, copy); // (just above it: layers come after the slide's own photo)
   state.photoPicked = true;
   state.textId = null;
   state.layerId = copy.id;
   changed("project");
+  if (quiet) return copy;
   commit();
-  toast("Photo duplicated", undoAction);
   return true;
+}
+
+// A caption, shape or GIF copied, just above it and picked (Tom, 2026-11-26: ⌘D, the Duplicate button, Option-drag)
+export function duplicateText(t, { quiet = false } = {}) {
+  const item = currentItem();
+  if (!item || !t) return false;
+  const copy = { ...clone(t), id: newId("t") };
+  delete copy.group; delete copy.locked;
+  if (!quiet) { copy.x += 0.03; copy.y += 0.03; }
+  item.texts.splice(item.texts.indexOf(t) + 1, 0, copy);
+  state.textId = copy.id; state.photoPicked = false; state.layerId = null;
+  changed("project");
+  if (quiet) return copy;
+  commit();
+  return true;
+}
+
+// What's picked on the canvas copied (a photo, caption, shape or GIF), else the picked slides
+export function duplicatePicked() {
+  const item = currentItem();
+  if (state.view === "edit" && item) {
+    const t = state.textId && item.texts.find((x) => x.id === state.textId);
+    if (t) return duplicateText(t);
+    if (state.photoPicked && duplicateLayer()) return true;
+  }
+  return duplicateSelected();
 }
 
 // Take a photo off the slide (the slide always keeps one)

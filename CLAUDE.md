@@ -135,6 +135,19 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
     one shows), plays along a video slide's MP4 (`time` in drawItem's options), and a photo slide's JPEG gets its first
     frame. The key: `GIPHY_KEY` in gifs.js (localStorage `ans_photo_giphy_key` overrides, for tests); a free key is
     100 searches an hour, more needs GIPHY's production key.
+  - **Duplicate** (Tom, 2026-11-26): ⌘D and the Duplicate button copy what's picked on the canvas (a photo, caption,
+    shape or GIF: `duplicatePicked` in actions.js), else the picked slides. **Option-drag** (as a clip in a DAW) drags a
+    copy away and leaves the original (stage.js `down`: a quiet copy, one step with the drag; Option-click alone, none).
+  - **Auto-crop to the subject** (Tom, 2026-11-26): Crop → Fit | Fill | Subject (`js/autocrop.js`). The Remove background
+    model finds the subject; the photo is zoomed so it's 4/5 of the frame's height (at most 9/10 of its width), centred,
+    never past Fill. Several slides picked in the strip: each one's own photo. About 1 s a photo on the graphics card.
+  - **Brand kit** (Tom, 2026-11-26; rail tab Brand, `buildBrand` in panel.js, `js/brand.js`): the artist's colours (5 by
+    role) and fonts (Display, Brand text, Social) read from their Visual Profiles in Identity (`GET /api/identity/artist`,
+    the whole brand's first, a menu when there are several; nothing typed twice). A colour goes on the picked caption's
+    words or shape's fill, else the slide's background; a font on the picked caption, else a new caption in it (the
+    artist's name for Display). Any Google Font or the artist's own font file loads when needed (`js/fonts.js`,
+    `t.fontUrl`). Logos are added here and kept in this browser (meta `brand-logos:<artist>`), placed as an image
+    (`kind: "gif"`, `logo: true`). Tests: `window.__brandStandIn` (a stand-in artist).
   - **Caption effects**: Curve (letters on an arc, ±200 = a full circle; the box grows to hold it), Shadow, Glow, Gradient, and Photo inside the words (`photoFill`: the
     slide's photos show only through those letters, `drawItem` in render.js).
 - **Notes** (`js/ui/toast.js`, Tom, 2026-11-18): a small dark bar at the top of the canvas, only for what can't be seen
@@ -209,7 +222,7 @@ zip export). Styles: `styles.css`. Run with any static server from this folder, 
   needed; `splitPanorama` is kept in actions.js but nothing calls it)) · Undo / Redo · the canvas bar (`#canvas-bar`: the tools, ‹ Slide 1 of 7 ›, the shape, − Fit +, guides,
   snapping, background, Before; hidden in Phone view and on an empty project) · "7 of 20" at the right.
 - **The side columns** (Tom, 2026-11-23, as the Lyric Visualiser's): a see-through rail down the left edge, on the window's
-  grey (`#rail`: Media · Filters · Effects · Tools · Captions · Shapes · GIFs · History; `state.lib`) opens its library in the column beside it (`js/ui/mediaColumn.js`; Filters, Tools and
+  grey (`#rail`: Media · Filters · Effects · Tools · Captions · Shapes · GIFs · Brand · History; `state.lib`) opens its library in the column beside it (`js/ui/mediaColumn.js`; Filters, Tools and
   Captions drawn by `buildLibrary` in panel.js: the presets row and the filter grid, Remove background and the brushes,
   New Text Overlay and the slide's captions; Effects = every effect as a tile drawn on the photo (`effectSwatch` in
   looks.js), a click puts it on the picked photo (`addEffect`) and opens it on the right); the open one again folds the

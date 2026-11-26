@@ -21,8 +21,9 @@ import { maskDown, maskMove, maskUp, drawMasks } from './masks.js';
 import { initVideoBar, videoFrame, spaceMovedView } from './videoBar.js';
 import { getPicture, loadPicture } from '../media.js';
 import { movingGifs, onGifsChange } from '../gifs.js';
+import { onFontsChange } from '../fonts.js';
 import { uiColour, onSkinChange } from './skin.js';
-import { duplicateLayer, removeLayer } from '../actions.js';
+import { duplicateLayer, duplicateText, removeLayer } from '../actions.js';
 
 const PREFS_KEY = "ans_photo_guides";
 const SNAP = 7;         // screen pixels before something clicks onto a line
@@ -303,7 +304,16 @@ function down(e) {
     if (e.button === 0 && (viewZoom !== 1 || viewPan.x || viewPan.y)) startPan(e);
     return;
   }
+  // Option-drag (Tom, 2026-11-26, as a clip in a DAW): a copy comes away with the pointer, the original stays put
+  let dupe = null;
+  if (e.altKey && e.button === 0) {
+    const t = state.textId && item.texts.find((x) => x.id === state.textId);
+    const was = t || currentLayer() || item;
+    dupe = t ? duplicateText(t, { quiet: true }) : duplicateLayer(was, { quiet: true });
+    if (dupe) dupe = { copy: dupe, was, text: !!t };
+  }
   startDrag(pickedBox(item, f), "inside", p, f);
+  if (drag && dupe) drag.dupe = dupe;
 }
 
 // (the view's zoom and move, for checking)
@@ -441,8 +451,15 @@ function up() {
   if (panning) { panning = null; canvas.style.cursor = spaceHeld ? "grab" : ""; return; }
   if (maskUp()) return;
   if (!drag) { brushUp(); return; }
-  const moved = drag.moved;
+  const moved = drag.moved, dupe = drag.dupe;
   drag = null;
+  if (dupe && !moved) {
+    // (Option-click without a drag: no copy)
+    const item = currentItem();
+    if (dupe.text) { item.texts = item.texts.filter((x) => x !== dupe.copy); pick("text", dupe.was.id); }
+    else { item.layers = item.layers.filter((x) => x !== dupe.copy); if (!item.layers.length && !isGrid(item)) item.layout.kind = "single"; pick("photo", null, dupe.was); }
+    changed("project");
+  }
   lit = [];
   canvas.style.cursor = "";
   if (moved) commit(); // (one drag = one undo step)
@@ -495,6 +512,7 @@ function wheel(e) {
 
 let queued = false, gifTimer = 0;
 onGifsChange(() => draw());
+onFontsChange(() => draw());
 export function draw() {
   if (queued) return;
   queued = true;

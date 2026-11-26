@@ -58,7 +58,7 @@ function describe(before, after) {
       const at = (o) => path.split(".").slice(1).reduce((x, k) => (x ? x[k] : x), o) || [];
       const a = at(A), b = at(B), more = b.length > a.length;
       const t = (more ? b.find((x) => !a.some((y) => y.id === x.id)) : a.find((x) => !b.some((y) => y.id === x.id))) || {};
-      return `${more ? "New" : "Deleted"} ${t.kind === "shape" ? "shape" : t.kind === "gif" ? "GIF" : "caption"}`;
+      return `${more ? "New" : "Deleted"} ${t.kind === "shape" ? "shape" : t.kind === "gif" ? (t.logo ? "logo" : "GIF") : "caption"}`;
     }
     let name = (NAMES.find(([re]) => re.test(path)) || [, "Change"])[1];
     if (/masks$/.test(path)) {

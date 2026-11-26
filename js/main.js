@@ -16,7 +16,7 @@ import { newProject, slides as slideList, firstSlideOf, allLists, slideCount } f
 import { saveProject, loadProject } from './store.js';
 import { loadPicture, warmHeicReader } from './media.js';
 import { FONTS } from './render.js';
-import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, setSpan, panoMost, copyLook, pasteLook, setStage, setRatio, addLayerFiles, duplicateLayer } from './actions.js';
+import { addFiles, duplicateSelected, removeSelected, resetSelected, makePanorama, setSpan, panoMost, copyLook, pasteLook, setStage, setRatio, addLayerFiles, duplicateLayer, duplicatePicked } from './actions.js';
 import { loadMyFilters } from './filters.js';
 import { initInstall } from './install.js';
 import { STAGES, SHAPES, PLATFORMS, fitFor } from './project.js';
@@ -243,7 +243,7 @@ function wireStrip() {
   const foldStrip = (on) => { document.body.classList.toggle("strip-folded", on); try { localStorage.setItem("ans_photo_strip_folded", on ? "1" : "0"); } catch (e) {} window.dispatchEvent(new Event("resize")); };
   try { foldStrip(localStorage.getItem("ans_photo_strip_folded") === "1"); } catch (e) {}
   $("btn-strip-fold").onclick = () => foldStrip(!document.body.classList.contains("strip-folded"));
-  $("btn-duplicate").onclick = duplicateSelected;
+  $("btn-duplicate").onclick = duplicatePicked; // (what's picked on the canvas, else the slides: Tom, 2026-11-26)
   $("btn-delete").onclick = removeSelected;
   $("btn-reset").onclick = resetSelected;
   $("btn-pano").onclick = () => { const item = currentItem(); if (item && item.span > 1 && state.selected.size <= 1) return; makePanorama(); };
@@ -293,7 +293,7 @@ function wireKeys() {
     if (cmd && key === "v") { e.preventDefault(); pasteLook(); return; }
     if (cmd && key === "a") { e.preventDefault(); selectAll(); return; }
     // ⌘D: a picked photo (on the canvas or in Layers) is copied onto the slide; else the selected slides
-    if (cmd && key === "d") { e.preventDefault(); if (!(state.photoPicked && state.view === "edit" && currentItem() && duplicateLayer())) duplicateSelected(); return; }
+    if (cmd && key === "d") { e.preventDefault(); duplicatePicked(); return; }
     if (cmd) return;
     if (e.key.startsWith("Arrow") && flickFilter(e.key)) { e.preventDefault(); return; } // (a filter tile last clicked)
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {

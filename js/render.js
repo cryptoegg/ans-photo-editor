@@ -4,6 +4,7 @@
 import { lookedPicture, lookedFrame } from './looks.js';
 import { getPicture } from './media.js';
 import { gifFrame, gifClock } from './gifs.js';
+import { useFont } from './fonts.js';
 import { LAYOUTS, layersOf } from './project.js';
 
 // ---- Where the photo sits in a frame W x H (free, like the lyric app's pictures)
@@ -232,7 +233,8 @@ export const FONTS = [
   { id: "Space Mono", css: "'Space Mono', Menlo, monospace" },
   { id: "Caveat", css: "Caveat, cursive" }
 ];
-const fontCss = (id) => (FONTS.find((f) => f.id === id) || FONTS[0]).css;
+// (a font not built in: a brand font, by its own name, loaded when first needed: js/fonts.js)
+const fontCss = (id) => { const f = FONTS.find((x) => x.id === id); return f ? f.css : id ? `"${String(id).replace(/"/g, "")}", Helvetica, sans-serif` : FONTS[0].css; };
 
 // Ready-made text styles (Text → + Add)
 export const TEXT_STYLES = {
@@ -250,6 +252,7 @@ export function layoutText(ctx, t, W, H) {
     return { shape: true, px: h, lines: [], widths: [], lineH: h, textW: w, textH: h, padX: 0, padY: 0, cx, cy, width: w, height: h, left: cx - w / 2, top: cy - h / 2, rotation: t.rotation || 0 };
   }
   const px = Math.max(4, t.size * H);
+  useFont(t.font, t.fontUrl, FONTS.some((f) => f.id === t.font));
   const font = `${t.weight || 400} ${px}px ${fontCss(t.font)}`;
   ctx.save();
   ctx.font = font;
